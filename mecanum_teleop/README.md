@@ -10,7 +10,7 @@ cd mecanum_teleop
 
     - Windows: `call install/setup.bat`
 
-    - Linux: `. install/setup.bash`
+    - Linux: `source install/setup.bash`
 
 3. Run node:
 ```
