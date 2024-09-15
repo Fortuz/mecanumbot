@@ -92,7 +92,7 @@ def get_key(settings):
 
 
 def print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity):
-    print('currently:\tX linear velocity {0}\Y linear velocity {1}\tangular velocity {2} '.format(
+    print('X linear velocity {0:.2f}     |     Y linear velocity {1:.2f}     |     Z angular velocity {2:.2f} '.format(
         target_x_linear_velocity,
         target_y_linear_velocity,
         target_angular_velocity))
@@ -197,7 +197,8 @@ def main():
                     break
 
             if status == 20:
-                print(msg)
+                # Tutorial message will only be displayed once, on start
+                # print(msg)
                 status = 0
 
             twist = Twist()
