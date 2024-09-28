@@ -312,8 +312,8 @@ def main():
         pub_cmd_vel.publish(twist)
 
         grabber_msg = GrabberPosition()
-        grabber_msg.left_grabber = DEFAULT_GRABBER_POSITION
-        grabber_msg.right_grabber = DEFAULT_GRABBER_POSITION
+        grabber_msg.l = DEFAULT_GRABBER_POSITION
+        grabber_msg.r = DEFAULT_GRABBER_POSITION
         pub_grabber_pos.publish(grabber_msg)
 
         if os.name != 'nt':
