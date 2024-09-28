@@ -57,17 +57,28 @@ MAX_ANG_VEL = 1.82
 LIN_VEL_STEP_SIZE = 0.01
 ANG_VEL_STEP_SIZE = 0.1
 
+INSTANT_XLIN_VEL = 0.18
+INSTANT_YLIN_VEL = 0.18
+INSTANT_ANG_VEL = 1.82
+
 msg = """
 Moving around:
     q   w   e
     a   s   d
         x
+    
+[Incremental mode]:
+    w/x : increase/decrease X linear velocity (max 0.26)
+    a/d : increase/decrease Y linear velocity (max 0.26)
+    q/e : increase/decrease angular velocity (max 1.82)
 
-w/x : increase/decrease X linear velocity (~ 0.26)
-a/d : increase/decrease Y linear velocity (~ 0.26)
-q/e : increase/decrease angular velocity (~ 1.82)
+[Instant mode]:
+    w/x : set X linear velocity to +/-0.18
+    a/d : set Y linear velocity to +/-0.18
+    q/e : set angular velocity to +/-1.20
 
 space key, s : force stop
+m : switch between modes
 
 CTRL-C to quit
 """
@@ -91,8 +102,9 @@ def get_key(settings):
     return key
 
 
-def print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity):
-    print('X linear velocity {0:.2f}     |     Y linear velocity {1:.2f}     |     Z angular velocity {2:.2f} '.format(
+def print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity):
+    print('[{0} mode]:     X linear velocity {1:.2f}     |     Y linear velocity {2:.2f}     |     Z angular velocity {3:.2f} '.format(
+        "Incremental" if is_incremental else "Instant",
         target_x_linear_velocity,
         target_y_linear_velocity,
         target_angular_velocity))
@@ -142,6 +154,7 @@ def main():
     node = rclpy.create_node('teleop_keyboard')
     pub = node.create_publisher(Twist, 'cmd_vel', qos)
 
+    is_incremental = True
     status = 0
     target_x_linear_velocity = 0.0
     target_y_linear_velocity = 0.0
@@ -150,40 +163,53 @@ def main():
     control_y_linear_velocity = 0.0
     control_angular_velocity = 0.0
 
+
     try:
         print(msg)
         while(1):
             key = get_key(settings)
             if key == 'w':
-                target_x_linear_velocity =\
-                    check_x_linear_limit_velocity(target_x_linear_velocity + LIN_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_x_linear_velocity = check_x_linear_limit_velocity(target_x_linear_velocity + LIN_VEL_STEP_SIZE)
+                else:
+                    target_x_linear_velocity = INSTANT_XLIN_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == 'x':
-                target_x_linear_velocity =\
-                    check_x_linear_limit_velocity(target_x_linear_velocity - LIN_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_x_linear_velocity = check_x_linear_limit_velocity(target_x_linear_velocity - LIN_VEL_STEP_SIZE)
+                else:
+                    target_x_linear_velocity = -INSTANT_XLIN_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == 'a':
-                target_y_linear_velocity =\
-                    check_y_linear_limit_velocity(target_y_linear_velocity + LIN_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_y_linear_velocity = check_y_linear_limit_velocity(target_y_linear_velocity + LIN_VEL_STEP_SIZE)
+                else:
+                    target_y_linear_velocity = INSTANT_YLIN_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == 'd':
-                target_y_linear_velocity =\
-                    check_y_linear_limit_velocity(target_y_linear_velocity - LIN_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_y_linear_velocity = check_y_linear_limit_velocity(target_y_linear_velocity - LIN_VEL_STEP_SIZE)
+                else:
+                    target_y_linear_velocity = -INSTANT_YLIN_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == 'q':
-                target_angular_velocity =\
-                    check_angular_limit_velocity(target_angular_velocity + ANG_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_angular_velocity = check_angular_limit_velocity(target_angular_velocity + ANG_VEL_STEP_SIZE)
+                else:
+                    target_angular_velocity = INSTANT_ANG_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == 'e':
-                target_angular_velocity =\
-                    check_angular_limit_velocity(target_angular_velocity - ANG_VEL_STEP_SIZE)
+                if is_incremental:
+                    target_angular_velocity = check_angular_limit_velocity(target_angular_velocity - ANG_VEL_STEP_SIZE)
+                else:
+                    target_angular_velocity = -INSTANT_ANG_VEL
                 status = status + 1
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
             elif key == ' ' or key == 's':
                 target_x_linear_velocity = 0.0
                 control_x_linear_velocity = 0.0
@@ -191,7 +217,10 @@ def main():
                 control_y_linear_velocity = 0.0
                 target_angular_velocity = 0.0
                 control_angular_velocity = 0.0
-                print_vels(target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
+            elif key == 'm':
+                is_incremental = not is_incremental
+                print("Control mode changed to {} mode.".format("incremental" if is_incremental else "instant"))
             else:
                 if (key == '\x03'):
                     break
