@@ -41,6 +41,7 @@ import select
 import sys
 import rclpy
 
+from grabber_msg_interface.msg import GrabberPosition
 from geometry_msgs.msg import Twist
 from rclpy.qos import QoSProfile
 
@@ -61,9 +62,13 @@ INSTANT_XLIN_VEL = 0.18
 INSTANT_YLIN_VEL = 0.18
 INSTANT_ANG_VEL = 1.82
 
+DEFAULT_GRABBER_POSITION = 512.0 # straight forward
+MIN_GRABBER_POSITION = 400.0
+MAX_GRABBER_POSITION = 624.0
+
 msg = """
 Moving around:
-    q   w   e
+    q   w   e      u   i   o   p
     a   s   d
         x
     
@@ -77,6 +82,8 @@ Moving around:
     a/d : set Y linear velocity to +/-0.18
     q/e : set angular velocity to +/-1.20
 
+u/i : open/close left grabber
+p/o : open/close right grabber
 space key, s : force stop
 m : switch between modes
 
@@ -102,12 +109,14 @@ def get_key(settings):
     return key
 
 
-def print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity):
-    print('[{0} mode]:     X linear velocity {1:.2f}     |     Y linear velocity {2:.2f}     |     Z angular velocity {3:.2f} '.format(
+def print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_pos, right_grabber_pos):
+    print('[{0} mode]:   X linear velocity {1:.2f}   |   Y linear velocity {2:.2f}   |   Z angular velocity {3:.2f}   |   Left grabber: {4:.2f}   |   Right grabber: {5:.2f}'.format(
         "Incremental" if is_incremental else "Instant",
         target_x_linear_velocity,
         target_y_linear_velocity,
-        target_angular_velocity))
+        target_angular_velocity,
+        left_grabber_pos,
+        right_grabber_pos))
 
 
 def make_simple_profile(output, input, slop):
@@ -135,6 +144,7 @@ def constrain(input_vel, low_bound, high_bound):
 def check_x_linear_limit_velocity(velocity):
     return constrain(velocity, -MAX_XLIN_VEL, MAX_XLIN_VEL)
 
+
 def check_y_linear_limit_velocity(velocity):
     return constrain(velocity, -MAX_YLIN_VEL, MAX_YLIN_VEL)
     
@@ -142,6 +152,9 @@ def check_y_linear_limit_velocity(velocity):
 def check_angular_limit_velocity(velocity):
     return constrain(velocity, -MAX_ANG_VEL, MAX_ANG_VEL)
 
+
+def check_grabber_position(position):
+    return constrain(position, MIN_GRABBER_POSITION, MAX_GRABBER_POSITION)
 
 def main():
     settings = None
@@ -152,7 +165,8 @@ def main():
 
     qos = QoSProfile(depth=10)
     node = rclpy.create_node('teleop_keyboard')
-    pub = node.create_publisher(Twist, 'cmd_vel', qos)
+    pub_cmd_vel = node.create_publisher(Twist, 'cmd_vel', qos)
+    pub_grabber_pos = node.create_publisher(GrabberPosition, 'grabber_goal_position', qos)
 
     is_incremental = True
     status = 0
@@ -163,64 +177,83 @@ def main():
     control_y_linear_velocity = 0.0
     control_angular_velocity = 0.0
 
+    left_grabber_position = DEFAULT_GRABBER_POSITION
+    right_grabber_position = DEFAULT_GRABBER_POSITION
+
 
     try:
         print(msg)
         while(1):
             key = get_key(settings)
-            if key == 'w':
+            if key == 'w':  # Go forward
                 if is_incremental:
                     target_x_linear_velocity = check_x_linear_limit_velocity(target_x_linear_velocity + LIN_VEL_STEP_SIZE)
                 else:
                     target_x_linear_velocity = INSTANT_XLIN_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'x':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'x':  # Go back
                 if is_incremental:
                     target_x_linear_velocity = check_x_linear_limit_velocity(target_x_linear_velocity - LIN_VEL_STEP_SIZE)
                 else:
                     target_x_linear_velocity = -INSTANT_XLIN_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'a':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'a':  # Go (slide) left
                 if is_incremental:
                     target_y_linear_velocity = check_y_linear_limit_velocity(target_y_linear_velocity + LIN_VEL_STEP_SIZE)
                 else:
                     target_y_linear_velocity = INSTANT_YLIN_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'd':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'd':  # Go (slide) right
                 if is_incremental:
                     target_y_linear_velocity = check_y_linear_limit_velocity(target_y_linear_velocity - LIN_VEL_STEP_SIZE)
                 else:
                     target_y_linear_velocity = -INSTANT_YLIN_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'q':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'q':  # Turn left
                 if is_incremental:
                     target_angular_velocity = check_angular_limit_velocity(target_angular_velocity + ANG_VEL_STEP_SIZE)
                 else:
                     target_angular_velocity = INSTANT_ANG_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'e':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'e':  # Turn right
                 if is_incremental:
                     target_angular_velocity = check_angular_limit_velocity(target_angular_velocity - ANG_VEL_STEP_SIZE)
                 else:
                     target_angular_velocity = -INSTANT_ANG_VEL
                 status = status + 1
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == ' ' or key == 's':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'u':  # Open left grabber
+                left_grabber_position = check_grabber_position(MIN_GRABBER_POSITION)
+                status += 1
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'i':  # Close left grabber
+                left_grabber_position = check_grabber_position(MAX_GRABBER_POSITION)
+                status += 1
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'o':  # Close right grabber
+                right_grabber_position = check_grabber_position(MIN_GRABBER_POSITION)
+                status += 1
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'p':  # Open right grabber
+                right_grabber_position = check_grabber_position(MAX_GRABBER_POSITION)
+                status += 1
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == ' ' or key == 's':  # Stop
                 target_x_linear_velocity = 0.0
                 control_x_linear_velocity = 0.0
                 target_y_linear_velocity = 0.0
                 control_y_linear_velocity = 0.0
                 target_angular_velocity = 0.0
                 control_angular_velocity = 0.0
-                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity)
-            elif key == 'm':
+                print_vels(is_incremental, target_x_linear_velocity, target_y_linear_velocity, target_angular_velocity, left_grabber_position, right_grabber_position)
+            elif key == 'm':  # Switch velocity control mode between incremental and instant
                 is_incremental = not is_incremental
-                print("Control mode changed to {} mode.".format("incremental" if is_incremental else "instant"))
+                print("Velocity control mode changed to {} mode.".format("incremental" if is_incremental else "instant"))
             else:
                 if (key == '\x03'):
                     break
@@ -256,7 +289,12 @@ def main():
             twist.angular.y = 0.0
             twist.angular.z = control_angular_velocity
 
-            pub.publish(twist)
+            pub_cmd_vel.publish(twist)
+
+            grabber_msg = GrabberPosition()
+            grabber_msg.l = left_grabber_position
+            grabber_msg.r = right_grabber_position
+            pub_grabber_pos.publish(grabber_msg)
 
     except Exception as e:
         print(e)
@@ -271,7 +309,12 @@ def main():
         twist.angular.y = 0.0
         twist.angular.z = 0.0
 
-        pub.publish(twist)
+        pub_cmd_vel.publish(twist)
+
+        grabber_msg = GrabberPosition()
+        grabber_msg.left_grabber = DEFAULT_GRABBER_POSITION
+        grabber_msg.right_grabber = DEFAULT_GRABBER_POSITION
+        pub_grabber_pos.publish(grabber_msg)
 
         if os.name != 'nt':
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
