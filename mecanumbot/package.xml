@@ -12,6 +12,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <exec_depend>mecanumbot_bringup</exec_depend>
+  <exec_depend>mecanumbot_description</exec_depend>
   <exec_depend>mecanumbot_msgs</exec_depend>
   <exec_depend>mecanumbot_led</exec_depend>
 
