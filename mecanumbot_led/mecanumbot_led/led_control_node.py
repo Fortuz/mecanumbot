@@ -68,21 +68,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
-
-"""
-ros2 service call /get_led_status mecanumbot_msgs/srv/GetLedStatus "{}"
-
-ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
-  fl_mode: 1,
-  fl_color: 3,
-  fr_mode: 1,
-  fr_color: 3,
-  br_mode: 1,
-  br_color: 3,
-  bl_mode: 1,
-  bl_color: 4
-}"
-
-ros2 run mecanumbot_led mecanumbot_led_service
-"""
