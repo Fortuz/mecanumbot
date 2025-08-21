@@ -22,8 +22,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "turtlebot3_node/diff_drive_controller.hpp"
-#include "turtlebot3_node/turtlebot3.hpp"
+#include "mecanumbot_node/diff_drive_controller.hpp"
+#include "mecanumbot_node/turtlebot3.hpp"
 
 void help_print()
 {

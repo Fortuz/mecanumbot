@@ -1,4 +1,4 @@
-turtlebot3_node:
+mecanumbot_node:
   ros__parameters:
 
     opencr:

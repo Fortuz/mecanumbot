@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 
-#include "turtlebot3_node/sensors/joint_state.hpp"
+#include "mecanumbot_node/sensors/joint_state.hpp"
 
 using robotis::turtlebot3::sensors::JointState;
 
@@ -37,11 +37,17 @@ JointState::JointState(
   pub_ = nh->create_publisher<sensor_msgs::msg::JointState>(topic_name, this->qos_);
   last_position =
   {dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_position_left.addr,
-      extern_control_table.present_position_left.length),
+      extern_control_table.present_position_frontleft.addr,
+      extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_position_right.addr,
-      extern_control_table.present_position_right.length)};
+      extern_control_table.present_position_frontright.addr,
+      extern_control_table.present_position_frontright.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_position_backleft.addr,
+      extern_control_table.present_position_backleft.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_position_backright.addr,
+      extern_control_table.present_position_backright.length)};
 
   nh_->get_parameter_or<std::string>(
     "namespace",
@@ -50,8 +56,10 @@ JointState::JointState(
 
   if (name_space_ != "") {
     frame_id_ = name_space_ + "/" + frame_id_;
-    wheel_right_joint_ = name_space_ + "/" + wheel_right_joint_;
-    wheel_left_joint_ = name_space_ + "/" + wheel_left_joint_;
+    wheel_frontright_joint_ = name_space_ + "/" + wheel_frontright_joint_;
+    wheel_frontleft_joint_ = name_space_ + "/" + wheel_frontleft_joint_;
+    wheel_backright_joint_ = name_space_ + "/" + wheel_backright_joint_;
+    wheel_backleft_joint_ = name_space_ + "/" + wheel_backleft_joint_;
   }
   RCLCPP_INFO(nh_->get_logger(), "Succeeded to create joint state publisher");
 }
@@ -64,19 +72,32 @@ void JointState::publish(
 
   std::array<int32_t, JOINT_NUM> position =
   {dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_position_left.addr,
-      extern_control_table.present_position_left.length),
+      extern_control_table.present_position_frontleft.addr,
+      extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_position_right.addr,
-      extern_control_table.present_position_right.length)};
+      extern_control_table.present_position_frontright.addr,
+      extern_control_table.present_position_frontright.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_position_backleft.addr,
+      extern_control_table.present_position_backleft.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_position_backright.addr,
+      extern_control_table.present_position_backright.length)
+  };
 
   std::array<int32_t, JOINT_NUM> velocity =
   {dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_velocity_left.addr,
-      extern_control_table.present_velocity_left.length),
+      extern_control_table.present_velocity_frontleft.addr,
+      extern_control_table.present_velocity_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
-      extern_control_table.present_velocity_right.addr,
-      extern_control_table.present_velocity_right.length)};
+      extern_control_table.present_velocity_frontright.addr,
+      extern_control_table.present_velocity_frontright.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_velocity_backleft.addr,
+      extern_control_table.present_velocity_backleft.length),
+    dxl_sdk_wrapper->get_data_from_device<int32_t>(
+      extern_control_table.present_velocity_backright.addr,
+      extern_control_table.present_velocity_backright.length)};
 
   // std::array<int32_t, JOINT_NUM> current =
   //   {dxl_sdk_wrapper->get_data_from_device<int32_t>(
@@ -89,8 +110,10 @@ void JointState::publish(
   msg->header.frame_id = this->frame_id_;
   msg->header.stamp = now;
 
-  msg->name.push_back(wheel_left_joint_);
-  msg->name.push_back(wheel_right_joint_);
+  msg->name.push_back(wheel_frontleft_joint_);
+  msg->name.push_back(wheel_frontright_joint_);
+  msg->name.push_back(wheel_backleft_joint_);
+  msg->name.push_back(wheel_backright_joint_);
 
   msg->position.push_back(TICK_TO_RAD * last_diff_position[0]);
   msg->position.push_back(TICK_TO_RAD * last_diff_position[1]);

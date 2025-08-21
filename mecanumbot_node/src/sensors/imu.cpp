@@ -14,7 +14,7 @@
 //
 // Author: Darby Lim
 
-#include "turtlebot3_node/sensors/imu.hpp"
+#include "mecanumbot_node/sensors/imu.hpp"
 
 #include <memory>
 #include <string>

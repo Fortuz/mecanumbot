@@ -14,7 +14,7 @@
 //
 // Author: Darby Lim
 
-#include "turtlebot3_node/dynamixel_sdk_wrapper.hpp"
+#include "mecanumbot_node/dynamixel_sdk_wrapper.hpp"
 
 #include <algorithm>
 #include <string>
