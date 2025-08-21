@@ -21,6 +21,9 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
 - [ ] Documentation
 - [ ] Include image of the robot
 - [ ] Include image of the arhitecture
+- [ ] Check LIDAR
+- [ ] Check Camera
+- [ ] Include Grabber and Camera moving motors into the microcontroller code
 
 ## Project
 
