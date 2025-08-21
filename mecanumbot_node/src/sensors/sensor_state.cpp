@@ -14,7 +14,7 @@
 //
 // Author: Darby Lim
 
-#include "turtlebot3_node/sensors/sensor_state.hpp"
+#include "mecanumbot_node/sensors/sensor_state.hpp"
 
 #include <memory>
 #include <string>
@@ -118,13 +118,21 @@ void SensorState::publish(
     extern_control_table.motor_torque_enable.addr,
     extern_control_table.motor_torque_enable.length);
 
-  msg->left_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
-    extern_control_table.present_position_left.addr,
-    extern_control_table.present_position_left.length);
+  msg->frontleft_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
+    extern_control_table.present_position_frontleft.addr,
+    extern_control_table.present_position_frontleft.length);
 
-  msg->right_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
-    extern_control_table.present_position_right.addr,
-    extern_control_table.present_position_right.length);
+  msg->frontright_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
+    extern_control_table.present_position_frontright.addr,
+    extern_control_table.present_position_frontright.length);
+
+  msg->backleft_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
+    extern_control_table.present_position_backleft.addr,
+    extern_control_table.present_position_backleft.length);
+
+  msg->backright_encoder = dxl_sdk_wrapper->get_data_from_device<int32_t>(
+    extern_control_table.present_position_backright.addr,
+    extern_control_table.present_position_backright.length);
 
   msg->battery = 0.01f * dxl_sdk_wrapper->get_data_from_device<int32_t>(
     extern_control_table.battery_voltage.addr,

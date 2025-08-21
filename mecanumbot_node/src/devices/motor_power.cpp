@@ -14,7 +14,7 @@
 //
 // Author: Darby Lim
 
-#include "turtlebot3_node/devices/motor_power.hpp"
+#include "mecanumbot_node/devices/motor_power.hpp"
 
 #include <memory>
 #include <string>
