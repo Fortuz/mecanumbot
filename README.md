@@ -1,5 +1,63 @@
 # Mecanumbot packages
 
-Mecanumbot related packages
+The Mecanumbot projects goal is to build a Turtlebot3 friend with mecanum wheel drive and fit into the Turtlebot3 family.<br>
+This repository contains the Mecanumbot related packages. The repository made by using the original Turtlebot3 packeges.
 
+Original sources: <br>
+[Turtlebot3 - humble version](https://github.com/ROBOTIS-GIT/turtlebot3/tree/humble) <br>
+[Turtlebot3_msgs - humble version](https://github.com/ROBOTIS-GIT/turtlebot3_msgs/tree/humble) <br>
+
+Building and using a robot with additional motors with different protocols, using a mecanum wheel drive sysetem instead of a differential drive system requires some changes in the original architecture so this repository is intend to provide a full functionality similar to the original Turtlebot3 repositories.
+
+As a main source of information, documentation, codes and more the original [Turtlebot3 e-Manual](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/#overview) can be found here. Lot of the setup and codes came from the original Turtlebot3 project but a huge chunk of the codebase have been modified to accomodate the new motors, setup, and work with the mecanum wheel drive system. Altough the setups steps are basicaly the same some the important steps can be read below.
+
+The project is made with Ubuntu 22.04 and ROS2 Humble.
+
+## TODO
+
+- [ ] Add inertia information to the URDF file
+- [ ] Add collision hitboxes to the URDF file
+- [x] Printable 3D part stl files added
+- [ ] Documentation
+- [ ] Include image of the robot
+- [ ] Include image of the arhitecture
+
+## Project
+
+[mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project
+
+## SSH
+
+```
+$ ssh ubuntu@192.168.1.240
+```
+
+## TESTS
+
+### LED control
+
+[Terminal 1] - Start the ros node controlling the leds
+```
+$ ros2 run mecanumbot_led mecanumbot_led_service
+```
+
+[Terminal 2] - Send a message to get back the actual status of the leds
+```
+$ ros2 service call /get_led_status mecanumbot_msgs/srv/GetLedStatus "{}"
+```
+OR
+
+[Terminal 2] - Send a message to set the status of the leds
+```
+$ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
+  fl_mode: 1,
+  fl_color: 3,
+  fr_mode: 1,
+  fr_color: 3,
+  br_mode: 1,
+  br_color: 3,
+  bl_mode: 1,
+  bl_color: 4
+}"
+```
 
