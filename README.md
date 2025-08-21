@@ -13,6 +13,10 @@ As a main source of information, documentation, codes and more the original [Tur
 
 The project is made with Ubuntu 22.04 and ROS2 Humble.
 
+<p align="center">
+  <img src="docs/mecanumbot.jpg" width="600" alt="Screenshot of My Project">
+</p>
+
 ## TODO
 
 - [ ] Add inertia information to the URDF file
