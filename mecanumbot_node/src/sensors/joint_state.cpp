@@ -97,7 +97,8 @@ void JointState::publish(
       extern_control_table.present_velocity_backleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_velocity_backright.addr,
-      extern_control_table.present_velocity_backright.length)};
+      extern_control_table.present_velocity_backright.length)
+  };
 
   // std::array<int32_t, JOINT_NUM> current =
   //   {dxl_sdk_wrapper->get_data_from_device<int32_t>(
