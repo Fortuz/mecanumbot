@@ -17,7 +17,7 @@
 #ifndef TURTLEBOT3_NODE__SENSORS__SENSOR_STATE_HPP_
 #define TURTLEBOT3_NODE__SENSORS__SENSOR_STATE_HPP_
 
-#include <turtlebot3_msgs/msg/sensor_state.hpp>
+#include <mecanumbot_msgs/msg/sensor_state.hpp>
 
 #include <memory>
 #include <string>
