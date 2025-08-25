@@ -22,21 +22,21 @@ from mecanumbot_msgs.srv import GetLedStatus, SetLedStatus
 
 # ---------------------------- Configurable enums ---------------------------- #
 COLOR_MAP = [
-    ("OFF", 0),
-    ("RED", 1),
+    ("BLACK", 0),
+    ("WHITE", 1),
     ("GREEN", 2),
-    ("BLUE", 3),
-    ("YELLOW", 4),
-    ("PURPLE", 5),
-    ("CYAN", 6),
-    ("WHITE", 7),
+    ("RED", 3),
+    ("BLUE", 4),
+    ("CYAN", 5),
+    ("PINK", 6),
+    ("YELLOW", 7),
 ]
 
 MODE_MAP = [
-    ("OFF", 0),
-    ("SOLID", 1),
-    ("BLINK", 2),
-    ("BREATHE", 3),
+    ("WAVE_RIGHT", 1),
+    ("WAVE_LEFT", 2),
+    ("PULSE", 3),
+    ("SOLID", 4),
 ]
 
 COLOR_NAME_TO_VAL = {name: val for name, val in COLOR_MAP}
@@ -97,7 +97,7 @@ class App(tk.Tk):
         self.minsize(520, 260)
 
         # ROS init (node in separate thread-safe context)
-        rclpy.init()mecanumbot_ledgui.led_gui
+        rclpy.init()
         self.node = LedClient()
 
         # Top bar (service availability)
@@ -125,8 +125,8 @@ class App(tk.Tk):
             ttk.Label(frame, text="BR", anchor="center").grid(row=2, column=2, padx=6, pady=4, sticky="ew")
 
         # Dropdowns
-        self.color_vars = {c: tk.StringVar(value="OFF") for c in CORNERS}
-        self.mode_vars  = {c: tk.StringVar(value="OFF") for c in CORNERS}
+        self.color_vars = {c: tk.StringVar(value="BLACK") for c in CORNERS}
+        self.mode_vars  = {c: tk.StringVar(value="BLACK") for c in CORNERS}
 
         # Row 1 (FL, FR)
         ttk.Label(color_frame, text="").grid(row=1, column=0)  # spacer
@@ -210,8 +210,8 @@ class App(tk.Tk):
                 }
                 def update_ui():
                     for c in CORNERS:
-                        self.color_vars[c].set(COLOR_VAL_TO_NAME.get(mapping[c]['color'], 'OFF'))
-                        self.mode_vars[c].set(MODE_VAL_TO_NAME.get(mapping[c]['mode'], 'OFF'))
+                        self.color_vars[c].set(COLOR_VAL_TO_NAME.get(mapping[c]['color'], 'BLACK'))
+                        self.mode_vars[c].set(MODE_VAL_TO_NAME.get(mapping[c]['mode'], 'BLACK'))
                 self.after(0, update_ui)
             except Exception as e:
                 self.after(0, lambda: messagebox.showerror("GET", f"Exception: {e}"))
