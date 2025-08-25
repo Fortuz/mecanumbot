@@ -118,15 +118,21 @@ void JointState::publish(
 
   msg->position.push_back(TICK_TO_RAD * last_diff_position[0]);
   msg->position.push_back(TICK_TO_RAD * last_diff_position[1]);
+  msg->position.push_back(TICK_TO_RAD * last_diff_position[2]);
+  msg->position.push_back(TICK_TO_RAD * last_diff_position[3]);
 
   msg->velocity.push_back(RPM_TO_MS * velocity[0]);
   msg->velocity.push_back(RPM_TO_MS * velocity[1]);
+  msg->velocity.push_back(RPM_TO_MS * velocity[2]);
+  msg->velocity.push_back(RPM_TO_MS * velocity[3]);
 
   // msg->effort.push_back(current[0]);
   // msg->effort.push_back(current[1]);
 
   last_diff_position[0] += (position[0] - last_position[0]);
   last_diff_position[1] += (position[1] - last_position[1]);
+  last_diff_position[2] += (position[2] - last_position[2]);
+  last_diff_position[3] += (position[3] - last_position[3]);
 
   last_position = position;
 
