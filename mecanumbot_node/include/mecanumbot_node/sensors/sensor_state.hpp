@@ -47,7 +47,7 @@ public:
     std::shared_ptr<DynamixelSDKWrapper> & dxl_sdk_wrapper) override;
 
 private:
-  rclcpp::Publisher<turtlebot3_msgs::msg::SensorState>::SharedPtr pub_;
+  rclcpp::Publisher<mecanumbot_msgs::msg::SensorState>::SharedPtr pub_;
 
   uint8_t bumper_forward_;
   uint8_t bumper_backward_;

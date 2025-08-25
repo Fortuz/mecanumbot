@@ -37,7 +37,7 @@ SensorState::SensorState(
   cliff_(cliff),
   sonar_(sonar)
 {
-  pub_ = nh->create_publisher<turtlebot3_msgs::msg::SensorState>(topic_name, this->qos_);
+  pub_ = nh->create_publisher<mecanumbot_msgs::msg::SensorState>(topic_name, this->qos_);
 
   RCLCPP_INFO(nh_->get_logger(), "Succeeded to create sensor state publisher");
 }
@@ -46,7 +46,7 @@ void SensorState::publish(
   const rclcpp::Time & now,
   std::shared_ptr<DynamixelSDKWrapper> & dxl_sdk_wrapper)
 {
-  auto msg = std::make_unique<turtlebot3_msgs::msg::SensorState>();
+  auto msg = std::make_unique<mecanumbot_msgs::msg::SensorState>();
 
   msg->header.stamp = now;
 
