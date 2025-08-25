@@ -49,10 +49,24 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/base.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://mecanumbot_description/meshes/base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="dark"/>
     </visual>
+
+    <collision>
+      <origin xyz="0.085 0.0 0.135" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.045 0.260 0.09"/>
+      </geometry>
+    </collision>
+
+    <collision>
+      <origin xyz="0.5 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.2 0.2 0.2"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="${namespace}wheel_frontleft_joint" type="continuous">
@@ -66,7 +80,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/wheel.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://mecanumbot_description/meshes/wheel.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="light_blue"/>
     </visual>
@@ -90,7 +104,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/wheel.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://mecanumbot_description/meshes/wheel.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="light_blue"/>
     </visual>
@@ -114,7 +128,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/wheel.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://mecanumbot_description/meshes/wheel.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="light_blue"/>
     </visual>
@@ -138,7 +152,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/wheel.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://mecanumbot_description/meshes/wheel.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="light_blue"/>
     </visual>
@@ -167,6 +181,13 @@
       </geometry>
       <material name="green"/>
     </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://mecanumbot_description/meshes/arm_right.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="${namespace}grabber_left_joint" type="revolute">
@@ -185,6 +206,13 @@
       </geometry>
       <material name="green"/>
     </visual>
+
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://mecanumbot_description/meshes/arm_left.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
   </link>
 
   <joint name="${namespace}head_joint" type="revolute">
@@ -263,6 +291,7 @@
       <geometry>
         <box size="0.015 0.030 0.027"/>
       </geometry>
+
     </collision>
   </link>
 
