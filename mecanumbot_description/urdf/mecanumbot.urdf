@@ -170,7 +170,7 @@
     <child link="${namespace}grabber_right_link"/>
     <origin xyz="0.174 -0.070 0.024" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-1.57" upper="1.57"/>
+    <limit lower="-1.57" upper="1.57" effort="5.0" velocity="1.0"/>
   </joint>
 
   <link name="${namespace}grabber_right_link">
@@ -195,7 +195,7 @@
     <child link="${namespace}grabber_left_link"/>
     <origin xyz="0.174 0.070 0.024" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-1.57" upper="1.57"/>
+    <limit lower="-1.57" upper="1.57" effort="5.0" velocity="1.0"/>
   </joint>
 
   <link name="${namespace}grabber_left_link">
@@ -220,7 +220,7 @@
     <child link="${namespace}head_link"/>
     <origin xyz="0.1063 0.0 0.1679" rpy="1.57 0 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-1.57" upper="0.52"/>
+    <limit lower="-1.57" upper="1.57" effort="5.0" velocity="1.0"/>
   </joint>
 
   <link name="${namespace}head_link">
