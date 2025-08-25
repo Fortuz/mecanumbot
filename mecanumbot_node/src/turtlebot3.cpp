@@ -68,9 +68,9 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 
   dxl_sdk_wrapper_->init_read_memory(
     extern_control_table.millis.addr,
-    (extern_control_table.profile_acceleration_right.addr - extern_control_table.millis.addr) +
-    extern_control_table.profile_acceleration_right.length
-  );
+    (extern_control_table.profile_acceleration_frontright.addr - extern_control_table.millis.addr) +
+    extern_control_table.profile_acceleration_frontright.length
+  );  // TODO: Why just 1 wheel? Is it enough?
 }
 
 void TurtleBot3::check_device_status()
@@ -135,7 +135,7 @@ void TurtleBot3::add_wheels()
   this->declare_parameter<float>("wheels.separation");
   this->declare_parameter<float>("wheels.radius");
 
-  this->get_parameter_or<float>("wheels.separation", wheels_.separation, 0.160);
+  this->get_parameter_or<float>("wheels.separation", wheels_.separation, 0.160);  // TODO: need 1 more parameter regarding wheel separation
   this->get_parameter_or<float>("wheels.radius", wheels_.radius, 0.033);
 }
 
@@ -299,18 +299,18 @@ void TurtleBot3::parameter_event_callback()
             motors_.profile_acceleration / motors_.profile_acceleration_constant;
 
           union Data {
-            int32_t dword[2];
-            uint8_t byte[4 * 2];
+            int32_t dword[4];
+            uint8_t byte[4 * 4];
           } data;
 
           data.dword[0] = static_cast<int32_t>(motors_.profile_acceleration);
-          data.dword[1] = static_cast<int32_t>(motors_.profile_acceleration);
+          data.dword[1] = static_cast<int32_t>(motors_.profile_acceleration); // TODO: think it through
 
-          uint16_t start_addr = extern_control_table.profile_acceleration_left.addr;
+          uint16_t start_addr = extern_control_table.profile_acceleration_frontleft.addr;
           uint16_t addr_length =
-            (extern_control_table.profile_acceleration_right.addr -
-            extern_control_table.profile_acceleration_left.addr) +
-            extern_control_table.profile_acceleration_right.length;
+            (extern_control_table.profile_acceleration_backright.addr -
+            extern_control_table.profile_acceleration_frontleft.addr) +
+            extern_control_table.profile_acceleration_backright.length;  // TODO: need 2 more profile acceleration
 
           uint8_t * p_data = &data.byte[0];
 
@@ -346,7 +346,7 @@ void TurtleBot3::cmd_vel_callback()
         } data;
 
         data.dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        data.dword[1] = 0;
+        data.dword[1] = static_cast<int32_t>(msg->linear.y * 100); // Added here
         data.dword[2] = 0;
         data.dword[3] = 0;
         data.dword[4] = 0;
@@ -356,7 +356,7 @@ void TurtleBot3::cmd_vel_callback()
         uint16_t addr_length =
         (extern_control_table.cmd_velocity_angular_z.addr -
         extern_control_table.cmd_velocity_linear_x.addr) +
-        extern_control_table.cmd_velocity_angular_z.length;
+        extern_control_table.cmd_velocity_angular_z.length;          
 
         uint8_t * p_data = &data.byte[0];
 
@@ -364,7 +364,11 @@ void TurtleBot3::cmd_vel_callback()
 
         RCLCPP_DEBUG(
           this->get_logger(),
-          "lin_vel: %f ang_vel: %f msg : %s", msg->linear.x, msg->angular.z, sdk_msg.c_str());
+          "lin_x_vel: %f lin_y_vel: %f ang_vel: %f msg : %s", 
+          msg->linear.x, 
+          msg->linear.y, 
+          msg->angular.z, 
+          sdk_msg.c_str());
       }
     ),
     std::function<void(const geometry_msgs::msg::TwistStamped::SharedPtr)>(
@@ -378,7 +382,7 @@ void TurtleBot3::cmd_vel_callback()
         } data;
 
         data.dword[0] = static_cast<int32_t>(msg->twist.linear.x * 100);
-        data.dword[1] = 0;
+        data.dword[1] = static_cast<int32_t>(msg->twist.linear.y * 100);  // Added here
         data.dword[2] = 0;
         data.dword[3] = 0;
         data.dword[4] = 0;
@@ -396,8 +400,9 @@ void TurtleBot3::cmd_vel_callback()
 
         RCLCPP_DEBUG(
           this->get_logger(),
-          "lin_vel: %f ang_vel: %f msg : %s",
+          "lin_x_vel: %f lin_y_vel: %f ang_vel: %f msg : %s",
           msg->twist.linear.x,
+          msg->twist.linear.y,
           msg->twist.angular.z,
           sdk_msg.c_str());
       }

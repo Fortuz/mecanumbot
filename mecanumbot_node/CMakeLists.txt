@@ -28,6 +28,7 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(mecanumbot_msgs REQUIRED)
 find_package(turtlebot3_msgs REQUIRED)
 
 ################################################################################
@@ -66,6 +67,7 @@ target_link_libraries(${PROJECT_NAME}_lib
   ${std_msgs_TARGETS}
   ${std_srvs_TARGETS}
   ${turtlebot3_msgs_TARGETS}
+  ${mecanumbot_msgs_TARGETS}
   message_filters::message_filters
   rclcpp::rclcpp
   rcutils::rcutils
@@ -106,6 +108,7 @@ ament_export_dependencies(
   tf2
   tf2_ros
   turtlebot3_msgs
+  mecanumbot_msgs
 )
 ament_export_include_directories(include)
 ament_package()

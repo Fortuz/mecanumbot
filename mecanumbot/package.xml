@@ -13,8 +13,9 @@
 
   <exec_depend>mecanumbot_bringup</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
-  <exec_depend>mecanumbot_msgs</exec_depend>
   <exec_depend>mecanumbot_led</exec_depend>
+  <exec_depend>mecanumbot_msgs</exec_depend>
+  <exec_depend>mecanumbot_node</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
