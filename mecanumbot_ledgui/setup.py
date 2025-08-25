@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'mecanum_led_gui'
+package_name = 'mecanumbot_ledgui'
 
 setup(
     name=package_name,
@@ -15,12 +15,12 @@ setup(
     zip_safe=True,
     maintainer='adorjan',
     maintainer_email='adorjan@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='LED GUI',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        	'led_gui = mecanum_led_gui.led_gui:main',
+        	'led_gui = mecanumbot_ledgui.led_gui:main',
 
         ],
     },
