@@ -69,3 +69,9 @@ $ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
 }"
 ```
 
+SBC
+```
+ros2 launch mecanumbot_bringup robot.launch.py
+```
+
+
