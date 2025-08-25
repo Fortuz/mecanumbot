@@ -54,7 +54,7 @@ GET_SRV = "get_led_status"
 # ---------------------------- ROS2 Client Node ----------------------------- #
 class LedClient(Node):
     def __init__(self):
-        super().__init__('mecanumbot_led_gui_client')
+        super().__init__('mecanumbot_ledgui_client')
         self.cli_set = self.create_client(SetLedStatus, SET_SRV)
         self.cli_get = self.create_client(GetLedStatus, GET_SRV)
 
@@ -97,7 +97,7 @@ class App(tk.Tk):
         self.minsize(520, 260)
 
         # ROS init (node in separate thread-safe context)
-        rclpy.init()
+        rclpy.init()mecanumbot_ledgui.led_gui
         self.node = LedClient()
 
         # Top bar (service availability)
