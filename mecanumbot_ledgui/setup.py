@@ -17,7 +17,6 @@ setup(
     maintainer_email='adorjan@todo.todo',
     description='LED GUI',
     license='Apache-2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         	'led_gui = mecanumbot_ledgui.led_gui:main',

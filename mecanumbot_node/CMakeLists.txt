@@ -75,7 +75,7 @@ target_link_libraries(${PROJECT_NAME}_lib
   tf2_ros::tf2_ros
 )
 
-set(EXECUTABLE_NAME "turtlebot3_ros")
+set(EXECUTABLE_NAME "mecanumbot_ros")
 add_executable(${EXECUTABLE_NAME} src/node_main.cpp)
 target_link_libraries(${EXECUTABLE_NAME}
   ${PROJECT_NAME}_lib
