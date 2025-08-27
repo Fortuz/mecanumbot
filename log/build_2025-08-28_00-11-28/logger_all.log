@@ -1,0 +1,563 @@
+[0.071s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.071s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=8, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7dbb7b013880>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7dbb7afd1210>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7dbb7afd1210>>, mixin_verb=('build',))
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.186s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.186s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/adorjan/github/mecanumbot'
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.186s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['ignore', 'ignore_ament_install']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'ignore'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'ignore_ament_install'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['colcon_pkg']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'colcon_pkg'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['colcon_meta']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'colcon_meta'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['ros']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'ros'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['cmake', 'python']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'cmake'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'python'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extensions ['python_setup_py']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs) by extension 'python_setup_py'
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['ignore', 'ignore_ament_install']
+[0.193s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'ignore'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'ignore_ament_install'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['colcon_pkg']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'colcon_pkg'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['colcon_meta']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'colcon_meta'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['ros']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'ros'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['cmake', 'python']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'cmake'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'python'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extensions ['python_setup_py']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(docs/images) by extension 'python_setup_py'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extensions ['ignore', 'ignore_ament_install']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extension 'ignore'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extension 'ignore_ament_install'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extensions ['colcon_pkg']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extension 'colcon_pkg'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extensions ['colcon_meta']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extension 'colcon_meta'
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extensions ['ros']
+[0.194s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot) by extension 'ros'
+[0.196s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot' with type 'ros.ament_cmake' and name 'mecanumbot'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extensions ['ignore', 'ignore_ament_install']
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extension 'ignore'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extension 'ignore_ament_install'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extensions ['colcon_pkg']
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extension 'colcon_pkg'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extensions ['colcon_meta']
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extension 'colcon_meta'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extensions ['ros']
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_bringup) by extension 'ros'
+[0.196s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_bringup' with type 'ros.ament_cmake' and name 'mecanumbot_bringup'
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extensions ['ignore', 'ignore_ament_install']
+[0.196s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extension 'ignore'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extension 'ignore_ament_install'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extensions ['colcon_pkg']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extension 'colcon_pkg'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extensions ['colcon_meta']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extension 'colcon_meta'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extensions ['ros']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_description) by extension 'ros'
+[0.197s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_description' with type 'ros.ament_cmake' and name 'mecanumbot_description'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extensions ['ignore', 'ignore_ament_install']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extension 'ignore'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extension 'ignore_ament_install'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extensions ['colcon_pkg']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extension 'colcon_pkg'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extensions ['colcon_meta']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extension 'colcon_meta'
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extensions ['ros']
+[0.197s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_led) by extension 'ros'
+[0.198s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_led' with type 'ros.ament_python' and name 'mecanumbot_led'
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extensions ['ignore', 'ignore_ament_install']
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extension 'ignore'
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extension 'ignore_ament_install'
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extensions ['colcon_pkg']
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extension 'colcon_pkg'
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extensions ['colcon_meta']
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extension 'colcon_meta'
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extensions ['ros']
+[0.198s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_ledgui) by extension 'ros'
+[0.198s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_ledgui' with type 'ros.ament_python' and name 'mecanumbot_ledgui'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extensions ['ignore', 'ignore_ament_install']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extension 'ignore'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extension 'ignore_ament_install'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extensions ['colcon_pkg']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extension 'colcon_pkg'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extensions ['colcon_meta']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extension 'colcon_meta'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extensions ['ros']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_msgs) by extension 'ros'
+[0.199s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_msgs' with type 'ros.ament_cmake' and name 'mecanumbot_msgs'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extensions ['ignore', 'ignore_ament_install']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extension 'ignore'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extension 'ignore_ament_install'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extensions ['colcon_pkg']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extension 'colcon_pkg'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extensions ['colcon_meta']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extension 'colcon_meta'
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extensions ['ros']
+[0.199s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_node) by extension 'ros'
+[0.200s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_node' with type 'ros.ament_cmake' and name 'mecanumbot_node'
+[0.200s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extensions ['ignore', 'ignore_ament_install']
+[0.200s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extension 'ignore'
+[0.200s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extension 'ignore_ament_install'
+[0.200s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extensions ['colcon_pkg']
+[0.200s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extension 'colcon_pkg'
+[0.201s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extensions ['colcon_meta']
+[0.201s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extension 'colcon_meta'
+[0.201s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extensions ['ros']
+[0.201s] Level 1:colcon.colcon_core.package_identification:_identify(mecanumbot_teleop) by extension 'ros'
+[0.201s] DEBUG:colcon.colcon_core.package_identification:Package 'mecanumbot_teleop' with type 'ros.ament_python' and name 'mecanumbot_teleop'
+[0.201s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.201s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.201s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.201s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.201s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.222s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.222s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.224s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 8 installed packages in /home/adorjan/github/mecanumbot/install
+[0.224s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 365 installed packages in /opt/ros/humble
+[0.225s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_args' from command line to 'None'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_target' from command line to 'None'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_clean_cache' from command line to 'False'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_clean_first' from command line to 'False'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'cmake_force_configure' from command line to 'False'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'ament_cmake_args' from command line to 'None'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'catkin_cmake_args' from command line to 'None'
+[0.300s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_description' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.300s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_description' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_description', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_description', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_description', 'symlink_install': False, 'test_result_base': None}
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_target' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_clean_cache' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_clean_first' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'cmake_force_configure' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'ament_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'catkin_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_msgs' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.301s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_msgs' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_msgs', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_msgs', 'symlink_install': False, 'test_result_base': None}
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_target' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_clean_cache' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_clean_first' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'cmake_force_configure' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'ament_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'catkin_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_teleop' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.301s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_teleop' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_teleop', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_teleop', 'symlink_install': False, 'test_result_base': None}
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_target' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_clean_cache' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_clean_first' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'cmake_force_configure' from command line to 'False'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'ament_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'catkin_cmake_args' from command line to 'None'
+[0.301s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_led' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.301s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_led' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_led', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_led', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_led', 'symlink_install': False, 'test_result_base': None}
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_target' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_clean_cache' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_clean_first' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'cmake_force_configure' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'ament_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'catkin_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_ledgui' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.302s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_ledgui' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_ledgui', 'symlink_install': False, 'test_result_base': None}
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_target' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_clean_cache' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_clean_first' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'cmake_force_configure' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'ament_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'catkin_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_node' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.302s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_node' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_node', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_node', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_node', 'symlink_install': False, 'test_result_base': None}
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_target' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_clean_cache' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_clean_first' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'cmake_force_configure' from command line to 'False'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'ament_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'catkin_cmake_args' from command line to 'None'
+[0.302s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot_bringup' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.302s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot_bringup' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot_bringup', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot_bringup', 'symlink_install': False, 'test_result_base': None}
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_args' from command line to 'None'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_target' from command line to 'None'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_clean_cache' from command line to 'False'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_clean_first' from command line to 'False'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'cmake_force_configure' from command line to 'False'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'ament_cmake_args' from command line to 'None'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'catkin_cmake_args' from command line to 'None'
+[0.303s] Level 5:colcon.colcon_core.verb:set package 'mecanumbot' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.303s] DEBUG:colcon.colcon_core.verb:Building package 'mecanumbot' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/adorjan/github/mecanumbot/build/mecanumbot', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/adorjan/github/mecanumbot/install/mecanumbot', 'merge_install': False, 'path': '/home/adorjan/github/mecanumbot/mecanumbot', 'symlink_install': False, 'test_result_base': None}
+[0.303s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.304s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.304s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_msgs' with build type 'ament_cmake'
+[0.304s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/adorjan/github/mecanumbot/mecanumbot_msgs'
+[0.305s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.305s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.305s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.308s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_description' with build type 'ament_cmake'
+[0.308s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/adorjan/github/mecanumbot/mecanumbot_description'
+[0.308s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.308s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.310s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_teleop' with build type 'ament_python'
+[0.310s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_teleop', 'ament_prefix_path')
+[0.310s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/ament_prefix_path.ps1'
+[0.311s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/ament_prefix_path.dsv'
+[0.311s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/ament_prefix_path.sh'
+[0.311s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.312s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.318s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_msgs -- -j8 -l8
+[0.320s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_description -- -j8 -l8
+[0.524s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/adorjan/github/mecanumbot/mecanumbot_teleop'
+[0.524s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.524s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.528s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_description -- -j8 -l8
+[0.537s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_description
+[0.547s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_description)
+[0.548s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_description
+[0.549s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description' for CMake module files
+[0.550s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description' for CMake config files
+[0.550s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_description', 'cmake_prefix_path')
+[0.550s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.ps1'
+[0.550s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.dsv'
+[0.551s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.sh'
+[0.551s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/bin'
+[0.551s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/lib/pkgconfig/mecanumbot_description.pc'
+[0.551s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/lib/python3.10/site-packages'
+[0.551s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/bin'
+[0.552s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.ps1'
+[0.552s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.dsv'
+[0.552s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.sh'
+[0.553s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.bash'
+[0.554s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.zsh'
+[0.554s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/colcon-core/packages/mecanumbot_description)
+[0.554s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_description)
+[0.554s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description' for CMake module files
+[0.555s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description' for CMake config files
+[0.555s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_description', 'cmake_prefix_path')
+[0.555s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.ps1'
+[0.555s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.dsv'
+[0.555s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/hook/cmake_prefix_path.sh'
+[0.556s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/bin'
+[0.556s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/lib/pkgconfig/mecanumbot_description.pc'
+[0.556s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/lib/python3.10/site-packages'
+[0.556s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_description/bin'
+[0.556s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.ps1'
+[0.557s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.dsv'
+[0.557s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.sh'
+[0.557s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.bash'
+[0.557s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/mecanumbot_description/package.zsh'
+[0.558s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_description/share/colcon-core/packages/mecanumbot_description)
+[0.606s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_msgs -- -j8 -l8
+[0.608s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_msgs
+[0.667s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_msgs)
+[0.667s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs' for CMake module files
+[0.668s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_msgs
+[0.668s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs' for CMake config files
+[0.668s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_msgs', 'cmake_prefix_path')
+[0.669s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.ps1'
+[0.669s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.dsv'
+[0.669s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.sh'
+[0.670s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib'
+[0.670s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_msgs', 'ld_library_path_lib')
+[0.670s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.ps1'
+[0.670s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.dsv'
+[0.670s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.sh'
+[0.671s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/bin'
+[0.671s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/pkgconfig/mecanumbot_msgs.pc'
+[0.671s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/python3.10/site-packages'
+[0.671s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/bin'
+[0.671s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.ps1'
+[0.672s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.dsv'
+[0.672s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.sh'
+[0.672s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.bash'
+[0.672s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.zsh'
+[0.673s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/colcon-core/packages/mecanumbot_msgs)
+[0.673s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_msgs)
+[0.673s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs' for CMake module files
+[0.674s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs' for CMake config files
+[0.674s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_msgs', 'cmake_prefix_path')
+[0.674s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.ps1'
+[0.675s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.dsv'
+[0.675s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/cmake_prefix_path.sh'
+[0.675s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib'
+[0.675s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_msgs', 'ld_library_path_lib')
+[0.676s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.ps1'
+[0.676s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.dsv'
+[0.676s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/hook/ld_library_path_lib.sh'
+[0.676s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/bin'
+[0.676s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/pkgconfig/mecanumbot_msgs.pc'
+[0.676s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/python3.10/site-packages'
+[0.676s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/bin'
+[0.677s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.ps1'
+[0.677s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.dsv'
+[0.677s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.sh'
+[0.677s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.bash'
+[0.678s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.zsh'
+[0.678s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/colcon-core/packages/mecanumbot_msgs)
+[0.678s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_node' with build type 'ament_cmake'
+[0.678s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/adorjan/github/mecanumbot/mecanumbot_node'
+[0.678s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.679s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.681s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_led' with build type 'ament_python'
+[0.681s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_led', 'ament_prefix_path')
+[0.681s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/ament_prefix_path.ps1'
+[0.682s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/ament_prefix_path.dsv'
+[0.682s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/ament_prefix_path.sh'
+[0.682s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.682s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.684s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui' with build type 'ament_python'
+[0.684s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_ledgui', 'ament_prefix_path')
+[0.685s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/ament_prefix_path.ps1'
+[0.685s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/ament_prefix_path.dsv'
+[0.685s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/ament_prefix_path.sh'
+[0.686s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.686s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.691s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_node -- -j8 -l8
+[0.884s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/adorjan/github/mecanumbot/mecanumbot_led'
+[0.884s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.884s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[1.051s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui'
+[1.052s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[1.052s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[1.056s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/mecanumbot_teleop': PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_teleop build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log --single-version-externally-managed install_data
+[1.056s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_node -- -j8 -l8
+[1.058s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_node
+[1.067s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_node)
+[1.068s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node' for CMake module files
+[1.068s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_node
+[1.069s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node' for CMake config files
+[1.069s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_node', 'cmake_prefix_path')
+[1.070s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.ps1'
+[1.070s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.dsv'
+[1.070s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.sh'
+[1.071s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib'
+[1.071s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/bin'
+[1.071s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/pkgconfig/mecanumbot_node.pc'
+[1.072s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/python3.10/site-packages'
+[1.072s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/bin'
+[1.072s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.ps1'
+[1.072s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.dsv'
+[1.073s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.sh'
+[1.073s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.bash'
+[1.073s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.zsh'
+[1.073s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/colcon-core/packages/mecanumbot_node)
+[1.074s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_node)
+[1.074s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node' for CMake module files
+[1.074s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node' for CMake config files
+[1.074s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_node', 'cmake_prefix_path')
+[1.075s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.ps1'
+[1.075s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.dsv'
+[1.075s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/hook/cmake_prefix_path.sh'
+[1.075s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib'
+[1.075s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/bin'
+[1.076s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/pkgconfig/mecanumbot_node.pc'
+[1.076s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/python3.10/site-packages'
+[1.076s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_node/bin'
+[1.076s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.ps1'
+[1.076s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.dsv'
+[1.077s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.sh'
+[1.077s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.bash'
+[1.077s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.zsh'
+[1.077s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_node/share/colcon-core/packages/mecanumbot_node)
+[1.078s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot_bringup' with build type 'ament_cmake'
+[1.078s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/adorjan/github/mecanumbot/mecanumbot_bringup'
+[1.078s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[1.078s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[1.087s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_bringup': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_bringup -- -j8 -l8
+[1.128s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_bringup' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_bringup -- -j8 -l8
+[1.130s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_bringup': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_bringup
+[1.140s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_bringup)
+[1.140s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup' for CMake module files
+[1.141s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_bringup' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_bringup
+[1.141s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup' for CMake config files
+[1.142s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_bringup', 'cmake_prefix_path')
+[1.142s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.ps1'
+[1.143s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.dsv'
+[1.143s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.sh'
+[1.144s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/bin'
+[1.144s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/lib/pkgconfig/mecanumbot_bringup.pc'
+[1.144s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/lib/python3.10/site-packages'
+[1.144s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/bin'
+[1.145s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.ps1'
+[1.145s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.dsv'
+[1.146s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.sh'
+[1.146s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.bash'
+[1.146s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.zsh'
+[1.147s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/colcon-core/packages/mecanumbot_bringup)
+[1.147s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_bringup)
+[1.147s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup' for CMake module files
+[1.148s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup' for CMake config files
+[1.148s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_bringup', 'cmake_prefix_path')
+[1.148s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.ps1'
+[1.149s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.dsv'
+[1.149s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/hook/cmake_prefix_path.sh'
+[1.149s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/bin'
+[1.150s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/lib/pkgconfig/mecanumbot_bringup.pc'
+[1.150s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/lib/python3.10/site-packages'
+[1.150s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/bin'
+[1.150s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.ps1'
+[1.151s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.dsv'
+[1.151s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.sh'
+[1.152s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.bash'
+[1.152s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.zsh'
+[1.152s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/colcon-core/packages/mecanumbot_bringup)
+[1.303s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop' for CMake module files
+[1.304s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/mecanumbot_teleop' returned '0': PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_teleop build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log --single-version-externally-managed install_data
+[1.305s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop' for CMake config files
+[1.306s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib'
+[1.306s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/bin'
+[1.306s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/pkgconfig/mecanumbot_teleop.pc'
+[1.306s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages'
+[1.306s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_teleop', 'pythonpath')
+[1.306s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/pythonpath.ps1'
+[1.307s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/pythonpath.dsv'
+[1.307s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/hook/pythonpath.sh'
+[1.308s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/bin'
+[1.308s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_teleop)
+[1.309s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/package.ps1'
+[1.309s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/package.dsv'
+[1.310s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/package.sh'
+[1.310s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/package.bash'
+[1.310s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/mecanumbot_teleop/package.zsh'
+[1.311s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/share/colcon-core/packages/mecanumbot_teleop)
+[1.350s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_ledgui build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/install.log --single-version-externally-managed install_data
+[1.352s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/mecanumbot_led': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_led/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_led build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_led/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_led/install.log --single-version-externally-managed install_data
+[1.560s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui' for CMake module files
+[1.561s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_ledgui build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/install.log --single-version-externally-managed install_data
+[1.561s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui' for CMake config files
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib'
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/bin'
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/pkgconfig/mecanumbot_ledgui.pc'
+[1.562s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages'
+[1.562s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_ledgui', 'pythonpath')
+[1.563s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/pythonpath.ps1'
+[1.563s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/pythonpath.dsv'
+[1.563s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/hook/pythonpath.sh'
+[1.564s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/bin'
+[1.564s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_ledgui)
+[1.564s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/package.ps1'
+[1.564s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/package.dsv'
+[1.564s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/package.sh'
+[1.565s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/package.bash'
+[1.565s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/mecanumbot_ledgui/package.zsh'
+[1.565s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/share/colcon-core/packages/mecanumbot_ledgui)
+[1.568s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led' for CMake module files
+[1.568s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/mecanumbot_led' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_led/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_led build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_led/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_led/install.log --single-version-externally-managed install_data
+[1.569s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led' for CMake config files
+[1.569s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib'
+[1.569s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led/bin'
+[1.569s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/pkgconfig/mecanumbot_led.pc'
+[1.570s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages'
+[1.570s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot_led', 'pythonpath')
+[1.570s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/pythonpath.ps1'
+[1.570s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/pythonpath.dsv'
+[1.570s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/hook/pythonpath.sh'
+[1.571s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot_led/bin'
+[1.571s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot_led)
+[1.571s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/package.ps1'
+[1.571s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/package.dsv'
+[1.571s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/package.sh'
+[1.572s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/package.bash'
+[1.572s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/mecanumbot_led/package.zsh'
+[1.572s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot_led/share/colcon-core/packages/mecanumbot_led)
+[1.572s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/adorjan/github/mecanumbot/mecanumbot' with build type 'ament_cmake'
+[1.572s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/adorjan/github/mecanumbot/mecanumbot'
+[1.572s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[1.572s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[1.582s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/opt/ros/humble CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot -- -j8 -l8
+[1.612s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot' returned '0': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/opt/ros/humble CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot -- -j8 -l8
+[1.613s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/opt/ros/humble CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot
+[1.624s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot)
+[1.624s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot' for CMake module files
+[1.625s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot' returned '0': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/opt/ros/humble CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot_description:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui:/home/adorjan/github/mecanumbot/install/mecanumbot_led:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot
+[1.625s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot' for CMake config files
+[1.625s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot', 'cmake_prefix_path')
+[1.626s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.ps1'
+[1.626s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.dsv'
+[1.626s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.sh'
+[1.627s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/bin'
+[1.627s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/lib/pkgconfig/mecanumbot.pc'
+[1.627s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/lib/python3.10/site-packages'
+[1.627s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/bin'
+[1.627s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.ps1'
+[1.628s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.dsv'
+[1.628s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.sh'
+[1.628s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.bash'
+[1.629s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.zsh'
+[1.629s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot/share/colcon-core/packages/mecanumbot)
+[1.629s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(mecanumbot)
+[1.629s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot' for CMake module files
+[1.630s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot' for CMake config files
+[1.630s] Level 1:colcon.colcon_core.shell:create_environment_hook('mecanumbot', 'cmake_prefix_path')
+[1.630s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.ps1'
+[1.630s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.dsv'
+[1.631s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/hook/cmake_prefix_path.sh'
+[1.631s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/bin'
+[1.631s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/lib/pkgconfig/mecanumbot.pc'
+[1.631s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/lib/python3.10/site-packages'
+[1.631s] Level 1:colcon.colcon_core.environment:checking '/home/adorjan/github/mecanumbot/install/mecanumbot/bin'
+[1.632s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.ps1'
+[1.632s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.dsv'
+[1.632s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.sh'
+[1.633s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.bash'
+[1.633s] INFO:colcon.colcon_core.shell:Creating package script '/home/adorjan/github/mecanumbot/install/mecanumbot/share/mecanumbot/package.zsh'
+[1.633s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/adorjan/github/mecanumbot/install/mecanumbot/share/colcon-core/packages/mecanumbot)
+[1.633s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[1.634s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[1.634s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[1.634s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[1.639s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[1.639s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[1.639s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[1.647s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[1.647s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/adorjan/github/mecanumbot/install/local_setup.ps1'
+[1.648s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/adorjan/github/mecanumbot/install/_local_setup_util_ps1.py'
+[1.649s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/adorjan/github/mecanumbot/install/setup.ps1'
+[1.650s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/adorjan/github/mecanumbot/install/local_setup.sh'
+[1.650s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/adorjan/github/mecanumbot/install/_local_setup_util_sh.py'
+[1.650s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/adorjan/github/mecanumbot/install/setup.sh'
+[1.651s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/adorjan/github/mecanumbot/install/local_setup.bash'
+[1.652s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/adorjan/github/mecanumbot/install/setup.bash'
+[1.652s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/adorjan/github/mecanumbot/install/local_setup.zsh'
+[1.653s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/adorjan/github/mecanumbot/install/setup.zsh'
