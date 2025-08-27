@@ -10,6 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', ['launch/mecanumbot_ledgui.launch.py']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -19,7 +20,7 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-        	'led_gui = mecanumbot_ledgui.led_gui:main',
+        	'mecanumbot_ledgui = mecanumbot_ledgui.mecanumbot_ledgui:main',
 
         ],
     },
