@@ -1,0 +1,20 @@
+{
+  "firestorm": {
+    "FL": {
+      "color": 3,
+      "mode": 2
+    },
+    "FR": {
+      "color": 7,
+      "mode": 1
+    },
+    "BL": {
+      "color": 7,
+      "mode": 2
+    },
+    "BR": {
+      "color": 3,
+      "mode": 1
+    }
+  }
+}

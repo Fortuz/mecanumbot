@@ -47,7 +47,8 @@ CORNERS = ["FL", "FR", "BL", "BR"]
 SET_SRV = "set_led_status"
 GET_SRV = "get_led_status"
 
-CONFIG_PATH = Path.home() / ".mecanum_led_configs.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent /"mecanumbot_ledgui" / "configs" / "led_configs.json"
+
 
 # ---------------------------- ROS2 Client Node ----------------------------- #
 class LedClient(Node):

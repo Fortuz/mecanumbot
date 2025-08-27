@@ -1,0 +1,19 @@
+running egg_info
+writing ../build/mecanumbot_led/mecanumbot_led.egg-info/PKG-INFO
+writing dependency_links to ../build/mecanumbot_led/mecanumbot_led.egg-info/dependency_links.txt
+writing entry points to ../build/mecanumbot_led/mecanumbot_led.egg-info/entry_points.txt
+writing requirements to ../build/mecanumbot_led/mecanumbot_led.egg-info/requires.txt
+writing top-level names to ../build/mecanumbot_led/mecanumbot_led.egg-info/top_level.txt
+reading manifest file '../build/mecanumbot_led/mecanumbot_led.egg-info/SOURCES.txt'
+writing manifest file '../build/mecanumbot_led/mecanumbot_led.egg-info/SOURCES.txt'
+running build
+running build_py
+running install
+running install_lib
+running install_data
+running install_egg_info
+removing '/home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages/mecanumbot_led-0.0.1-py3.10.egg-info' (and everything under it)
+Copying ../build/mecanumbot_led/mecanumbot_led.egg-info to /home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/python3.10/site-packages/mecanumbot_led-0.0.1-py3.10.egg-info
+running install_scripts
+Installing mecanumbot_led_service script to /home/adorjan/github/mecanumbot/install/mecanumbot_led/lib/mecanumbot_led
+writing list of installed files to '/home/adorjan/github/mecanumbot/build/mecanumbot_led/install.log'
