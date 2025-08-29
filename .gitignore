@@ -81,3 +81,6 @@ build-*/
 
 #saved color and mode
 mecanumbot_ledgui/configs/led_configs.json
+
+log/
+install/
