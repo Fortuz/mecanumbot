@@ -1,6 +1,0 @@
-source;share/mecanumbot_led/hook/pythonpath.ps1
-source;share/mecanumbot_led/hook/pythonpath.dsv
-source;share/mecanumbot_led/hook/pythonpath.sh
-source;share/mecanumbot_led/hook/ament_prefix_path.ps1
-source;share/mecanumbot_led/hook/ament_prefix_path.dsv
-source;share/mecanumbot_led/hook/ament_prefix_path.sh
