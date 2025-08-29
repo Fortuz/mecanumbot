@@ -27,8 +27,8 @@
 
 void help_print()
 {
-  printf("For turtlebot3 node : \n");
-  printf("turtlebot3_node [-i usb_port] [-h]\n");
+  printf("For mecanumbot node : \n");
+  printf("mecanumbot_node [-i usb_port] [-h]\n");
   printf("options:\n");
   printf("-h : Print this help function.\n");
   printf("-i usb_port: Connected USB port with OpenCR.");

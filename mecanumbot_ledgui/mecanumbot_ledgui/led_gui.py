@@ -191,7 +191,7 @@ class App(tk.Tk):
                     msg = getattr(res, 'message', 'Unknown error') if res else 'No response'
                     self.after(0, lambda: messagebox.showerror("SET", f"Failed: {msg}"))
             except Exception as e:
-                self.after(0, lambda: messagebox.showerror("SET", f"Exception: {e}"))
+                self.after(0, lambda: messagebox.showerror("SET", f"Exception: {e if e is not None else 'NullPtrException'}"))
         threading.Thread(target=work, daemon=True).start()
 
     def on_get(self):
@@ -225,5 +225,8 @@ class App(tk.Tk):
             pass
         self.destroy()
 
-if __name__ == '__main__':
+def main():
     App().mainloop()
+
+if __name__ == '__main__':
+    main()
