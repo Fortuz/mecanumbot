@@ -6,7 +6,6 @@
   <description>
     Mecanumbot driver node that include diff drive controller, odometry and tf node
   </description>
-  <maintainer email="pyo@robotis.com">Pyo</maintainer>
   <license>Apache 2.0</license>
   <author email="fortuz19@gmail.com">fortuz</author>
   <buildtool_depend>ament_cmake</buildtool_depend>
