@@ -10,7 +10,8 @@
         protocol_version: 2.0
 
       wheels:
-        separation: 0.287
+        separation_x: 0.287
+        separation_y: 0.205
         radius: 0.033
 
       motors:
