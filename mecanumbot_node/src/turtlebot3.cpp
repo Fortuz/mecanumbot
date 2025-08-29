@@ -23,9 +23,9 @@ using robotis::turtlebot3::TurtleBot3;
 using namespace std::chrono_literals;
 
 TurtleBot3::TurtleBot3(const std::string & usb_port)
-: Node("mecanumbot_node", rclcpp::NodeOptions().use_intra_process_comms(true))
+: Node("turtlebot3_node", rclcpp::NodeOptions().use_intra_process_comms(true))
 {
-  RCLCPP_INFO(get_logger(), "Init TurtleBot3 Node Main");
+  RCLCPP_INFO(get_logger(), "Init Turtlebot3 Node Main");
   node_handle_ = std::shared_ptr<::rclcpp::Node>(this, [](::rclcpp::Node *) {});
 
   init_dynamixel_sdk_wrapper(usb_port);
@@ -346,7 +346,7 @@ void TurtleBot3::cmd_vel_callback()
         } data;
 
         data.dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        data.dword[1] = static_cast<int32_t>(msg->linear.y * 100); // Added here
+        data.dword[1] = static_cast<int32_t>(msg->linear.y * 100);
         data.dword[2] = 0;
         data.dword[3] = 0;
         data.dword[4] = 0;

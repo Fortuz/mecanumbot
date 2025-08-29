@@ -103,6 +103,7 @@ typedef struct
   ControlItem present_position_backleft = {160, RAM, 4, READ};
   ControlItem present_position_backright = {164, RAM, 4, READ};
 
+  ControlItem motor_connect = {168, RAM, 1, READ_WRITE};   // TODO: check
   ControlItem motor_torque_enable = {169, RAM, 1, READ_WRITE};
 
   ControlItem cmd_velocity_linear_x = {170, RAM, 4, READ_WRITE};
