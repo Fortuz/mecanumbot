@@ -1,38 +1,35 @@
-/**:
-  mecanumbot_node:
-    ros__parameters:
+mecanumbot_node:
+  ros__parameters:
 
-      enable_stamped_cmd_vel: false
+    opencr:
+      id: 200
+      baud_rate: 115200
+      protocol_version: 2.0
 
-      opencr:
-        id: 200
-        baud_rate: 115200
-        protocol_version: 2.0
+    wheels:
+      separation_x: 0.287
+      separation_y: 0.187
+      radius: 0.033
 
-      wheels:
-        separation_x: 0.287
-        separation_y: 0.205
-        radius: 0.033
+    motors:
+      profile_acceleration_constant: 214.577
 
-      motors:
-        profile_acceleration_constant: 214.577
+      # [rev/min2]
+      # ref) http://emanual.robotis.com/docs/en/dxl/x/xl430-w250/#profile-acceleration
+      profile_acceleration: 0.0
 
-        # [rev/min2]
-        # ref) http://emanual.robotis.com/docs/en/dxl/x/xl430-w250/#profile-acceleration
-        profile_acceleration: 0.0
+    sensors:
+      bumper_1: 0
+      bumper_2: 0
+      illumination: 0
+      ir: 0
+      sonar: 0
 
-      sensors:
-        bumper_1: 0
-        bumper_2: 0
-        illumination: 0
-        ir: 0
-        sonar: 0
-/**:
-  diff_drive_controller:
-    ros__parameters:
+diff_drive_controller:
+  ros__parameters:
 
-      odometry:
-        publish_tf: true
-        use_imu: true
-        frame_id: "odom"
-        child_frame_id: "base_footprint"
+    odometry:
+      publish_tf: true
+      use_imu: true
+      frame_id: "odom"
+      child_frame_id: "base_footprint"
