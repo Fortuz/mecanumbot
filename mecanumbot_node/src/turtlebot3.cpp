@@ -51,7 +51,7 @@ TurtleBot3::Motors * TurtleBot3::get_motors()
 
 void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 {
-  DynamixelSDKWrapper::Device opencr = {usb_port, 200, 1000000, 2.0f};
+  DynamixelSDKWrapper::Device opencr = {usb_port, 200, 115200, 2.0f}; // TODO
 
   this->declare_parameter<uint8_t>("opencr.id");
   this->declare_parameter<int>("opencr.baud_rate");
@@ -59,7 +59,7 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   this->declare_parameter<std::string>("namespace");
 
   this->get_parameter_or<uint8_t>("opencr.id", opencr.id, 200);
-  this->get_parameter_or<int>("opencr.baud_rate", opencr.baud_rate, 1000000);
+  this->get_parameter_or<int>("opencr.baud_rate", opencr.baud_rate, 115200);
   this->get_parameter_or<float>("opencr.protocol_version", opencr.protocol_version, 2.0f);
 
   RCLCPP_INFO(this->get_logger(), "Init DynamixelSDKWrapper");
