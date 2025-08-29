@@ -62,15 +62,15 @@ ANG_VEL_STEP_SIZE = 0.1
 TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
 
 msg = """
-Control Your TurtleBot3!
+Control Your TurtleBot3 frined - Mecanumbot !
 ---------------------------
 Moving around:
-        w
+   q    w    e
    a    s    d
         x
 
-w/x : increase/decrease linear velocity (Burger : ~ 0.22, Waffle and Waffle Pi : ~ 0.26)
-a/d : increase/decrease angular velocity (Burger : ~ 2.84, Waffle and Waffle Pi : ~ 1.82)
+w/x : increase/decrease linear velocity (Mecanumbot : ~ 0.26)
+a/d : increase/decrease angular velocity (Mecanumbot : ~ 1.82)
 
 space key, s : force stop
 
@@ -190,7 +190,7 @@ def main():
                     check_angular_limit_velocity(target_angular_velocity + ANG_VEL_STEP_SIZE)
                 status = status + 1
                 print_vels(target_linear_x_velocity, target_linear_y_velocity, target_angular_velocity)
-            elif key == 'd':
+            elif key == 'e':
                 target_angular_velocity =\
                     check_angular_limit_velocity(target_angular_velocity - ANG_VEL_STEP_SIZE)
                 status = status + 1
