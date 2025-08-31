@@ -1,0 +1,35 @@
+running egg_info
+creating ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info
+writing ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/PKG-INFO
+writing dependency_links to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/dependency_links.txt
+writing entry points to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/entry_points.txt
+writing requirements to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/requires.txt
+writing top-level names to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/top_level.txt
+writing manifest file '../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/SOURCES.txt'
+reading manifest file '../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/SOURCES.txt'
+writing manifest file '../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build
+creating /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib
+creating /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop
+copying mecanumbot_teleop/__init__.py -> /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop
+creating /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/script
+copying mecanumbot_teleop/script/__init__.py -> /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/script
+copying mecanumbot_teleop/script/teleop_keyboard.py -> /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/script
+running install
+running install_lib
+creating /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop
+copying /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/__init__.py -> /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop
+creating /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/script
+copying /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/script/__init__.py -> /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/script
+copying /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build/lib/mecanumbot_teleop/script/teleop_keyboard.py -> /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/script
+byte-compiling /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/script/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop/script/teleop_keyboard.py to teleop_keyboard.cpython-310.pyc
+running install_data
+running install_egg_info
+Copying ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info to /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop-2.3.3-py3.10.egg-info
+running install_scripts
+Installing mecanumbot_keyboard script to /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/mecanumbot_teleop
+writing list of installed files to '/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log'

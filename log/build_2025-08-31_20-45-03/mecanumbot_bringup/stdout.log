@@ -1,0 +1,44 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/adorjan/github/mecanumbot/build/mecanumbot_bringup
+-- Install configuration: ""
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/launch
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/launch/robot.launch.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/launch/mecanumbot_state_publisher.launch.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/launch/camera.launch.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/launch/rviz2.launch.py
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/param
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/param/humble
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/param/humble/mecanumbot.yaml
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/script
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/script/90_mecanumbot_nano.rules
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/script/99-turtlebot3-cdc.rules
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/ament_index/resource_index/package_run_dependencies/mecanumbot_bringup
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/ament_index/resource_index/parent_prefix_path/mecanumbot_bringup
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/environment/ament_prefix_path.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/environment/ament_prefix_path.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/environment/path.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/environment/path.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/local_setup.bash
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/local_setup.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/local_setup.zsh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/local_setup.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/ament_index/resource_index/packages/mecanumbot_bringup
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/cmake/mecanumbot_bringupConfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/cmake/mecanumbot_bringupConfig-version.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_bringup/share/mecanumbot_bringup/package.xml

@@ -1,0 +1,24 @@
+[0.803s] Invoking command in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_ledgui build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/install.log --single-version-externally-managed install_data
+[0.999s] running egg_info
+[1.000s] writing ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/PKG-INFO
+[1.000s] writing dependency_links to ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/dependency_links.txt
+[1.000s] writing entry points to ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/entry_points.txt
+[1.000s] writing requirements to ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/requires.txt
+[1.000s] writing top-level names to ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/top_level.txt
+[1.002s] reading manifest file '../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/SOURCES.txt'
+[1.002s] writing manifest file '../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info/SOURCES.txt'
+[1.002s] running build
+[1.002s] running build_py
+[1.002s] copying mecanumbot_ledgui/mecanumbot_ledgui.py -> /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build/lib/mecanumbot_ledgui
+[1.003s] running install
+[1.003s] running install_lib
+[1.004s] copying /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build/lib/mecanumbot_ledgui/mecanumbot_ledgui.py -> /home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages/mecanumbot_ledgui
+[1.004s] byte-compiling /home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages/mecanumbot_ledgui/mecanumbot_ledgui.py to mecanumbot_ledgui.cpython-310.pyc
+[1.007s] running install_data
+[1.007s] running install_egg_info
+[1.009s] removing '/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages/mecanumbot_ledgui-0.0.0-py3.10.egg-info' (and everything under it)
+[1.009s] Copying ../build/mecanumbot_ledgui/mecanumbot_ledgui.egg-info to /home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages/mecanumbot_ledgui-0.0.0-py3.10.egg-info
+[1.010s] running install_scripts
+[1.027s] Installing mecanumbot_ledgui script to /home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/mecanumbot_ledgui
+[1.027s] writing list of installed files to '/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/install.log'
+[1.051s] Invoked command in '/home/adorjan/github/mecanumbot/mecanumbot_ledgui' returned '0': CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/home/adorjan/github/mecanumbot/install/mecanumbot:/home/adorjan/github/mecanumbot/install/mecanumbot_bringup:/home/adorjan/github/mecanumbot/install/mecanumbot_node:/home/adorjan/github/mecanumbot/install/mecanumbot_description LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_ledgui/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_ledgui build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_ledgui/install.log --single-version-externally-managed install_data

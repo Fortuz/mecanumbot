@@ -1,0 +1,21 @@
+[0.828s] Invoking command in '/home/adorjan/github/mecanumbot/mecanumbot_teleop': PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_teleop build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log --single-version-externally-managed install_data
+[1.079s] running egg_info
+[1.080s] writing ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/PKG-INFO
+[1.080s] writing dependency_links to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/dependency_links.txt
+[1.080s] writing entry points to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/entry_points.txt
+[1.080s] writing requirements to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/requires.txt
+[1.080s] writing top-level names to ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/top_level.txt
+[1.082s] reading manifest file '../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/SOURCES.txt'
+[1.082s] writing manifest file '../build/mecanumbot_teleop/mecanumbot_teleop.egg-info/SOURCES.txt'
+[1.082s] running build
+[1.082s] running build_py
+[1.083s] running install
+[1.083s] running install_lib
+[1.084s] running install_data
+[1.084s] running install_egg_info
+[1.086s] removing '/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop-2.3.3-py3.10.egg-info' (and everything under it)
+[1.086s] Copying ../build/mecanumbot_teleop/mecanumbot_teleop.egg-info to /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages/mecanumbot_teleop-2.3.3-py3.10.egg-info
+[1.087s] running install_scripts
+[1.105s] Installing mecanumbot_keyboard script to /home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/mecanumbot_teleop
+[1.106s] writing list of installed files to '/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log'
+[1.132s] Invoked command in '/home/adorjan/github/mecanumbot/mecanumbot_teleop' returned '0': PYTHONPATH=/home/adorjan/github/mecanumbot/build/mecanumbot_teleop/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/adorjan/github/mecanumbot/install/mecanumbot_teleop/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../build/mecanumbot_teleop build --build-base /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/build install --record /home/adorjan/github/mecanumbot/build/mecanumbot_teleop/install.log --single-version-externally-managed install_data

@@ -16,5 +16,41 @@
       "color": 3,
       "mode": 1
     }
+  },
+  "k": {
+    "FL": {
+      "color": 3,
+      "mode": 2
+    },
+    "FR": {
+      "color": 7,
+      "mode": 2
+    },
+    "BL": {
+      "color": 7,
+      "mode": 2
+    },
+    "BR": {
+      "color": 3,
+      "mode": 1
+    }
+  },
+  "l": {
+    "FL": {
+      "color": 3,
+      "mode": 2
+    },
+    "FR": {
+      "color": 7,
+      "mode": 2
+    },
+    "BL": {
+      "color": 3,
+      "mode": 2
+    },
+    "BR": {
+      "color": 3,
+      "mode": 1
+    }
   }
 }

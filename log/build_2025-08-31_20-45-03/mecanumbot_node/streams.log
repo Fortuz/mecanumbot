@@ -1,0 +1,86 @@
+[0.009s] Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/adorjan/github/mecanumbot/mecanumbot_node -DCMAKE_INSTALL_PREFIX=/home/adorjan/github/mecanumbot/install/mecanumbot_node
+[0.186s] -- The C compiler identification is GNU 11.4.0
+[0.186s] -- The CXX compiler identification is GNU 11.4.0
+[0.187s] -- Detecting C compiler ABI info
+[0.187s] -- Detecting C compiler ABI info - done
+[0.187s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.187s] -- Detecting C compile features
+[0.187s] -- Detecting C compile features - done
+[0.187s] -- Detecting CXX compiler ABI info
+[0.205s] -- Detecting CXX compiler ABI info - done
+[0.210s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.210s] -- Detecting CXX compile features
+[0.210s] -- Detecting CXX compile features - done
+[0.212s] -- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.308s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.369s] -- Found dynamixel_sdk: 3.8.4 (/opt/ros/humble/share/dynamixel_sdk/cmake)
+[0.371s] -- Found geometry_msgs: 4.9.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+[0.396s] -- Found rosidl_generator_c: 3.1.7 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.399s] -- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.404s] -- Found rosidl_generator_cpp: 3.1.7 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.412s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.424s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.451s] -- Found message_filters: 4.3.8 (/opt/ros/humble/share/message_filters/cmake)
+[0.490s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.493s] -- Found rmw_fastrtps_cpp: 6.2.8 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.561s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[0.603s] -- Found FastRTPS: /opt/ros/humble/include  
+[0.637s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.648s] -- Looking for pthread.h
+[0.696s] -- Looking for pthread.h - found
+[0.697s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[0.747s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[0.748s] -- Found Threads: TRUE  
+[0.783s] -- Found nav_msgs: 4.9.0 (/opt/ros/humble/share/nav_msgs/cmake)
+[0.799s] -- Found sensor_msgs: 4.9.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[0.818s] -- Found std_srvs: 4.9.0 (/opt/ros/humble/share/std_srvs/cmake)
+[0.829s] -- Found tf2: 0.25.16 (/opt/ros/humble/share/tf2/cmake)
+[0.837s] -- Found tf2_ros: 0.25.16 (/opt/ros/humble/share/tf2_ros/cmake)
+[0.904s] -- Found mecanumbot_msgs: 0.0.1 (/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake)
+[0.914s] -- Found turtlebot3_msgs: 2.4.0 (/opt/ros/humble/share/turtlebot3_msgs/cmake)
+[0.968s] -- Configuring done
+[0.980s] -- Generating done
+[0.984s] -- Build files have been written to: /home/adorjan/github/mecanumbot/build/mecanumbot_node
+[0.991s] Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node' returned '0': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/adorjan/github/mecanumbot/mecanumbot_node -DCMAKE_INSTALL_PREFIX=/home/adorjan/github/mecanumbot/install/mecanumbot_node
+[0.993s] Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_node -- -j8 -l8
+[1.030s] [ 28%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/devices/sound.cpp.o[0m
+[1.030s] [ 28%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/odometry.cpp.o[0m
+[1.030s] [ 42%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/devices/reset.cpp.o[0m
+[1.030s] [ 28%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/diff_drive_controller.cpp.o[0m
+[1.030s] [ 42%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/devices/motor_power.cpp.o[0m
+[1.030s] [ 50%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/dynamixel_sdk_wrapper.cpp.o[0m
+[1.030s] [ 50%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/turtlebot3.cpp.o[0m
+[1.031s] [ 57%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/sensors/battery_state.cpp.o[0m
+[1.632s] [ 64%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/sensors/imu.cpp.o[0m
+[5.252s] [ 71%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/sensors/joint_state.cpp.o[0m
+[5.866s] [ 78%] [32mBuilding CXX object CMakeFiles/mecanumbot_node_lib.dir/src/sensors/sensor_state.cpp.o[0m
+[14.890s] [ 85%] [32m[1mLinking CXX static library libmecanumbot_node_lib.a[0m
+[15.311s] [ 85%] Built target mecanumbot_node_lib
+[15.327s] [ 92%] [32mBuilding CXX object CMakeFiles/mecanumbot_ros.dir/src/node_main.cpp.o[0m
+[17.980s] [100%] [32m[1mLinking CXX executable mecanumbot_ros[0m
+[20.235s] [100%] Built target mecanumbot_ros
+[20.249s] Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node' returned '0': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/adorjan/github/mecanumbot/build/mecanumbot_node -- -j8 -l8
+[20.251s] Invoking command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_node
+[20.258s] -- Install configuration: ""
+[20.258s] -- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/param
+[20.258s] -- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/param/mecanumbot.yaml
+[20.258s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/mecanumbot_node/mecanumbot_ros
+[20.274s] -- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_node/lib/mecanumbot_node/mecanumbot_ros" to ""
+[20.274s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/ament_index/resource_index/package_run_dependencies/mecanumbot_node
+[20.274s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/ament_index/resource_index/parent_prefix_path/mecanumbot_node
+[20.274s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/environment/ament_prefix_path.sh
+[20.274s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/environment/ament_prefix_path.dsv
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/environment/path.sh
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/environment/path.dsv
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/local_setup.bash
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/local_setup.sh
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/local_setup.zsh
+[20.275s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/local_setup.dsv
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.dsv
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/ament_index/resource_index/packages/mecanumbot_node
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/cmake/ament_cmake_export_dependencies-extras.cmake
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/cmake/ament_cmake_export_include_directories-extras.cmake
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/cmake/mecanumbot_nodeConfig.cmake
+[20.276s] -- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/cmake/mecanumbot_nodeConfig-version.cmake
+[20.277s] -- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_node/share/mecanumbot_node/package.xml
+[20.280s] Invoked command in '/home/adorjan/github/mecanumbot/build/mecanumbot_node' returned '0': AMENT_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs:/opt/ros/humble LD_LIBRARY_PATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins PYTHONPATH=/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/adorjan/github/mecanumbot/build/mecanumbot_node

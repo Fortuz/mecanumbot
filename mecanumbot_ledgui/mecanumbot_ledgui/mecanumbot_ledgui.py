@@ -47,8 +47,13 @@ CORNERS = ["FL", "FR", "BL", "BR"]
 SET_SRV = "set_led_status"
 GET_SRV = "get_led_status"
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent /"mecanumbot_ledgui" / "configs" / "led_configs.json"
 
+# First candidate path
+CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
+
+# Check if it exists, otherwise fall back
+if not CONFIG_PATH.exists():
+    CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
 
 # ---------------------------- ROS2 Client Node ----------------------------- #
 class LedClient(Node):
@@ -159,7 +164,6 @@ class App(tk.Tk):
 
         self.check_services()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-
         self.on_get()
 
     # ------------------------- UI helpers & persistence ------------------------- #
@@ -207,6 +211,7 @@ class App(tk.Tk):
                 json.dump(self.saved_configs, f, indent=2)
         except Exception as e:
             messagebox.showerror("Configs", f"Failed to save configs:\n{e}")
+
 
     def refresh_saved_list(self):
         self.saved_list.delete(0, tk.END)

@@ -1,0 +1,307 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.12 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Found rosidl_adapter: 3.1.7 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found std_msgs: 4.9.0 (/opt/ros/humble/share/std_msgs/cmake)
+-- Found geometry_msgs: 4.9.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found ament_cmake_cppcheck: 0.12.14 (/opt/ros/humble/share/ament_cmake_cppcheck/cmake)
+-- Found ament_cmake_cpplint: 0.12.14 (/opt/ros/humble/share/ament_cmake_cpplint/cmake)
+-- Found ament_cmake_uncrustify: 0.12.14 (/opt/ros/humble/share/ament_cmake_uncrustify/cmake)
+-- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.12", minimum required is "3.6") 
+-- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+-- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.12", minimum required is "3.5") 
+-- Using PYTHON_EXECUTABLE: /usr/bin/python3
+-- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+-- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+-- Found PythonExtra: .so  
+-- Found ament_cmake_flake8: 0.12.14 (/opt/ros/humble/share/ament_cmake_flake8/cmake)
+-- Found ament_cmake_pep257: 0.12.14 (/opt/ros/humble/share/ament_cmake_pep257/cmake)
+-- Found ament_lint_auto: 0.12.14 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/adorjan/github/mecanumbot/build/mecanumbot_msgs
+[  2%] [34m[1mGenerating C code for ROS interfaces[0m
+[  4%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[  4%] Built target ament_cmake_python_copy_mecanumbot_msgs
+running egg_info
+creating mecanumbot_msgs.egg-info
+writing mecanumbot_msgs.egg-info/PKG-INFO
+writing dependency_links to mecanumbot_msgs.egg-info/dependency_links.txt
+writing top-level names to mecanumbot_msgs.egg-info/top_level.txt
+writing manifest file 'mecanumbot_msgs.egg-info/SOURCES.txt'
+reading manifest file 'mecanumbot_msgs.egg-info/SOURCES.txt'
+writing manifest file 'mecanumbot_msgs.egg-info/SOURCES.txt'
+[  4%] Built target ament_cmake_python_build_mecanumbot_msgs_egg
+[  4%] Built target mecanumbot_msgs__cpp
+[ 10%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_c.dir/rosidl_generator_c/mecanumbot_msgs/srv/detail/set_led_status__functions.c.o[0m
+[ 10%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_c.dir/rosidl_generator_c/mecanumbot_msgs/msg/detail/sensor_state__functions.c.o[0m
+[ 10%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_c.dir/rosidl_generator_c/mecanumbot_msgs/srv/detail/get_led_status__functions.c.o[0m
+[ 12%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[ 14%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[ 17%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[ 19%] [32m[1mLinking C shared library libmecanumbot_msgs__rosidl_generator_c.so[0m
+[ 19%] Built target mecanumbot_msgs__rosidl_generator_c
+[ 21%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[ 23%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[ 25%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[ 29%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/mecanumbot_msgs/msg/sensor_state__type_support.cpp.o[0m
+[ 29%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/mecanumbot_msgs/srv/get_led_status__type_support.cpp.o[0m
+[ 31%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/mecanumbot_msgs/srv/set_led_status__type_support.cpp.o[0m
+[ 34%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/mecanumbot_msgs/msg/sensor_state__type_support.cpp.o[0m
+[ 36%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/mecanumbot_msgs/srv/get_led_status__type_support.cpp.o[0m
+[ 38%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/mecanumbot_msgs/srv/set_led_status__type_support.cpp.o[0m
+[ 40%] [32m[1mLinking CXX shared library libmecanumbot_msgs__rosidl_typesupport_c.so[0m
+[ 40%] Built target mecanumbot_msgs__rosidl_typesupport_c
+[ 42%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/mecanumbot_msgs/msg/detail/sensor_state__type_support.cpp.o[0m
+[ 44%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/mecanumbot_msgs/srv/detail/get_led_status__type_support.cpp.o[0m
+[ 46%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/mecanumbot_msgs/srv/detail/set_led_status__type_support.cpp.o[0m
+[ 48%] [32m[1mLinking CXX shared library libmecanumbot_msgs__rosidl_typesupport_cpp.so[0m
+[ 53%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/mecanumbot_msgs/msg/detail/dds_fastrtps/sensor_state__type_support.cpp.o[0m
+[ 53%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/mecanumbot_msgs/srv/detail/dds_fastrtps/get_led_status__type_support.cpp.o[0m
+[ 53%] Built target mecanumbot_msgs__rosidl_typesupport_cpp
+[ 55%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/mecanumbot_msgs/srv/detail/dds_fastrtps/set_led_status__type_support.cpp.o[0m
+[ 57%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/mecanumbot_msgs/msg/detail/sensor_state__type_support.c.o[0m
+[ 59%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/mecanumbot_msgs/msg/detail/sensor_state__type_support_c.cpp.o[0m
+[ 61%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/mecanumbot_msgs/srv/detail/get_led_status__type_support.c.o[0m
+[ 63%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/mecanumbot_msgs/srv/detail/set_led_status__type_support.c.o[0m
+[ 65%] [32m[1mLinking C shared library libmecanumbot_msgs__rosidl_typesupport_introspection_c.so[0m
+[ 65%] Built target mecanumbot_msgs__rosidl_typesupport_introspection_c
+[ 68%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/mecanumbot_msgs/srv/detail/get_led_status__type_support_c.cpp.o[0m
+[ 70%] [32mBuilding CXX object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/mecanumbot_msgs/srv/detail/set_led_status__type_support_c.cpp.o[0m
+[ 72%] [32m[1mLinking CXX shared library libmecanumbot_msgs__rosidl_typesupport_introspection_cpp.so[0m
+[ 74%] [32m[1mLinking CXX shared library libmecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.so[0m
+[ 74%] Built target mecanumbot_msgs__rosidl_typesupport_introspection_cpp
+[ 74%] Built target mecanumbot_msgs__rosidl_typesupport_fastrtps_cpp
+[ 76%] [32m[1mLinking CXX shared library libmecanumbot_msgs__rosidl_typesupport_fastrtps_c.so[0m
+[ 76%] Built target mecanumbot_msgs__rosidl_typesupport_fastrtps_c
+[ 76%] Built target mecanumbot_msgs
+[ 78%] [34m[1mGenerating Python code for ROS interfaces[0m
+[ 78%] Built target mecanumbot_msgs__py
+[ 85%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_py.dir/rosidl_generator_py/mecanumbot_msgs/msg/_sensor_state_s.c.o[0m
+[ 85%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_py.dir/rosidl_generator_py/mecanumbot_msgs/srv/_set_led_status_s.c.o[0m
+[ 85%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_generator_py.dir/rosidl_generator_py/mecanumbot_msgs/srv/_get_led_status_s.c.o[0m
+[ 87%] [32m[1mLinking C shared library rosidl_generator_py/mecanumbot_msgs/libmecanumbot_msgs__rosidl_generator_py.so[0m
+[ 87%] Built target mecanumbot_msgs__rosidl_generator_py
+[ 93%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[ 93%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_c.c.o[0m
+[ 93%] [32mBuilding C object CMakeFiles/mecanumbot_msgs__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[100%] [32m[1mLinking C shared library rosidl_generator_py/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so[0m
+[100%] [32m[1mLinking C shared library rosidl_generator_py/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so[0m
+[100%] [32m[1mLinking C shared library rosidl_generator_py/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so[0m
+[100%] Built target mecanumbot_msgs__rosidl_typesupport_c__pyext
+[100%] Built target mecanumbot_msgs__rosidl_typesupport_introspection_c__pyext
+[100%] Built target mecanumbot_msgs__rosidl_typesupport_fastrtps_c__pyext
+-- Install configuration: ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/ament_index/resource_index/rosidl_interfaces/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/rosidl_generator_c__visibility_control.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__functions.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__struct.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__type_support.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__functions.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/sensor_state.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/get_led_status.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/set_led_status.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__type_support.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__functions.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__type_support.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__struct.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__functions.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__struct.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__functions.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__functions.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/library_path.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/library_path.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_generator_c.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_generator_c.so" to ""
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__rosidl_typesupport_fastrtps_c.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_fastrtps_c.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_fastrtps_c.so" to ""
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__type_support.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__rosidl_typesupport_introspection_c.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__type_support.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__rosidl_typesupport_introspection_c.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__type_support.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__rosidl_typesupport_introspection_c.h
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_introspection_c.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_introspection_c.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_c.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_c.so" to ""
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/sensor_state.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/rosidl_generator_cpp__visibility_control.hpp
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__traits.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__builder.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__struct.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__type_support.hpp
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/set_led_status.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/get_led_status.hpp
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__builder.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__traits.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__traits.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__struct.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__builder.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__struct.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__type_support.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__type_support.hpp
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/dds_fastrtps
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/dds_fastrtps
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_fastrtps_cpp.so" to ""
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/msg/detail/sensor_state__type_support.cpp
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv
+-- Up-to-date: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/get_led_status__type_support.cpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/include/mecanumbot_msgs/mecanumbot_msgs/srv/detail/set_led_status__type_support.cpp
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_introspection_cpp.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_introspection_cpp.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_cpp.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_typesupport_cpp.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/pythonpath.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/pythonpath.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs-0.0.1-py3.10.egg-info
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs-0.0.1-py3.10.egg-info/dependency_links.txt
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs-0.0.1-py3.10.egg-info/PKG-INFO
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs-0.0.1-py3.10.egg-info/top_level.txt
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs-0.0.1-py3.10.egg-info/SOURCES.txt
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/libmecanumbot_msgs__rosidl_generator_py.so
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_introspection_c.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/_mecanumbot_msgs_s.ep.rosidl_typesupport_c.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/__init__.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg/__init__.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg/_sensor_state_s.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg/_sensor_state.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/__init__.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_set_led_status_s.c
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_set_led_status.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_get_led_status.py
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_get_led_status_s.c
+Listing '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/__init__.py'...
+Listing '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg/__init__.py'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/msg/_sensor_state.py'...
+Listing '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/__init__.py'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_get_led_status.py'...
+Compiling '/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/srv/_set_led_status.py'...
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/local/lib/python3.10/dist-packages/mecanumbot_msgs/mecanumbot_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_generator_py.so
+-- Set runtime path of "/home/adorjan/github/mecanumbot/install/mecanumbot_msgs/lib/libmecanumbot_msgs__rosidl_generator_py.so" to ""
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/msg/SensorState.idl
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/GetLedStatus.idl
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/SetLedStatus.idl
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/msg/SensorState.msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/GetLedStatus.srv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/GetLedStatus_Request.msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/GetLedStatus_Response.msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/SetLedStatus.srv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/SetLedStatus_Request.msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/srv/SetLedStatus_Response.msg
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/ament_index/resource_index/package_run_dependencies/mecanumbot_msgs
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/ament_index/resource_index/parent_prefix_path/mecanumbot_msgs
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/ament_prefix_path.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/ament_prefix_path.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/path.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/environment/path.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/local_setup.bash
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/local_setup.sh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/local_setup.zsh
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/local_setup.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.dsv
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/ament_index/resource_index/packages/mecanumbot_msgs
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_generator_cExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_generator_cExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_introspection_cExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_cExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_cExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_generator_cppExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_introspection_cppExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_cppExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_generator_pyExport.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/export_mecanumbot_msgs__rosidl_generator_pyExport-noconfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/rosidl_cmake-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/ament_cmake_export_targets-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgsConfig.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/cmake/mecanumbot_msgsConfig-version.cmake
+-- Installing: /home/adorjan/github/mecanumbot/install/mecanumbot_msgs/share/mecanumbot_msgs/package.xml
