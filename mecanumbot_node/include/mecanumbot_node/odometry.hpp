@@ -44,7 +44,7 @@ class Odometry
 public:
   explicit Odometry(
     std::shared_ptr<rclcpp::Node> & nh,
-    const double wheels_separation,
+    const double wheels_separation_y,
     const double wheels_radius);
   virtual ~Odometry() {}
 
@@ -79,7 +79,7 @@ private:
 
   std::shared_ptr<SynchronizerJointStateImu> joint_state_imu_sync_;
 
-  double wheels_separation_;
+  double wheels_separation_y_;
   double wheels_radius_;
 
   std::string frame_id_of_odometry_;

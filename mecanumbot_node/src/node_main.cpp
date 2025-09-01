@@ -57,7 +57,7 @@ int main(int argc, char * argv[])
   auto turtlebot3 = std::make_shared<robotis::turtlebot3::TurtleBot3>(usb_port);
   auto diff_drive_controller =
     std::make_shared<robotis::turtlebot3::DiffDriveController>(
-    turtlebot3->get_wheels()->separation,
+    turtlebot3->get_wheels()->separation_y,
     turtlebot3->get_wheels()->radius);
 
   executor.add_node(turtlebot3);
