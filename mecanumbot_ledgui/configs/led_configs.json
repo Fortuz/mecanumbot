@@ -52,5 +52,23 @@
       "color": 3,
       "mode": 1
     }
+  },
+  "Cyan_Pulse": {
+    "FL": {
+      "color": 5,
+      "mode": 3
+    },
+    "FR": {
+      "color": 5,
+      "mode": 3
+    },
+    "BL": {
+      "color": 5,
+      "mode": 3
+    },
+    "BR": {
+      "color": 5,
+      "mode": 3
+    }
   }
 }

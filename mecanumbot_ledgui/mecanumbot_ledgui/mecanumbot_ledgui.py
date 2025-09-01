@@ -48,12 +48,23 @@ SET_SRV = "set_led_status"
 GET_SRV = "get_led_status"
 
 
+from ament_index_python.packages import get_package_share_directory
+from pathlib import Path
+
+# Get the share directory of the 'mecanumbot_ledgui' package
+package_share_dir = get_package_share_directory('mecanumbot_ledgui')
+
+# Build the full path to the config file
+CONFIG_PATH = Path(package_share_dir).resolve().parent.parent.parent.parent/ 'src' / 'mecanumbot' / 'mecanumbot_ledgui' / 'configs' / 'led_configs.json'
+
+
+
 # First candidate path
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
+# CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
 
 # Check if it exists, otherwise fall back
-if not CONFIG_PATH.exists():
-    CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
+#if not CONFIG_PATH.exists():
+#    CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent.parent.parent.parent / "mecanumbot_ledgui" / "configs" / "led_configs.json"
 
 # ---------------------------- ROS2 Client Node ----------------------------- #
 class LedClient(Node):
