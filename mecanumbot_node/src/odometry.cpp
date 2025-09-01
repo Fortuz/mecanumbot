@@ -28,7 +28,7 @@ Odometry::Odometry(
     const double wheels_separation_y,
     const double wheels_radius)
     : nh_(nh),
-      wheels_separation_(wheels_separation_y),
+      wheels_separation_y_(wheels_separation_y),
       wheels_radius_(wheels_radius),
       use_imu_(false),
       publish_tf_(false),
@@ -289,7 +289,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
   else
   {
-    theta = wheels_radius_ * (wheel_r - wheel_l) / wheels_separation_;
+    theta = wheels_radius_ * (wheel_r - wheel_l) / wheels_separation_y_;
     delta_theta = theta;
   }
 
