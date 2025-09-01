@@ -88,5 +88,6 @@ wheel thikness: 30 mm <br>
 wheel separation x: 129 mm <br>
 wheel separation y: 300 mm <br>
 
+
 alternative git repo: <br>
 [Mecanumbot repo](https://github.com/deborggraever/ros2-mecanum-bot/blob/main/mecanumbot_control/src/mecanumbot_control_node.cpp)
