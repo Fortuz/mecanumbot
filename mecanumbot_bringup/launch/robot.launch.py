@@ -30,7 +30,7 @@ from launch_ros.actions import PushRosNamespace
 
 
 def generate_launch_description():
-    TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
+    #TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
     ROS_DISTRO = os.environ.get('ROS_DISTRO')
     LDS_MODEL = os.environ['LDS_MODEL']
     LDS_LAUNCH_FILE = '/hlds_laser.launch.py'
@@ -46,14 +46,14 @@ def generate_launch_description():
                 get_package_share_directory('mecanumbot_bringup'),
                 'param',
                 ROS_DISTRO,
-                TURTLEBOT3_MODEL + '.yaml'))
+                'mecanumbot.yaml'))
     else:
         tb3_param_dir = LaunchConfiguration(
             'tb3_param_dir',
             default=os.path.join(
                 get_package_share_directory('mecanumbot_bringup'),
                 'param',
-                TURTLEBOT3_MODEL + '.yaml'))
+                'mecanumbot.yaml'))
 
     if LDS_MODEL == 'LDS-01':
         lidar_pkg_dir = LaunchConfiguration(
