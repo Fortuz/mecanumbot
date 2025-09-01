@@ -7,9 +7,9 @@ mecanumbot_node:
       protocol_version: 2.0
 
     wheels:
-      separation_x: 0.287
-      separation_y: 0.187
-      radius: 0.033
+      separation_x: 0.129
+      separation_y: 0.300
+      radius: 0.0325
 
     motors:
       profile_acceleration_constant: 214.577

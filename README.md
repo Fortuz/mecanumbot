@@ -81,3 +81,9 @@ ros2 run mecanumbot_teleop mecanumbot_keyboard
 ros2 launch mecanumbot_ledgui mecanumbot_ledgui.launch.py
 ```
 
+Parameters: <br>
+wheel diameter: 65 mm <br>
+wheel radius: 32.5 mm <br> 
+wheel thikness: 30 mm <br>
+wheel separation x: 129 mm <br>
+wheel separation y: 300 mm <br>
