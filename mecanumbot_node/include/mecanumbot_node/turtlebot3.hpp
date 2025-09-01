@@ -60,7 +60,8 @@ class TurtleBot3 : public rclcpp::Node
 public:
   typedef struct
   {
-    float separation;
+    float separation_x;
+    float separation_y;
     float radius;
   } Wheels;
 

@@ -25,10 +25,10 @@ using namespace std::chrono_literals;
 
 Odometry::Odometry(
     std::shared_ptr<rclcpp::Node> &nh,
-    const double wheels_separation,
+    const double wheels_separation_y,
     const double wheels_radius)
     : nh_(nh),
-      wheels_separation_(wheels_separation),
+      wheels_separation_(wheels_separation_y),
       wheels_radius_(wheels_radius),
       use_imu_(false),
       publish_tf_(false),
@@ -180,7 +180,7 @@ void Odometry::publish(const rclcpp::Time &now)
   odom_msg->pose.pose.orientation.w = q.w();
 
   odom_msg->twist.twist.linear.x = robot_vel_[0];
-  odom_msg->twist.twist.linear.x = robot_vel_[1];
+  odom_msg->twist.twist.linear.y = robot_vel_[1];
   odom_msg->twist.twist.angular.z = robot_vel_[2];
 
   // TODO(Will Son): Find more accurate covariance.

@@ -30,7 +30,7 @@ namespace turtlebot3
 class DiffDriveController : public rclcpp::Node
 {
 public:
-  explicit DiffDriveController(const float wheel_seperation, const float wheel_radius);
+  explicit DiffDriveController(const float wheel_seperation_y, const float wheel_radius);
   virtual ~DiffDriveController() {}
 
 private:

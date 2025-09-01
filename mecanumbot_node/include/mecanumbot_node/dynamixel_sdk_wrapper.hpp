@@ -119,7 +119,7 @@ private:
     const char ** log = NULL);
 
   dynamixel::PortHandler * portHandler_;
-  dynamixel::PacketHandler * packetHandler_;
+  dynamixel::PacketHandler * packetHandler_; // TODO
 
   Device device_;
 

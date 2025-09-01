@@ -19,14 +19,14 @@ uint8 BUTTON0 = 1
 uint8 BUTTON1 = 2
 
 # Motor errors
-uint8 ERROR_FRONTLEFT_MOTOR  = 1
-uint8 ERROR_FRONTRIGHT_MOTOR = 2
-uint8 ERROR_BACKRIGHT_MOTOR  = 3
-uint8 ERROR_BACKLEFT_MOTOR   = 4
+uint8 ERROR_FRONTLEFT_MOTOR  = 3
+uint8 ERROR_FRONTRIGHT_MOTOR = 4
+uint8 ERROR_BACKRIGHT_MOTOR  = 2
+uint8 ERROR_BACKLEFT_MOTOR   = 1
 
-uint8 ERROR_NECK_MOTOR         = 5
+uint8 ERROR_NECK_MOTOR         = 7
 uint8 ERROR_GRABBERLEFT_MOTOR  = 6
-uint8 ERROR_GRABBERRIGHT_MOTOR = 7
+uint8 ERROR_GRABBERRIGHT_MOTOR = 5
 
 # Motor torque
 uint8 TORQUE_ON  = 1
@@ -46,5 +46,5 @@ bool   torque
 int32  frontleft_encoder    # (-2,147,483,648 ~ 2,147,483,647)
 int32  frontright_encoder   # (-2,147,483,648 ~ 2,147,483,647)
 int32  backright_encoder    # (-2,147,483,648 ~ 2,147,483,647)
-int32  backleft_encoder   # (-2,147,483,648 ~ 2,147,483,647)
+int32  backleft_encoder     # (-2,147,483,648 ~ 2,147,483,647)
 float32  battery
