@@ -75,7 +75,7 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 
 void TurtleBot3::check_device_status()
 {
-  RCLCPP_INFO(this->get_logger(), xl_sdk_wrapper_->is_connected_to_device());
+  RCLCPP_INFO(this->get_logger(), dxl_sdk_wrapper_->is_connected_to_device());
   if (dxl_sdk_wrapper_->is_connected_to_device()) { // TODO - this fails
     std::string sdk_msg;
     uint8_t reset = 1;
