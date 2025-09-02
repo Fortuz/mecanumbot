@@ -1,5 +1,5 @@
 /**:
-  mecanumbot_node:
+  turtlebot3_node:
     ros__parameters:
 
       enable_stamped_cmd_vel: false
