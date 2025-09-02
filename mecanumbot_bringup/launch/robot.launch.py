@@ -116,6 +116,7 @@ def generate_launch_description():
         Node(
             package='mecanumbot_node',
             executable='mecanumbot_ros',
+            name='mecanumbot_node',
             parameters=[
                 tb3_param_dir,
                 {'namespace': namespace}],
