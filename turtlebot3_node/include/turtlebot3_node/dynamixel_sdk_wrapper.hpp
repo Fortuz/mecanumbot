@@ -100,6 +100,7 @@ public:
   void read_data_set();
 
   bool is_connected_to_device();
+  bool ping(uint8_t id);
 
 private:
   bool init_dynamixel_sdk_handlers();

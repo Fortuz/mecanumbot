@@ -39,14 +39,25 @@ DynamixelSDKWrapper::~DynamixelSDKWrapper()
 
 bool DynamixelSDKWrapper::is_connected_to_device()
 {
-  uint8_t data[2];
-  //return this->read_register(device_.id, 0, 2, &data[0]);
-  if (this->ping(device.id)==200) {
+  // uint8_t data[2];
+  // return this->read_register(device_.id, 0, 2, &data[0]);
+  return this->ping(device_.id);
+}
+
+bool DynamixelSDKWrapper::ping(uint8_t id)
+{
+  uint16_t model_number = 0;
+  uint8_t error = 0;
+
+  int result = packet_handler_->ping(port_handler_, id, &model_number, &error);
+
+  if (result == COMM_SUCCESS) {
+    RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping succeeded: ID %d, Model: %d", id, model_number);
     return true;
   } else {
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping failed: %s", packet_handler_->getTxRxResult(result));
     return false;
   }
-  //return this->ping(device_.id);
 }
 
 void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const uint16_t & length)
