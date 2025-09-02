@@ -71,6 +71,7 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   // Mecanum 10-206+4  = 10 - 210
   // Possible: hard coded wrong addresses somewhere else
   // TODO - make sure to check the arduino code once again
+  // Control item max: 128 - is it relevant?
   dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
     extern_control_table.millis.addr,
     (extern_control_table.profile_acceleration_backright.addr - extern_control_table.millis.addr) +
