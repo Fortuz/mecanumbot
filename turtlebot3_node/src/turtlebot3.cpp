@@ -66,10 +66,15 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 
   dxl_sdk_wrapper_ = std::make_shared<DynamixelSDKWrapper>(opencr);
 
-  dxl_sdk_wrapper_->init_read_memory(
+
+  // Original 10-178+4 = 10 - 182
+  // Mecanum 10-206+4  = 10 - 210
+  // Possible: hard coded wrong addresses somewhere else
+  // TODO - make sure to check the arduino code once again
+  dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
     extern_control_table.millis.addr,
-    (extern_control_table.profile_acceleration_frontright.addr - extern_control_table.millis.addr) +
-    extern_control_table.profile_acceleration_frontright.length
+    (extern_control_table.profile_acceleration_backright.addr - extern_control_table.millis.addr) +
+    extern_control_table.profile_acceleration_backright.length
   );  
 }
 
