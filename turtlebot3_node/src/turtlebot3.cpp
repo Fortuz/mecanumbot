@@ -76,10 +76,11 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 void TurtleBot3::check_device_status()
 {
   RCLCPP_INFO(this->get_logger(), "About to call is_connected_to_device");
-  bool result = dxl_sdk_wrapper_->is_connected_to_device();
+  bool ping_result = dxl_sdk_wrapper_->is_connected_to_device();
   RCLCPP_INFO(this->get_logger(), "Call finished: %s", result ? "true" : "false");
   
-  if (dxl_sdk_wrapper_->is_connected_to_device()) { // TODO - this fails
+  // if (dxl_sdk_wrapper_->is_connected_to_device()) { // TODO - this fails
+  if (ping_result) {
     std::string sdk_msg;
     uint8_t reset = 1;
 
