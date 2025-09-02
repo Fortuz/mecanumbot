@@ -77,10 +77,17 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     &read_data_buffer_[0],
     &log);
 
-    LOG_ERROR("Device ID", "[%d]", device_.id);
-    LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
-    LOG_ERROR("Memory length", "[%d]", read_memory_.length);
-
+  LOG_ERROR("Device ID", "[%d]", device_.id);
+  LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
+  LOG_ERROR("Memory length", "[%d]", read_memory_.length);
+  
+  /*
+  [turtlebot3_ros-3] [ERROR] [1756826600.476925401] [Device ID]: [200]
+  [turtlebot3_ros-3] [ERROR] [1756826600.477010293] [Start address]: [10]
+  [turtlebot3_ros-3] [ERROR] [1756826600.477039183] [Memory length]: [192]
+  
+  Thought: the OpenCRs memory is sorter than this propably? Too long to read back?
+  */
 
   if (ret == false) {
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
