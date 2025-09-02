@@ -67,7 +67,7 @@ void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const ui
   read_memory_.data = &read_data_[0];
 }
 
-void DynamixelSDKWrapper::read_data_set()
+void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 {
   const char * log = NULL;
   bool ret = this->read_register(
@@ -76,6 +76,11 @@ void DynamixelSDKWrapper::read_data_set()
     read_memory_.length,
     &read_data_buffer_[0],
     &log);
+
+    LOG_ERROR("Device ID", "[%d]", device_.id);
+    LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
+    LOG_ERROR("Memory length", "[%d]", read_memory_.length);
+
 
   if (ret == false) {
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
