@@ -77,7 +77,7 @@ void TurtleBot3::check_device_status()
 {
   RCLCPP_INFO(this->get_logger(), "About to call is_connected_to_device");
   bool ping_result = dxl_sdk_wrapper_->is_connected_to_device();
-  RCLCPP_INFO(this->get_logger(), "Call finished: %s", result ? "true" : "false");
+  RCLCPP_INFO(this->get_logger(), "Call finished: %s", ping_result ? "true" : "false");
   
   // if (dxl_sdk_wrapper_->is_connected_to_device()) { // TODO - this fails
   if (ping_result) {
