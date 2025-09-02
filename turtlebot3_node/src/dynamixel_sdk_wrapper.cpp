@@ -40,7 +40,13 @@ DynamixelSDKWrapper::~DynamixelSDKWrapper()
 bool DynamixelSDKWrapper::is_connected_to_device()
 {
   uint8_t data[2];
-  return this->read_register(device_.id, 0, 2, &data[0]);
+  //return this->read_register(device_.id, 0, 2, &data[0]);
+  if (this->ping(device.id)==200) {
+    return true;
+  } else {
+    return false;
+  }
+  //return this->ping(device_.id);
 }
 
 void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const uint16_t & length)
