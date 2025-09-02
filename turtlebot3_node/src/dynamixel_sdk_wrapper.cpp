@@ -49,13 +49,13 @@ bool DynamixelSDKWrapper::ping(uint8_t id)
   uint16_t model_number = 0;
   uint8_t error = 0;
 
-  int result = packetHandler_->ping(port_handler_, id, &model_number, &error);
+  int result = packetHandler_->ping(portHandler_, id, &model_number, &error);
 
   if (result == COMM_SUCCESS) {
-    RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping succeeded: ID %d, Model: %d", id, model_number);
+    // RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping succeeded: ID %d, Model: %d", id, model_number);
     return true;
   } else {
-    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping failed: %s", packetHandler_->getTxRxResult(result));
+    // RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Ping failed: %s", packetHandler_->getTxRxResult(result));
     return false;
   }
 }
