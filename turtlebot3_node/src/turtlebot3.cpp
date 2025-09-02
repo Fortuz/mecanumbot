@@ -202,8 +202,8 @@ void TurtleBot3::add_sensors()
       is_connected_illumination,
       is_connected_ir,
       is_connected_sonar));
-
-  dxl_sdk_wrapper_->read_data_set();
+  
+  dxl_sdk_wrapper_->read_data_set(); 
   sensors_.push_back(
     new sensors::JointState(
       node_handle_,
