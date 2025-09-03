@@ -6,7 +6,7 @@
 
       opencr:
         id: 200
-        #baud_rate: 115200
+        #baud_rate: 115200 #TODO: check wether this is correct. THe communication with the motors is on 115200 and the controller is on 57600. ?????
         baud_rate: 57600
         protocol_version: 2.0
 
