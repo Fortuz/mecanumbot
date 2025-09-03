@@ -66,9 +66,9 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
 
   dxl_sdk_wrapper_ = std::make_shared<DynamixelSDKWrapper>(opencr);
 
-
-  //ControlItem millis = {10, RAM, 4, READ};
-  //ControlItem profile_acceleration_backright = {206, RAM, 4, READ_WRITE};
+  // ControlItem model_number = {0, EEPROM, 2, READ};
+  // ControlItem millis = {10, RAM, 4, READ};
+  // ControlItem profile_acceleration_backright = {206, RAM, 4, READ_WRITE};
   // 206-10+4 = 200
   // Original 10-178+4 = 10 - 182
   // Mecanum 10-206+4  = 10 - 210
@@ -78,8 +78,8 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   // void init_read_memory(const uint16_t & start_addr, const uint16_t & length);
   dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
     extern_control_table.model_number.addr,
-    (extern_control_table.profile_acceleration_backright.addr - extern_control_table.model_number.addr) +
-    extern_control_table.profile_acceleration_backright.length
+    (extern_control_table.imu_orientation_z.addr - extern_control_table.model_number.addr) +
+    extern_control_table.imu_orientation_z.length
   );  
 }
 
