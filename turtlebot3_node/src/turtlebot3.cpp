@@ -77,9 +77,9 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   // Control item max: 128 - is it relevant?
   // void init_read_memory(const uint16_t & start_addr, const uint16_t & length);
   dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
-    extern_control_table.model_number.addr,
-    (extern_control_table.imu_orientation_z.addr - extern_control_table.model_number.addr) +
-    extern_control_table.imu_orientation_z.length
+    extern_control_table.millis.addr,
+    (extern_control_table.profile_acceleration_backright.addr - extern_control_table.millis.addr) +
+    extern_control_table.profile_acceleration_backright.length
   );  
 }
 
