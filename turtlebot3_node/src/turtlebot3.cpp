@@ -242,6 +242,9 @@ void TurtleBot3::run()
 
   parameter_event_callback();
   cmd_vel_callback();
+  cmd_cam_ori_callback();
+  cmd_grabberleft_ori_callback();
+  cmd_grabberright_ori_callback();
 }
 
 void TurtleBot3::publish_timer(const std::chrono::milliseconds timeout)
@@ -422,5 +425,106 @@ void TurtleBot3::cmd_vel_callback()
           sdk_msg.c_str());
       }
     )
+  );
+}
+
+void TurtleBot3::cmd_cam_ori_callback()
+{
+  auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
+  cmd_cam_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
+    "cmd_cam_ori",
+    qos,
+    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
+      std::string sdk_msg;
+
+      union Data {
+        int32_t dword[1];
+        uint8_t byte[4];
+      } data;
+
+      data.dword[0] = static_cast<int32_t>(msg->y * 100);
+
+      uint16_t cstart_addr = extern_control_table.cmd_neck_goal.addr;
+      uint16_t caddr_length = extern_control_table.cmd_neck_goal.length;          
+
+      uint8_t * cp_data = &data.byte[0];
+
+      dxl_sdk_wrapper_->set_data_to_device(cstart_addr, caddr_length, cp_data, &sdk_msg);
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
+        msg->x, 
+        msg->y, 
+        msg->z, 
+        sdk_msg.c_str());
+    }
+  );
+}
+
+void TurtleBot3::cmd_grabberleft_ori_callback()
+{
+  auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
+  cmd_grabberleft_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
+    "cmd_grabberleft_ori",
+    qos,
+    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
+      std::string sdk_msg;
+
+      union Data {
+        int32_t dword[1];
+        uint8_t byte[4];
+      } data;
+
+      data.dword[0] = static_cast<int32_t>(msg->z * 100);
+
+      uint16_t lstart_addr = extern_control_table.cmd_grabber_left_goal.addr;
+      uint16_t laddr_length = extern_control_table.cmd_grabber_left_goal.length;          
+
+      uint8_t * lp_data = &data.byte[0];
+
+      dxl_sdk_wrapper_->set_data_to_device(lstart_addr, laddr_length, lp_data, &sdk_msg);
+
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
+        msg->x, 
+        msg->y, 
+        msg->z, 
+        sdk_msg.c_str());
+    }
+  );
+}
+
+void TurtleBot3::cmd_grabberright_ori_callback()
+{
+  auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
+  cmd_grabberright_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
+    "cmd_grabberright_ori",
+    qos,
+    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
+      std::string sdk_msg;
+
+      union Data {
+        int32_t dword[1];
+        uint8_t byte[4];
+      } data;
+
+      data.dword[0] = static_cast<int32_t>(msg->z * 100);
+
+      uint16_t rstart_addr = extern_control_table.cmd_grabber_right_goal.addr;
+      uint16_t raddr_length = extern_control_table.cmd_grabber_right_goal.length;          
+
+      uint8_t * rp_data = &data.byte[0];
+
+      dxl_sdk_wrapper_->set_data_to_device(rstart_addr, raddr_length, rp_data, &sdk_msg);
+
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
+        msg->x, 
+        msg->y, 
+        msg->z, 
+        sdk_msg.c_str());
+    }
   );
 }
