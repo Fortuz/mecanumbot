@@ -194,13 +194,13 @@ def main():
     if ROS_DISTRO == 'humble':
         pub_vel = node.create_publisher(Twist, 'cmd_vel', qos)
         pub_cam = node.create_publisher(Vector3, 'cmd_cam_ori', qos)
-        pub_gripper_left = node.create_publisher(Vector3, 'cmd_gripperleft_ori', qos)
-        pub_gripper_right = node.create_publisher(Vector3, 'cmd_gripperright_ori', qos)
+        pub_gripper_left = node.create_publisher(Vector3, 'cmd_grabberleft_ori', qos)
+        pub_gripper_right = node.create_publisher(Vector3, 'cmd_grabberright_ori', qos)
     else:
         pub_vel = node.create_publisher(TwistStamped, 'cmd_vel', qos)
         pub_cam = node.create_publisher(Vector3Stamped, 'cmd_cam_ori', qos)
-        pub_gripper_left = node.create_publisher(Vector3Stamped, 'cmd_gripperleft_ori', qos)
-        pub_gripper_right = node.create_publisher(Vector3Stamped, 'cmd_gripperright_ori', qos)
+        pub_gripper_left = node.create_publisher(Vector3Stamped, 'cmd_grabberleft_ori', qos)
+        pub_gripper_right = node.create_publisher(Vector3Stamped, 'cmd_grabberright_ori', qos)
 
     status = 0
     target_linear_x_velocity  = 0.0
@@ -210,9 +210,9 @@ def main():
     control_linear_y_velocity = 0.0
     control_angular_velocity  = 0.0
 
-    control_cam_ori = [0.0,0.0,0.0] # x,y,z
-    control_gripper_left_ori = [0.0,0.0,0.0] # x,y,z
-    control_gripper_right_ori = [0.0,0.0,0.0] # x,y,z
+    control_cam_ori = [0.0,MECANUMBOT_MAX_CAM_POS,0.0] # x,y,z, moves around y axis of the robot 
+    control_gripper_left_ori = [0.0,0.0,6.55] # x,y,z, moves around z axis of the robot
+    control_gripper_right_ori = [0.0,0.0,3.6] # x,y,z, moves around y axis of the robot
 
     try:
         print(msg)
@@ -257,9 +257,9 @@ def main():
                 control_angular_velocity = 0.0
                 print_vels(target_linear_x_velocity, target_linear_y_velocity, target_angular_velocity)
             elif key == 'i': #cam_up
-                control_cam_ori[1] = (MECANUMBOT_MIN_CAM_POS + MECANUMBOT_MAX_CAM_POS)/2
+                control_cam_ori[1] = MECANUMBOT_MAX_CAM_POS 
             elif key == 'k': #cam_down
-                control_cam_ori[1] = MECANUMBOT_MAX_CAM_POS
+                control_cam_ori[1] = (MECANUMBOT_MIN_CAM_POS + MECANUMBOT_MAX_CAM_POS)/2
             elif key == 'j': #open gripper,rot around robot axis z
                 control_gripper_left_ori[2] = 3.6
                 control_gripper_right_ori[2] = 6.55
