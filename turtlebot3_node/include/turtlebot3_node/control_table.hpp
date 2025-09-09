@@ -117,6 +117,15 @@ typedef struct
   ControlItem profile_acceleration_frontright = {198, RAM, 4, READ_WRITE};
   ControlItem profile_acceleration_backleft = {202, RAM, 4, READ_WRITE};
   ControlItem profile_acceleration_backright = {206, RAM, 4, READ_WRITE};
+
+  ControlItem ax_motor_torque_enable = {210, RAM, 1, READ_WRITE};
+  ControlItem cmd_neck_goal = {214, RAM, 4, READ_WRITE};
+  ControlItem cmd_grabber_left_goal = {218, RAM, 4, READ_WRITE};
+  ControlItem cmd_grabber_right_goal = {222, RAM, 4, READ_WRITE};
+
+  ControlItem present_neck_position = {226, RAM, 4, READ};
+  ControlItem present_grabber_left_position = {230, RAM, 4, READ};
+  ControlItem present_grabber_right_position = {234, RAM, 4, READ};
 } ControlTable;
 
 const ControlTable extern_control_table;

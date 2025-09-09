@@ -29,6 +29,7 @@
 #include <queue>
 
 #include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
@@ -92,6 +93,9 @@ private:
   void heartbeat_timer(const std::chrono::milliseconds timeout);
 
   void cmd_vel_callback();
+  void cmd_cam_ori_callback();
+  void cmd_grabberleft_ori_callback();
+  void cmd_grabberright_ori_callback();
   void parameter_event_callback();
 
   Wheels wheels_;
@@ -110,6 +114,9 @@ private:
   rclcpp::TimerBase::SharedPtr heartbeat_timer_;
 
   std::unique_ptr<TwistSubscriber> cmd_vel_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr cmd_cam_ori_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr cmd_grabberleft_ori_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr cmd_grabberright_ori_sub_;
 
   rclcpp::AsyncParametersClient::SharedPtr priv_parameters_client_;
   rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr parameter_event_sub_;
