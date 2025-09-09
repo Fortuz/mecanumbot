@@ -76,11 +76,7 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     read_memory_.length,
     &read_data_buffer_[0],
     &log);
-
-  LOG_ERROR("Device ID", "[%d]", device_.id);
-  LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
-  LOG_ERROR("Memory length", "[%d]", read_memory_.length);
-  
+  //  LOG_INFO("DynamixelSDKWrapper", "Read data set called, ret=%d", ret);
   /*
   [turtlebot3_ros-3] [ERROR] [1756826600.476925401] [Device ID]: [200]
   [turtlebot3_ros-3] [ERROR] [1756826600.477010293] [Start address]: [10]
@@ -90,10 +86,14 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
   */
 
   if (ret == false) {
+    LOG_ERROR("Device ID", "[%d]", device_.id);
+    LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
+    LOG_ERROR("Memory length", "[%d]", read_memory_.length);
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
   } else {
     std::lock_guard<std::mutex> lock(read_data_mutex_);
     std::copy(read_data_buffer_, read_data_buffer_ + READ_DATA_SIZE, read_data_);
+    // LOG_INFO("DynamixelSDKWrapper", "Succeeded to read");
     LOG_DEBUG("DynamixelSDKWrapper", "Succeeded to read");
   }
 }
@@ -163,7 +163,6 @@ bool DynamixelSDKWrapper::read_register(
     length,
     data_basket,
     &dxl_error);
-
   if (dxl_comm_result != COMM_SUCCESS) {
     if (log != NULL) {*log = packetHandler_->getTxRxResult(dxl_comm_result);}
     return false;
