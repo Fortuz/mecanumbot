@@ -19,7 +19,7 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
 
 <p align="center">
   <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/turtlebot_architecture.drawio.png" width="600" alt="Architecture">
-</p>p
+</p>
 
 ## TODO
 
@@ -37,6 +37,7 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
 ## Project
 
 [mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project
+[mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors
 
 ## SSH
 
