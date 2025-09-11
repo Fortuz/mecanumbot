@@ -17,14 +17,18 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
   <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/mecanumbot.jpg" width="600" alt="Mecanumbot">
 </p>
 
+<p align="center">
+  <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/turtlebot_architecture.drawio.png" width="600" alt="Architecture">
+</p>p
+
 ## TODO
 
 - [ ] Add inertia information to the URDF file
 - [ ] Add collision hitboxes to the URDF file
 - [x] Printable 3D part stl files added
 - [ ] Documentation
-- [ ] Include image of the robot
-- [ ] Include image of the arhitecture
+- [x] Include image of the robot
+- [x] Include image of the arhitecture
 - [ ] Check LIDAR
 - [ ] Check Camera
 - [ ] Include Grabber and Camera moving motors into the microcontroller code
