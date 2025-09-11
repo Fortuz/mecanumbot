@@ -31,7 +31,7 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
 - [x] Include image of the arhitecture
 - [ ] Check LIDAR
 - [ ] Check Camera
-- [ ] Include Grabber and Camera moving motors into the microcontroller code
+- [x] Include Grabber and Camera moving motors into the microcontroller code
 - [ ] URDF file broken, missing files
 
 ## Project
