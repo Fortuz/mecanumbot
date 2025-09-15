@@ -16,8 +16,6 @@
   <exec_depend>mecanumbot_led</exec_depend>
   <exec_depend>mecanumbot_msgs</exec_depend>
   <exec_depend>turtlebot3_node</exec_depend>
-  <exec_depend>mecanumbot_ledgui</exec_depend>
-  <exec_depend>mecanumbot_teleop</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
