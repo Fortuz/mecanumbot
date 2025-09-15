@@ -21,22 +21,11 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
   <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/turtlebot_architecture.drawio.png" width="600" alt="Architecture">
 </p>
 
-## TODO
-
-- [ ] Add inertia information to the URDF file
-- [ ] Add collision hitboxes to the URDF file
-- [x] Printable 3D part stl files added
-- [ ] Documentation
-- [x] Include image of the robot
-- [x] Include image of the arhitecture
-- [ ] Check LIDAR
-- [ ] Check Camera
-- [x] Include Grabber and Camera moving motors into the microcontroller code
-- [ ] URDF file broken, missing files
-
-## Project
+## Project Repositories
 
 [mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project  
+[mecanumbot_remote](https://github.com/Fortuz/mecanumbot_remote) - Contains ROS2 packages for used on an external computer connected to the robot
+[mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the Raspberry Pi on the robot
 [mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors. Can be found on the robot locally in the ~/Sandbox folder
 
 ## SSH
