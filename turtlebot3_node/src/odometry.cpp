@@ -25,9 +25,11 @@ using namespace std::chrono_literals;
 
 Odometry::Odometry(
     std::shared_ptr<rclcpp::Node> &nh,
+    const double wheels_separation_x,
     const double wheels_separation_y,
     const double wheels_radius)
     : nh_(nh),
+      wheels_separation_x_(wheels_separation_x),
       wheels_separation_y_(wheels_separation_y),
       wheels_radius_(wheels_radius),
       use_imu_(false),
@@ -222,11 +224,15 @@ void Odometry::update_joint_state(
 {
   static std::array<double, 2> last_joint_positions = {0.0f, 0.0f};
 
-  diff_joint_positions_[0] = joint_state->position[0] - last_joint_positions[0];
-  diff_joint_positions_[1] = joint_state->position[1] - last_joint_positions[1];
+  diff_joint_positions_[0] = joint_state->position[0] - last_joint_positions[0]; //FL;3
+  diff_joint_positions_[1] = joint_state->position[1] - last_joint_positions[1]; //FR;4
+  diff_joint_positions_[2] = joint_state->position[2] - last_joint_positions[2]; //RL;1
+  diff_joint_positions_[3] = joint_state->position[3] - last_joint_positions[3]; //RR;2
 
-  last_joint_positions[0] = joint_state->position[0];
-  last_joint_positions[1] = joint_state->position[1];
+  last_joint_positions[0] = joint_state->position[0]; //FL
+  last_joint_positions[1] = joint_state->position[1]; //FR
+  last_joint_positions[2] = joint_state->position[2]; //RL
+  last_joint_positions[3] = joint_state->position[3]; //RR
 }
 
 void Odometry::update_imu(const std::shared_ptr<sensor_msgs::msg::Imu const> &imu)
@@ -239,10 +245,13 @@ void Odometry::update_imu(const std::shared_ptr<sensor_msgs::msg::Imu const> &im
 bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 {
   // rotation value of wheel [rad]
-  double wheel_l = diff_joint_positions_[0];
-  double wheel_r = diff_joint_positions_[1];
+  double wheel_fl = diff_joint_positions_[0]; //FL;3
+  double wheel_fr = diff_joint_positions_[1]; //FR;4
+  double wheel_rl = diff_joint_positions_[2]; //RL;1
+  double wheel_rr = diff_joint_positions_[3]; //RR;2
 
-  double delta_s = 0.0;
+  double delta_x = 0.0;
+  double delta_y = 0.0;
   double delta_theta = 0.0;
 
   double theta = 0.0;
@@ -250,7 +259,8 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 
   // v = translational velocity [m/s]
   // w = rotational velocity [rad/s]
-  double v = 0.0;
+  double v_x = 0.0;
+  double v_y = 0.0;
   double w = 0.0;
 
   double step_time = duration.seconds();
@@ -260,17 +270,28 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     return false;
   }
 
-  if (std::isnan(wheel_l))
+  if (std::isnan(wheel_fl))
   {
-    wheel_l = 0.0;
+    wheel_fl = 0.0;
   }
 
-  if (std::isnan(wheel_r))
+  if (std::isnan(wheel_fr))
   {
-    wheel_r = 0.0;
+    wheel_fr = 0.0;
   }
 
-  delta_s = wheels_radius_ * (wheel_r + wheel_l) / 2.0;
+  if (std::isnan(wheel_rl))
+  {
+    wheel_rl = 0.0;
+  }
+
+  if (std::isnan(wheel_rr))
+  {
+    wheel_rr = 0.0;
+  }
+
+  delta_x = wheels_radius_ * (wheel_fl + wheel_fr + wheel_rl + wheel_rl) / 4.0;
+  delta_y = wheels_radius_ * (-wheel_fl + wheel_fr + wheel_rl - wheel_rl) / 4.0;
 
   if (use_imu_)
   {
@@ -289,23 +310,24 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
   else
   {
-    theta = wheels_radius_ * (wheel_r - wheel_l) / wheels_separation_y_;
+    theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2*(wheels_separation_y_+wheels_separation_x_));
     delta_theta = theta;
   }
 
   // compute odometric pose
-  robot_pose_[0] += delta_s * cos(robot_pose_[2] + (delta_theta / 2.0));
-  robot_pose_[1] += delta_s * sin(robot_pose_[2] + (delta_theta / 2.0));
+  robot_pose_[0] += delta_x * cos(delta_theta) - delta_y * sin(delta_theta);
+  robot_pose_[1] += delta_x * sin(delta_theta) + delta_y * cos(delta_theta);
   robot_pose_[2] += delta_theta;
 
   RCLCPP_DEBUG(nh_->get_logger(), "x : %f, y : %f", robot_pose_[0], robot_pose_[1]);
 
   // compute odometric instantaneouse velocity
-  v = delta_s / step_time;
+  v_x = delta_x / step_time;
+  v_y = delta_y / step_time;
   w = delta_theta / step_time;
 
-  robot_vel_[0] = v;
-  robot_vel_[1] = 0.0;
+  robot_vel_[0] = v_x;
+  robot_vel_[1] = v_y;
   robot_vel_[2] = w;
 
   last_theta = theta;

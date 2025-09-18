@@ -44,6 +44,7 @@ class Odometry
 public:
   explicit Odometry(
     std::shared_ptr<rclcpp::Node> & nh,
+    const double wheels_separation_x,
     const double wheels_separation_y,
     const double wheels_radius);
   virtual ~Odometry() {}
@@ -78,7 +79,7 @@ private:
   typedef message_filters::Synchronizer<SyncPolicyJointStateImu> SynchronizerJointStateImu;
 
   std::shared_ptr<SynchronizerJointStateImu> joint_state_imu_sync_;
-
+  double wheels_separation_x_;
   double wheels_separation_y_;
   double wheels_radius_;
 
@@ -90,7 +91,7 @@ private:
   bool publish_tf_;
   bool last_theta_initialized_;
 
-  std::array<double, 2> diff_joint_positions_;
+  std::array<double, 4> diff_joint_positions_;
   double imu_angle_;
 
   std::array<double, 3> robot_pose_;

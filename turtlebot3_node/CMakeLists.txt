@@ -43,7 +43,7 @@ add_library(${PROJECT_NAME}_lib
   "src/devices/sound.cpp"
   "src/devices/reset.cpp"
 
-  "src/diff_drive_controller.cpp"
+  "src/mecanum_drive_controller.cpp"
   "src/dynamixel_sdk_wrapper.cpp"
   "src/odometry.cpp"
   "src/turtlebot3.cpp"

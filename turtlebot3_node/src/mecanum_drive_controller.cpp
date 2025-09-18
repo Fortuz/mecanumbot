@@ -14,29 +14,22 @@
 //
 // Author: Darby Lim
 
-#ifndef TURTLEBOT3_NODE__DIFF_DRIVE_CONTROLLER_HPP_
-#define TURTLEBOT3_NODE__DIFF_DRIVE_CONTROLLER_HPP_
+#include "turtlebot3_node/mecanum_drive_controller.hpp"
 
 #include <memory>
 
-#include <rclcpp/rclcpp.hpp>
+using robotis::turtlebot3::MecanumDriveController;
 
-#include "turtlebot3_node/odometry.hpp"
+MecanumDriveController::MecanumDriveController(const float wheel_separation_x,const float wheel_seperation_y, const float wheel_radius)
+: Node("mecanum_drive_controller", rclcpp::NodeOptions().use_intra_process_comms(true))
+{
+  nh_ = std::shared_ptr<::rclcpp::Node>(this, [](::rclcpp::Node *) {});
 
-namespace robotis
-{
-namespace turtlebot3
-{
-class DiffDriveController : public rclcpp::Node
-{
-public:
-  explicit DiffDriveController(const float wheel_seperation_y, const float wheel_radius);
-  virtual ~DiffDriveController() {}
+  odometry_ = std::make_unique<Odometry>(
+    nh_,
+    wheel_separation_x,
+    wheel_seperation_y,
+    wheel_radius);
 
-private:
-  std::shared_ptr<rclcpp::Node> nh_;
-  std::unique_ptr<Odometry> odometry_;
-};
-}  // namespace turtlebot3
-}  // namespace robotis
-#endif  // TURTLEBOT3_NODE__DIFF_DRIVE_CONTROLLER_HPP_
+  RCLCPP_INFO(this->get_logger(), "Run!");
+}
