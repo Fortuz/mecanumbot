@@ -4,7 +4,7 @@
   <name>turtlebot3_node</name>
   <version>2.3.3</version>
   <description>
-    Mecanumbot driver node that include diff drive controller, odometry and tf node
+    Mecanumbot driver node that include diff drive controller, mecanum drive controller, odometry and tf node
   </description>
   <license>Apache 2.0</license>
   <maintainer email="fortuz19@gmail.com">fortuz</maintainer>

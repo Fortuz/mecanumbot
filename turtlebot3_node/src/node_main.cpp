@@ -22,7 +22,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "turtlebot3_node/diff_drive_controller.hpp"
+#include "turtlebot3_node/mecanum_drive_controller.hpp"
 #include "turtlebot3_node/turtlebot3.hpp"
 
 void help_print()
@@ -55,13 +55,14 @@ int main(int argc, char * argv[])
   rclcpp::executors::SingleThreadedExecutor executor;
 
   auto turtlebot3 = std::make_shared<robotis::turtlebot3::TurtleBot3>(usb_port);
-  auto diff_drive_controller =
-    std::make_shared<robotis::turtlebot3::DiffDriveController>(
+  auto mecanum_drive_controller =
+    std::make_shared<robotis::turtlebot3::MecanumDriveController>(
+    turtlebot3->get_wheels()->separation_x,
     turtlebot3->get_wheels()->separation_y,
     turtlebot3->get_wheels()->radius);
 
   executor.add_node(turtlebot3);
-  executor.add_node(diff_drive_controller);
+  executor.add_node(mecanum_drive_controller);
   executor.spin();
 
   rclcpp::shutdown();
