@@ -30,7 +30,7 @@
         ir: 0
         sonar: 0
 /**:
-  diff_drive_controller:
+  mecanum_drive_controller:
     ros__parameters:
 
       odometry:
