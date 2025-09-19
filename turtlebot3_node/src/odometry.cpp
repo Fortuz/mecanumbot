@@ -290,8 +290,8 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     wheel_rr = 0.0;
   }
 
-  delta_x = wheels_radius_ * (wheel_fl + wheel_fr + wheel_rl + wheel_rl) / 4.0;
-  delta_y = wheels_radius_ * (-wheel_fl + wheel_fr + wheel_rl - wheel_rl) / 4.0;
+  delta_x = wheels_radius_ * (wheel_fl + wheel_fr + wheel_rl + wheel_rr) / 4.0;
+  delta_y = wheels_radius_ * (-wheel_fl + wheel_fr + wheel_rl - wheel_rr) / 4.0;
 
   if (use_imu_)
   {
