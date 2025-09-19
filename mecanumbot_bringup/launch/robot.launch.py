@@ -113,26 +113,6 @@ def generate_launch_description():
                               'namespace': namespace}.items(),
         ),
         Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_map',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'autostart': True,
-                'node_names': ['map_server']
-            }]
-),
-        Node(
-                package='nav2_map_server',
-                executable='map_server',
-                name='map_server',
-                output='screen',
-                parameters=[{
-                    'yaml_filename': os.path.join(get_package_share_directory('mecanumbot_bringup'), 'map', 'AI_room_lounge.yaml'),
-                }]
-            ),
-        Node(
             package='turtlebot3_node',
             executable='turtlebot3_ros',
             parameters=[
