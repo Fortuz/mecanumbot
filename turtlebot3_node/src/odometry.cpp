@@ -310,8 +310,9 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
   else
   {
-    theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2*(wheels_separation_y_+wheels_separation_x_));
-    delta_theta = theta;
+  theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
+  delta_theta = theta - last_theta;
+  last_theta = theta;
   }
 
   // compute odometric pose
