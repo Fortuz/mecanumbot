@@ -112,7 +112,15 @@ def generate_launch_description():
                               'frame_id': 'base_scan',
                               'namespace': namespace}.items(),
         ),
-
+        Node(
+                package='nav2_map_server',
+                executable='map_server',
+                name='map_server',
+                output='screen',
+                parameters=[{
+                    'yaml_filename': os.path.join(get_package_share_directory('hls_lfcd_lds_driver'), 'maps', 'AI_room_lounge.yaml'),
+                }]
+            )
         Node(
             package='turtlebot3_node',
             executable='turtlebot3_ros',
