@@ -118,7 +118,7 @@ def generate_launch_description():
                 name='map_server',
                 output='screen',
                 parameters=[{
-                    'yaml_filename': os.path.join(get_package_share_directory('hls_lfcd_lds_driver'), 'maps', 'AI_room_lounge.yaml'),
+                    'yaml_filename': os.path.join(get_package_share_directory('mecanumbot_bringup'), 'map', 'AI_room_lounge.yaml'),
                 }]
             ),
         Node(
