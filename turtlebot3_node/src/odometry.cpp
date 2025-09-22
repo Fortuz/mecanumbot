@@ -299,6 +299,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     {
       theta = imu_angle_;
       delta_theta = theta - last_theta;
+      RCLCPP_INFO(this->get_logger(), "Odometry, IMU based, last theta initd, delta_theta:%f, last_theta:%f",delta_theta,last_theta)
     }
     else
     {
@@ -306,12 +307,14 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
       last_theta = imu_angle_;
       delta_theta = theta - last_theta;
       last_theta_initialized_ = true;
+      RCLCPP_INFO(this->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta)
     }
   }
   else
   {
   theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
   delta_theta = theta;
+  RCLCPP_INFO(this->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
   }
 
   // compute odometric pose
