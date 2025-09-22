@@ -90,7 +90,7 @@ private:
   bool use_imu_;
   bool publish_tf_;
   bool last_theta_initialized_;
-
+  double last_theta_;
   std::array<double, 4> diff_joint_positions_;
   double imu_angle_;
 
