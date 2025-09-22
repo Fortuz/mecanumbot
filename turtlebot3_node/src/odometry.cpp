@@ -35,6 +35,7 @@ Odometry::Odometry(
       use_imu_(false),
       publish_tf_(false),
       last_theta_initialized_(false),
+      last_theta_(0.0f),
       imu_angle_(0.0f),
       robot_pose_({0.0, 0.0, 0.0}),
       robot_vel_({0.0, 0.0, 0.0})
@@ -255,7 +256,6 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   double delta_theta = 0.0;
 
   double theta = 0.0;
-  static double last_theta = 0.0;
 
   // v = translational velocity [m/s]
   // w = rotational velocity [rad/s]
@@ -297,27 +297,31 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   {
     if (last_theta_initialized_)
     {
-      theta = imu_angle_;
-      delta_theta = theta - last_theta;
-    }
+    theta = imu_angle_;
+    delta_theta = theta - last_theta_;     
+   /* RCLCPP_INFO(nh_->get_logger(),
+      "Odometry, IMU based, last_theta:%f, theta:%f, delta_theta:%f",
+      last_theta_,theta,delta_theta);*/
+  }
     else
     {
       theta = imu_angle_;
-      last_theta = imu_angle_;
-      delta_theta = theta - last_theta;
+      last_theta_ = imu_angle_;
+      delta_theta = theta - last_theta_;
       last_theta_initialized_ = true;
+      // RCLCPP_INFO(nh_->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta_);
     }
   }
   else
   {
   theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
-  delta_theta = theta - last_theta;
-  last_theta = theta;
+  delta_theta = theta;
+  //RCLCPP_INFO(nh_->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
   }
 
   // compute odometric pose
-  robot_pose_[0] += delta_x * cos(delta_theta) - delta_y * sin(delta_theta);
-  robot_pose_[1] += delta_x * sin(delta_theta) + delta_y * cos(delta_theta);
+  robot_pose_[0] += delta_x * cos(robot_pose_[2] + (delta_theta / 2.0)) - delta_y * sin(robot_pose_[2] + (delta_theta / 2.0));
+  robot_pose_[1] += delta_x * sin(robot_pose_[2] + (delta_theta / 2.0)) + delta_y * cos(robot_pose_[2] + (delta_theta / 2.0));
   robot_pose_[2] += delta_theta;
 
   RCLCPP_DEBUG(nh_->get_logger(), "x : %f, y : %f", robot_pose_[0], robot_pose_[1]);
@@ -331,6 +335,6 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   robot_vel_[1] = v_y;
   robot_vel_[2] = w;
 
-  last_theta = theta;
+  last_theta_ = theta;
   return true;
 }
