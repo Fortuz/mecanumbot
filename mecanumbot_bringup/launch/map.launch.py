@@ -27,8 +27,6 @@ from launch_ros.actions import PushRosNamespace
 def generate_launch_description():
     #TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
     ROS_DISTRO = os.environ.get('ROS_DISTRO')
-    LDS_MODEL = os.environ['LDS_MODEL']
-    LDS_LAUNCH_FILE = '/hlds_laser.launch.py'
 
     namespace = LaunchConfiguration('namespace', default='')
 
@@ -50,24 +48,6 @@ def generate_launch_description():
                 'param',
                 'mecanumbot.yaml'))
 
-    if LDS_MODEL == 'LDS-01':
-        lidar_pkg_dir = LaunchConfiguration(
-            'lidar_pkg_dir',
-            default=os.path.join(get_package_share_directory('hls_lfcd_lds_driver'), 'launch'))
-    elif LDS_MODEL == 'LDS-02':
-        lidar_pkg_dir = LaunchConfiguration(
-            'lidar_pkg_dir',
-            default=os.path.join(get_package_share_directory('ld08_driver'), 'launch'))
-        LDS_LAUNCH_FILE = '/ld08.launch.py'
-    elif LDS_MODEL == 'LDS-03':
-        lidar_pkg_dir = LaunchConfiguration(
-            'lidar_pkg_dir',
-            default=os.path.join(get_package_share_directory('coin_d4_driver'), 'launch'))
-        LDS_LAUNCH_FILE = '/single_lidar_node.launch.py'
-    else:
-        lidar_pkg_dir = LaunchConfiguration(
-            'lidar_pkg_dir',
-            default=os.path.join(get_package_share_directory('hls_lfcd_lds_driver'), 'launch'))
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
@@ -93,20 +73,6 @@ def generate_launch_description():
             description='Namespace for nodes'),
 
         PushRosNamespace(namespace),
-
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                [ThisLaunchFileDir(), '/mecanumbot_state_publisher.launch.py']),
-            launch_arguments={'use_sim_time': use_sim_time,
-                              'namespace': namespace}.items(),
-        ),
-
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([lidar_pkg_dir, LDS_LAUNCH_FILE]),
-            launch_arguments={'port': '/dev/ttyUSB0',
-                              'frame_id': 'base_scan',
-                              'namespace': namespace}.items(),
-        ),
     Node(
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',
@@ -115,16 +81,16 @@ def generate_launch_description():
             parameters=[{
                 'use_sim_time': use_sim_time,
                 'autostart': True,
-                'node_names': ['map_server']
+                'node_names': ['map_server','amcl']
             }]
         ),
     Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='map_to_my_frame_publisher', # You can name it something descriptive
-            arguments=['0', '0', '0', '0', '0', '0', 'map','base_link'], # x, y, z, roll, pitch, yaw, parent_frame, child_frame
-            output='screen'
-        )
+            package='nav2_amcl',
+            executable='amcl',
+            name='amcl',
+            output='screen',
+            parameters=[os.path.join(get_package_share_directory('mecanumbot_bringup'), 'param','amcl.yaml'), {'use_sim_time': use_sim_time}]
+        ),
     Node(
                 package='nav2_map_server',
                 executable='map_server',
@@ -133,5 +99,5 @@ def generate_launch_description():
                 parameters=[{
                     'yaml_filename': os.path.join(get_package_share_directory('mecanumbot_bringup'), 'map', 'AI_room_lounge.yaml'),
                 }]
-            ),
+            )
     ])
