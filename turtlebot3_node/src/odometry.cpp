@@ -248,8 +248,8 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   // rotation value of wheel [rad]
   double wheel_fl = diff_joint_positions_[0]; //FL;3
   double wheel_fr = diff_joint_positions_[1]; //FR;4
-  double wheel_rl = diff_joint_positions_[2]; //RL;1
-  double wheel_rr = diff_joint_positions_[3]; //RR;2
+  double wheel_rl = diff_joint_positions_[2]; //RL;1 EDITED
+  double wheel_rr = diff_joint_positions_[3]; //RR;2 EDITED
 
   double delta_x = 0.0;
   double delta_y = 0.0;
@@ -291,7 +291,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
 
   delta_x = wheels_radius_ * (wheel_fl + wheel_fr + wheel_rl + wheel_rr) / 4.0;
-  delta_y = wheels_radius_ * (-wheel_fl + wheel_fr + wheel_rl - wheel_rr) / 4.0;
+  delta_y = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / 4.0;
 
   if (use_imu_)
   {
@@ -299,9 +299,9 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     {
     theta = imu_angle_;
     delta_theta = theta - last_theta_;     
-   /* RCLCPP_INFO(nh_->get_logger(),
+   RCLCPP_INFO(nh_->get_logger(),
       "Odometry, IMU based, last_theta:%f, theta:%f, delta_theta:%f",
-      last_theta_,theta,delta_theta);*/
+      last_theta_,theta,delta_theta);
   }
     else
     {
@@ -309,14 +309,14 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
       last_theta_ = imu_angle_;
       delta_theta = theta - last_theta_;
       last_theta_initialized_ = true;
-      // RCLCPP_INFO(nh_->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta_);
+      RCLCPP_INFO(nh_->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta_);
     }
   }
   else
   {
-  theta = wheels_radius_ * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
+  theta = wheels_radius_ * (-wheel_fl + wheel_fr + wheel_rl - wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
   delta_theta = theta;
-  //RCLCPP_INFO(nh_->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
+  RCLCPP_INFO(nh_->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
   }
 
   // compute odometric pose
