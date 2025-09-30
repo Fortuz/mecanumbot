@@ -13,7 +13,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     namespace = LaunchConfiguration('namespace', default='')
     use_respawn = LaunchConfiguration('use_respawn', default='false')
-    log_level = LaunchConfiguration('log_level', default='info')
+    log_level = LaunchConfiguration('log_level', default='debug')
     remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
 
     mecanumbot_bringup_pkg_share = get_package_share_directory('mecanumbot_bringup')
@@ -28,7 +28,16 @@ def generate_launch_description():
             'param',
             'nav2_params.yaml')],
     )
-
+    recovery_server_node = Node(
+            package='nav2_behaviors',
+            executable='behavior_server',
+            name='recovery_server',
+            output='screen',
+            parameters=[os.path.join(
+                mecanumbot_bringup_pkg_share,
+                'param',
+                'nav2_params.yaml')],
+        )
     controller_server_node = Node(
     package='nav2_controller',
     executable='controller_server',
@@ -89,7 +98,7 @@ def generate_launch_description():
         parameters=[{
             'use_sim_time': use_sim_time,
             'autostart': True,
-            'node_names': ['amcl','map_server']
+            'node_names': ['map_server', 'amcl', 'recovery_server', 'planner_server', 'controller_server', 'bt_navigator']
         }]
 )
     return LaunchDescription([
@@ -100,6 +109,9 @@ def generate_launch_description():
         PushRosNamespace(namespace),
         map_server_node,
         navigator_node,
+        recovery_server_node,
+        planner_server_node,
+        controller_server_node,
         amcl_node,
         lifecycle_manager_node,
     ])
