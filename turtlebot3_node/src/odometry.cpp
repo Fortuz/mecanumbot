@@ -223,6 +223,11 @@ void Odometry::publish(const rclcpp::Time &now)
 void Odometry::update_joint_state(
     const std::shared_ptr<sensor_msgs::msg::JointState const> &joint_state)
 {
+  int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontleft_joint") - joint_state->name.begin();
+  int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontright_joint") - joint_state->name.begin();
+  int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
+  int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
+  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
   static std::array<double, 2> last_joint_positions = {0.0f, 0.0f};
 
   diff_joint_positions_[0] = joint_state->position[0] - last_joint_positions[0]; //FL;3
@@ -245,16 +250,12 @@ void Odometry::update_imu(const std::shared_ptr<sensor_msgs::msg::Imu const> &im
 
 bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 {
-  int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_front_left_joint") - joint_state->name.begin();
-  int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_front_right_joint") - joint_state->name.begin();
-  int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_rear_left_joint") - joint_state->name.begin();
-  int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_rear_right_joint") - joint_state->name.begin();
-  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
+
   // rotation value of wheel [rad]
-  double wheel_fl = diff_joint_positions_[idx_fl]; //FL;3
-  double wheel_fr = diff_joint_positions_[idx_fr]; //FR;4
-  double wheel_rl = diff_joint_positions_[idx_rl]; //RL;1 EDITED
-  double wheel_rr = diff_joint_positions_[idx_rr]; //RR;2 EDITED
+  double wheel_fl = diff_joint_positions_[3]; //FL;3
+  double wheel_fr = diff_joint_positions_[4]; //FR;4
+  double wheel_rl = diff_joint_positions_[1]; //RL;1 EDITED
+  double wheel_rr = diff_joint_positions_[2]; //RR;2 EDITED
 
   double delta_x = 0.0;
   double delta_y = 0.0;
