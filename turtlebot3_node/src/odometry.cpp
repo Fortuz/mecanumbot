@@ -348,7 +348,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     !std::isfinite(robot_vel_[1]) ||
     !std::isfinite(robot_vel_[2])) {
   RCLCPP_WARN(nh_->get_logger(), "Skipping odometry publish due to NaN or Inf values.");
-  return;
+  return false;
   }
   last_theta_ = theta;
   return true;
