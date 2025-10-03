@@ -245,11 +245,16 @@ void Odometry::update_imu(const std::shared_ptr<sensor_msgs::msg::Imu const> &im
 
 bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 {
+  int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_front_left_joint") - joint_state->name.begin();
+  int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_front_right_joint") - joint_state->name.begin();
+  int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_rear_left_joint") - joint_state->name.begin();
+  int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_rear_right_joint") - joint_state->name.begin();
+  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
   // rotation value of wheel [rad]
-  double wheel_fl = diff_joint_positions_[0]; //FL;3
-  double wheel_fr = diff_joint_positions_[1]; //FR;4
-  double wheel_rl = diff_joint_positions_[2]; //RL;1 EDITED
-  double wheel_rr = diff_joint_positions_[3]; //RR;2 EDITED
+  double wheel_fl = diff_joint_positions_[idx_fl]; //FL;3
+  double wheel_fr = diff_joint_positions_[idx_fr]; //FR;4
+  double wheel_rl = diff_joint_positions_[idx_rl]; //RL;1 EDITED
+  double wheel_rr = diff_joint_positions_[idx_rr]; //RR;2 EDITED
 
   double delta_x = 0.0;
   double delta_y = 0.0;
@@ -265,10 +270,10 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 
   double step_time = duration.seconds();
 
-  if (step_time == 0.0)
-  {
-    return false;
-  }
+ if (step_time < 1e-5) {
+  RCLCPP_WARN(nh_->get_logger(), "Step time too small: %f seconds. Skipping odometry update.", step_time);
+  return false;
+}
 
   if (std::isnan(wheel_fl))
   {
@@ -335,6 +340,15 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   robot_vel_[1] = v_y;
   robot_vel_[2] = w;
 
+  if (!std::isfinite(robot_pose_[0]) ||
+    !std::isfinite(robot_pose_[1]) ||
+    !std::isfinite(robot_pose_[2]) ||
+    !std::isfinite(robot_vel_[0]) ||
+    !std::isfinite(robot_vel_[1]) ||
+    !std::isfinite(robot_vel_[2])) {
+  RCLCPP_WARN(nh_->get_logger(), "Skipping odometry publish due to NaN or Inf values.");
+  return;
+  }
   last_theta_ = theta;
   return true;
 }
