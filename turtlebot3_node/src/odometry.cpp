@@ -223,11 +223,11 @@ void Odometry::publish(const rclcpp::Time &now)
 void Odometry::update_joint_state(
     const std::shared_ptr<sensor_msgs::msg::JointState const> &joint_state)
 {
-  //int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontleft_joint") - joint_state->name.begin();
-  //int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontright_joint") - joint_state->name.begin();
-  //int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
-  //int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
-  //RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
+  int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontleft_joint") - joint_state->name.begin();
+  int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontright_joint") - joint_state->name.begin();
+  int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
+  int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
+  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
   if (joint_state->position.size() < 4) {
   RCLCPP_WARN(nh_->get_logger(), "JointState position array too small (%zu). Skipping update.", joint_state->position.size());
   return false;
@@ -263,12 +263,11 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   if (!std::isfinite(wheel_fl) || !std::isfinite(wheel_fr) ||
     !std::isfinite(wheel_rl) || !std::isfinite(wheel_rr)) {
     RCLCPP_WARN(nh_->get_logger(), "NaN or Inf in wheel data. Skipping odometry update.");
-    return false;
+    return;
 }
   double delta_x = 0.0;
   double delta_y = 0.0;
   double delta_theta = 0.0;
-
   double theta = 0.0;
 
   // v = translational velocity [m/s]
