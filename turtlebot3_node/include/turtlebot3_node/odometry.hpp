@@ -91,7 +91,7 @@ private:
   bool publish_tf_;
   bool last_theta_initialized_;
   double last_theta_;
-  std::array<double, 4> diff_joint_positions_;
+  std::array<double, 4> diff_joint_velocities_;
   double imu_angle_;
 
   std::array<double, 3> robot_pose_;
