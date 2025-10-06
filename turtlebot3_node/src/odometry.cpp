@@ -258,8 +258,8 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   // rotation value of wheel [rad]
   double wheel_fl = diff_joint_velocities_[0]; //FL;3
   double wheel_fr = diff_joint_velocities_[1]; //FR;4
-  double wheel_rl = diff_joint_velocities_[3]; //RL;1
-  double wheel_rr = diff_joint_velocities_[2]; //RR;2
+  double wheel_rl = diff_joint_velocities_[2]; //RL;1
+  double wheel_rr = diff_joint_velocities_[3]; //RR;2
   if (!std::isfinite(wheel_fl) || !std::isfinite(wheel_fr) ||
     !std::isfinite(wheel_rl) || !std::isfinite(wheel_rr)) {
     RCLCPP_WARN(nh_->get_logger(), "NaN or Inf in wheel data. Skipping odometry update.");
@@ -304,7 +304,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
 
   delta_x = step_time * (wheel_fl + wheel_fr + wheel_rl + wheel_rr) / 4.0;
-  delta_y = step_time * (wheel_fl - wheel_fr - wheel_rl + wheel_rr) / 4.0;
+  delta_y = step_time * (-wheel_fl + wheel_fr + wheel_rl - wheel_rr) / 4.0;
 
   if (use_imu_)
   {
