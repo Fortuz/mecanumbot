@@ -344,6 +344,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   v_x = delta_x / step_time;
   v_y = delta_y / step_time;
   w = delta_theta / step_time;
+  RCLCPP_INFO(nh_->get_logger(), "Odometry, delta_x : %f, delta_y : %f, delta_theta : %f, v_x : %f, v_y : %f, w : %f", delta_x, delta_y, delta_theta, v_x, v_y, w);
 
   robot_vel_[0] = v_x;
   robot_vel_[1] = v_y;
