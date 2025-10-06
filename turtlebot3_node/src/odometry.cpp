@@ -234,10 +234,10 @@ void Odometry::update_joint_state(
 }
   static std::array<double, 4> last_joint_velocities = {0.0f, 0.0f, 0.0f, 0.0f};
 
-  diff_joint_velocities_[0] = joint_state->velocity[0] - last_joint_velocities[0]; //FL;3
-  diff_joint_velocities_[1] = joint_state->velocity[1] - last_joint_velocities[1]; //FR;4
-  diff_joint_velocities_[2] = joint_state->velocity[2] - last_joint_velocities[2]; //RR;1
-  diff_joint_velocities_[3] = joint_state->velocity[3] - last_joint_velocities[3]; //RL;2
+  diff_joint_velocities_[0] = joint_state->velocity[0]; //FL;3
+  diff_joint_velocities_[1] = joint_state->velocity[1];//FR;4
+  diff_joint_velocities_[2] = joint_state->velocity[2]; //RR;1
+  diff_joint_velocities_[3] = joint_state->velocity[3]; //RL;2
 
   last_joint_velocities[0] = joint_state->velocity[0]; //FL
   last_joint_velocities[1] = joint_state->velocity[1]; //FR
