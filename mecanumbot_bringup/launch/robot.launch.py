@@ -36,7 +36,7 @@ def generate_launch_description():
     LDS_LAUNCH_FILE = '/hlds_laser.launch.py'
 
     namespace = LaunchConfiguration('namespace', default='')
-    log_level = LaunchConfiguration('log_level', default='debug')
+    log_level = LaunchConfiguration('log_level', default='info')
     usb_port = LaunchConfiguration('usb_port', default='/dev/ttyACM0')
 
     if ROS_DISTRO == 'humble':
