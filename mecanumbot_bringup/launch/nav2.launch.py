@@ -44,9 +44,9 @@ def generate_launch_description():
     nav2_launch_file_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
 
     rviz_config_dir = os.path.join(
-        get_package_share_directory('robot_navigation'),
+        get_package_share_directory('mecanumbot_description'),
         'rviz',
-        'rviz_navigation.rviz')
+        'model.rviz')
 
     return LaunchDescription([
         DeclareLaunchArgument(

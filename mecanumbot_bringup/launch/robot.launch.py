@@ -36,7 +36,7 @@ def generate_launch_description():
     LDS_LAUNCH_FILE = '/hlds_laser.launch.py'
 
     namespace = LaunchConfiguration('namespace', default='')
-
+    log_level = LaunchConfiguration('log_level', default='debug')
     usb_port = LaunchConfiguration('usb_port', default='/dev/ttyACM0')
 
     if ROS_DISTRO == 'humble':
@@ -118,6 +118,6 @@ def generate_launch_description():
             parameters=[
                 tb3_param_dir,
                 {'namespace': namespace}],
-            arguments=['-i', usb_port],
+            arguments=['-i',usb_port,'--ros-args','--log-level',  log_level],
             output='screen'),
     ])
