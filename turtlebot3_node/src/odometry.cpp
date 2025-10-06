@@ -228,7 +228,11 @@ void Odometry::update_joint_state(
   //int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
   //int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
   //RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);
-  static std::array<double, 2> last_joint_positions = {0.0f, 0.0f};
+  if (joint_state->position.size() < 4) {
+  RCLCPP_WARN(nh_->get_logger(), "JointState position array too small (%zu). Skipping update.", joint_state->position.size());
+  return false;
+}
+  static std::array<double, 4> last_joint_positions = {0.0f, 0.0f, 0.0f, 0.0f};
 
   diff_joint_positions_[0] = joint_state->position[0] - last_joint_positions[0]; //FL;3
   diff_joint_positions_[1] = joint_state->position[1] - last_joint_positions[1]; //FR;4
@@ -254,9 +258,13 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   // rotation value of wheel [rad]
   double wheel_fl = diff_joint_positions_[0]; //FL;3
   double wheel_fr = diff_joint_positions_[1]; //FR;4
-  double wheel_rl = diff_joint_positions_[2]; //RL;1 EDITED
-  double wheel_rr = diff_joint_positions_[3]; //RR;2 EDITED
-
+  double wheel_rl = diff_joint_positions_[2]; //RL;1
+  double wheel_rr = diff_joint_positions_[3]; //RR;2
+  if (!std::isfinite(wheel_fl) || !std::isfinite(wheel_fr) ||
+    !std::isfinite(wheel_rl) || !std::isfinite(wheel_rr)) {
+    RCLCPP_WARN(nh_->get_logger(), "NaN or Inf in wheel data. Skipping odometry update.");
+    return false;
+}
   double delta_x = 0.0;
   double delta_y = 0.0;
   double delta_theta = 0.0;
