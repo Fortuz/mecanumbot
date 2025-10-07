@@ -41,13 +41,13 @@ JointState::JointState(
       extern_control_table.present_position_backleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_backright.addr,
-      extern_control_table.present_position_backright.length)
+      extern_control_table.present_position_backright.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontleft.addr,
       extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontright.addr,
-      extern_control_table.present_position_frontright.length),
+      extern_control_table.present_position_frontright.length)
     };
 
   nh_->get_parameter_or<std::string>(
@@ -78,13 +78,13 @@ void JointState::publish(
       extern_control_table.present_position_backleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_backright.addr,
-      extern_control_table.present_position_backright.length)
+      extern_control_table.present_position_backright.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontleft.addr,
       extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontright.addr,
-      extern_control_table.present_position_frontright.length),
+      extern_control_table.present_position_frontright.length)
   };
 
   std::array<int32_t, JOINT_NUM> velocity =
@@ -94,13 +94,13 @@ void JointState::publish(
       extern_control_table.present_velocity_backleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_velocity_backright.addr,
-      extern_control_table.present_velocity_backright.length)
+      extern_control_table.present_velocity_backright.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_velocity_frontleft.addr,
       extern_control_table.present_velocity_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_velocity_frontright.addr,
-      extern_control_table.present_velocity_frontright.length),
+      extern_control_table.present_velocity_frontright.length)
   };
 
   // std::array<int32_t, JOINT_NUM> current =
