@@ -225,24 +225,24 @@ void Odometry::update_joint_state(
 {
   /*int idx_fl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontleft_joint") - joint_state->name.begin();
   int idx_fr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_frontright_joint") - joint_state->name.begin();
-  int idx_rl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
-  int idx_rr = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
-  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, RL: %d, RR: %d", idx_fl, idx_fr, idx_rl, idx_rr);*/
+  int idx_bl = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backleft_joint") - joint_state->name.begin();
+  int idx_br = std::find(joint_state->name.begin(), joint_state->name.end(), "wheel_backright_joint") - joint_state->name.begin();
+  RCLCPP_INFO(nh_->get_logger(), "Wheel indices - FL: %d, FR: %d, BL: %d, BR: %d", idx_fl, idx_fr, idx_bl, idx_br);*/
   if (joint_state->position.size() < 4) {
   RCLCPP_WARN(nh_->get_logger(), "JointState position array too small (%zu). Skipping update.", joint_state->position.size());
   return;
 }
   static std::array<double, 4> last_joint_velocities = {0.0f, 0.0f, 0.0f, 0.0f};
 
-  diff_joint_velocities_[0] = joint_state->velocity[0]; //FL;3
-  diff_joint_velocities_[1] = joint_state->velocity[1];//FR;4
-  diff_joint_velocities_[2] = joint_state->velocity[2]; //RR;1
-  diff_joint_velocities_[3] = joint_state->velocity[3]; //RL;2
+  diff_joint_velocities_[0] = joint_state->velocity[0]; //BL;0
+  diff_joint_velocities_[1] = joint_state->velocity[1];//BR;1
+  diff_joint_velocities_[2] = joint_state->velocity[2]; //FL;2
+  diff_joint_velocities_[3] = joint_state->velocity[3]; //FR;3
 
-  last_joint_velocities[0] = joint_state->velocity[0]; //FL
-  last_joint_velocities[1] = joint_state->velocity[1]; //FR
-  last_joint_velocities[2] = joint_state->velocity[2]; //RR
-  last_joint_velocities[3] = joint_state->velocity[3]; //RL
+  last_joint_velocities[0] = joint_state->velocity[0]; //BL
+  last_joint_velocities[1] = joint_state->velocity[1]; //BR
+  last_joint_velocities[2] = joint_state->velocity[2]; //FL
+  last_joint_velocities[3] = joint_state->velocity[3]; //FR
 }
 
 void Odometry::update_imu(const std::shared_ptr<sensor_msgs::msg::Imu const> &imu)
@@ -256,12 +256,12 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
 {
 
   // rotation value of wheel [rad]
-  double wheel_fl = diff_joint_velocities_[0]; //FL;3
-  double wheel_fr = diff_joint_velocities_[1]; //FR;4
-  double wheel_rl = diff_joint_velocities_[3]; //RL;1
-  double wheel_rr = diff_joint_velocities_[2]; //RR;2
+  double wheel_bl = diff_joint_velocities_[0]; //BL;3
+  double wheel_br = diff_joint_velocities_[1]; //BR;1
+  double wheel_fl = diff_joint_velocities_[2]; //FL;2
+  double wheel_fr = diff_joint_velocities_[3]; //FR;3
   if (!std::isfinite(wheel_fl) || !std::isfinite(wheel_fr) ||
-    !std::isfinite(wheel_rl) || !std::isfinite(wheel_rr)) {
+    !std::isfinite(wheel_bl) || !std::isfinite(wheel_br)) {
     RCLCPP_WARN(nh_->get_logger(), "NaN or Inf in wheel data. Skipping odometry update.");
     return false;
 }
@@ -293,18 +293,18 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     wheel_fr = 0.0;
   }
 
-  if (std::isnan(wheel_rl))
+  if (std::isnan(wheel_bl))
   {
-    wheel_rl = 0.0;
+    wheel_bl = 0.0;
   }
 
-  if (std::isnan(wheel_rr))
+  if (std::isnan(wheel_br))
   {
-    wheel_rr = 0.0;
+    wheel_br = 0.0;
   }
 
-  delta_x = step_time * (wheel_fl + wheel_fr + wheel_rl + wheel_rr) / 4.0;
-  delta_y = step_time * (-wheel_fl + wheel_fr + wheel_rl - wheel_rr) / 4.0;
+  delta_x = step_time * (wheel_fl + wheel_fr + wheel_bl + wheel_br) / 4.0;
+  delta_y = step_time * (-wheel_fl + wheel_fr + wheel_bl - wheel_br) / 4.0;
 
   if (use_imu_)
   {
@@ -327,7 +327,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
   else
   {
-  theta = step_time * (-wheel_fl + wheel_fr - wheel_rl + wheel_rr) / (2 * (wheels_separation_y_ + wheels_separation_x_));
+  theta = step_time * (-wheel_fl + wheel_fr - wheel_bl + wheel_br) / (2 * (wheels_separation_y_ + wheels_separation_x_));
   delta_theta = theta;
  // RCLCPP_INFO(nh_->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
   }
