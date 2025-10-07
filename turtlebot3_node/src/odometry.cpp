@@ -327,7 +327,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
   else
   {
-  theta = step_time * (-wheel_fl + wheel_fr - wheel_bl + wheel_br) / (2 * (wheels_separation_y_ + wheels_separation_x_));
+  theta = step_time * (-wheel_fl + wheel_fr - wheel_bl + wheel_br) / (4 * (wheels_separation_y_ + wheels_separation_x_));
   delta_theta = theta;
  // RCLCPP_INFO(nh_->get_logger(), "Odometry, calculated delta_theta : %f", delta_theta);
   }
