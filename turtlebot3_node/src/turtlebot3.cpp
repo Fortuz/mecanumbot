@@ -78,10 +78,10 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   // void init_read_memory(const uint16_t & start_addr, const uint16_t & length);
   dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
     extern_control_table.millis.addr,
-    (extern_control_table.profile_acceleration_backright.addr - extern_control_table.millis.addr) +
-    extern_control_table.profile_acceleration_backright.length
-  );  
-}
+    (extern_control_table.profile_acceleration_frontright.addr - extern_control_table.millis.addr) +
+    extern_control_table.profile_acceleration_frontright.length
+  );  //206 - 10 + 4 = 200
+}s
 
 void TurtleBot3::check_device_status()
 {
@@ -324,11 +324,11 @@ void TurtleBot3::parameter_event_callback()
           data.dword[0] = static_cast<int32_t>(motors_.profile_acceleration);
           data.dword[1] = static_cast<int32_t>(motors_.profile_acceleration); // TODO: think it through
 
-          uint16_t start_addr = extern_control_table.profile_acceleration_frontleft.addr;
+          uint16_t start_addr = extern_control_table.profile_acceleration_backleft.addr;
           uint16_t addr_length =
-            (extern_control_table.profile_acceleration_backright.addr -
-            extern_control_table.profile_acceleration_frontleft.addr) +
-            extern_control_table.profile_acceleration_backright.length;  // TODO: need 2 more profile acceleration
+            (extern_control_table.profile_acceleration_frontright.addr -
+            extern_control_table.profile_acceleration_backleft.addr) +
+            extern_control_table.profile_acceleration_frontright.length;  // TODO: need 2 more profile acceleration
 
           uint8_t * p_data = &data.byte[0];
 
