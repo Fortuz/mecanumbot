@@ -79,8 +79,21 @@ build-*/
 *.gch
 /.project
 
-#saved color and mode
-mecanumbot_ledgui/configs/led_configs.json
+# Build artifacts
+build/
+install/
+log/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Colcon
+.colcon/
 
 log/
 install/
