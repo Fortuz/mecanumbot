@@ -38,13 +38,14 @@ $ cd ~/mecanumbot_ws/
 $ echo 'source /opt/ros/humble/setup.bash' >> ~/.bashrc
 $ source ~/.bashrc
 $ colcon build --symlink-install --parallel-workers 1
-$ echo 'source ~/turtlebot3_ws/install/setup.bash' >> ~/.bashrc
+$ echo 'source ~/mecanumbot_ws/install/setup.bash' >> ~/.bashrc
 $ source ~/.bashrc
 $ echo 'export OPENCR_PORT=/dev/ttyACM0' >> ~/.bashrc
 $ echo 'export OPENCR_MODEL=mecanumbot' >> ~/.bashrc
 $ echo 'export ROS_DOMAIN_ID=19' >> ~/.bashrc
 $ echo 'export LDS_MODEL=LDS-02' >> ~/.bashrc
 $ echo 'export TURTLEBOT3_MODEL=mecanumbot' >> ~/.bashrc
+$ echo 'export ROS_LOCALHOST_ONLY=0' >> ~/.bashrc
 $ echo "alias start_robot='ros2 launch mecanumbot_bringup robot.launch.py'" >> ~/.bashrc
 $ echo "alias start_robot_with_led='ros2 launch mecanumbot_bringup robot.launch.py & ros2 run mecanumbot_led mecanumbot_led_service & wait'" >> ~/.bashrc
 $ source ~/.bashrc
