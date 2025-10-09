@@ -28,28 +28,43 @@ The project is made with Ubuntu 22.04 and ROS2 Humble.
 [mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the Raspberry Pi on the robot <br>
 [mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors. Can be found on the robot locally in the ~/Sandbox folder <br>
 
-## SSH
+## Install
 
 ```
 $ ssh ubuntu@192.168.1.240
+$ mkdir -p ~/mecanumbot_ws/src && cd ~/mecanumbot_ws/src
+$ git clone https://github.com/Fortuz/mecanumbot.git
+$ cd ~/mecanumbot_ws/
+$ echo 'source /opt/ros/humble/setup.bash' >> ~/.bashrc
+$ source ~/.bashrc
+$ colcon build --symlink-install --parallel-workers 1
+$ echo 'source ~/turtlebot3_ws/install/setup.bash' >> ~/.bashrc
+$ source ~/.bashrc
+$ echo 'export OPENCR_PORT=/dev/ttyACM0' >> ~/.bashrc
+$ echo 'export OPENCR_MODEL=mecanumbot' >> ~/.bashrc
+$ echo 'export ROS_DOMAIN_ID=19' >> ~/.bashrc
+$ echo 'export LDS_MODEL=LDS-02' >> ~/.bashrc
+$ echo 'export TURTLEBOT3_MODEL=mecanumbot' >> ~/.bashrc
+$ echo "alias start_robot='ros2 launch mecanumbot_bringup robot.launch.py'" >> ~/.bashrc
+$ echo "alias start_robot_with_led='ros2 launch mecanumbot_bringup robot.launch.py & ros2 run mecanumbot_led mecanumbot_led_service & wait'" >> ~/.bashrc
+$ source ~/.bashrc
+```
+
+## Bringup
+
+```
+$ ssh ubuntu@192.168.1.240
+$ start_robot_with_led
 ```
 
 ## TESTS
 
 ### LED control
-
-[Terminal 1] - Start the ros node controlling the leds
-```
-$ ros2 run mecanumbot_led mecanumbot_led_service
-```
-
-[Terminal 2] - Send a message to get back the actual status of the leds
+Send a message to get back the actual status of the leds
 ```
 $ ros2 service call /get_led_status mecanumbot_msgs/srv/GetLedStatus "{}"
 ```
-OR
-
-[Terminal 2] - Send a message to set the status of the leds
+Send a message to set the status of the leds
 ```
 $ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
   fl_mode: 1,
@@ -63,16 +78,13 @@ $ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
 }"
 ```
 
-SBC
-```
-ros2 launch mecanumbot_bringup robot.launch.py
-
-```
-
 PC
 ```
-ros2 run mecanumbot_teleop mecanumbot_keyboard
-ros2 launch mecanumbot_ledgui mecanumbot_ledgui.launch.py
+$ cd ~/dev_ws
+$ source_ros
+$ source_ws
+$ ros2 run mecanumbot_teleop mecanumbot_keyboard
+$ ros2 launch mecanumbot_ledgui mecanumbot_ledgui.launch.py
 ```
 
 Parameters: <br>
