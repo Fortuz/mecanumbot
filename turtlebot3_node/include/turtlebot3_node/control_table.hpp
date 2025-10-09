@@ -87,21 +87,24 @@ typedef struct
   ControlItem imu_orientation_y = {104, RAM, 4, READ};
   ControlItem imu_orientation_z = {108, RAM, 4, READ};
 
-  ControlItem present_current_frontleft = {120, RAM, 4, READ};
-  ControlItem present_current_frontright = {124, RAM, 4, READ};
-  ControlItem present_current_backleft = {128, RAM, 4, READ};
-  ControlItem present_current_backright = {132, RAM, 4, READ};
+  ControlItem present_current_backleft = {120, RAM, 4, READ};
+  ControlItem present_current_backright = {124, RAM, 4, READ};
+  ControlItem present_current_frontleft = {128, RAM, 4, READ};
+  ControlItem present_current_frontright = {132, RAM, 4, READ};
+  
 
 
-  ControlItem present_velocity_frontleft = {136, RAM, 4, READ};
-  ControlItem present_velocity_frontright = {140, RAM, 4, READ};
-  ControlItem present_velocity_backleft = {144, RAM, 4, READ};
-  ControlItem present_velocity_backright = {148, RAM, 4, READ};
+  ControlItem present_velocity_backleft = {136, RAM, 4, READ};
+  ControlItem present_velocity_backright = {140, RAM, 4, READ};
+  ControlItem present_velocity_frontleft = {144, RAM, 4, READ};
+  ControlItem present_velocity_frontright = {148, RAM, 4, READ};
+  
 
-  ControlItem present_position_frontleft = {152, RAM, 4, READ};
-  ControlItem present_position_frontright = {156, RAM, 4, READ};
-  ControlItem present_position_backleft = {160, RAM, 4, READ};
-  ControlItem present_position_backright = {164, RAM, 4, READ};
+  ControlItem present_position_backleft = {152, RAM, 4, READ};
+  ControlItem present_position_backright = {156, RAM, 4, READ};
+  ControlItem present_position_frontleft = {160, RAM, 4, READ};
+  ControlItem present_position_frontright = {164, RAM, 4, READ};
+  
 
   ControlItem motor_connect = {168, RAM, 1, READ_WRITE};   // TODO: check
   ControlItem motor_torque_enable = {169, RAM, 1, READ_WRITE};
@@ -113,10 +116,11 @@ typedef struct
   ControlItem cmd_velocity_angular_y = {186, RAM, 4, READ_WRITE};
   ControlItem cmd_velocity_angular_z = {190, RAM, 4, READ_WRITE};
 
-  ControlItem profile_acceleration_frontleft = {194, RAM, 4, READ_WRITE};
-  ControlItem profile_acceleration_frontright = {198, RAM, 4, READ_WRITE};
-  ControlItem profile_acceleration_backleft = {202, RAM, 4, READ_WRITE};
-  ControlItem profile_acceleration_backright = {206, RAM, 4, READ_WRITE};
+  ControlItem profile_acceleration_backleft = {194, RAM, 4, READ_WRITE};
+  ControlItem profile_acceleration_backright = {198, RAM, 4, READ_WRITE};
+  ControlItem profile_acceleration_frontleft = {202, RAM, 4, READ_WRITE};
+  ControlItem profile_acceleration_frontright = {206, RAM, 4, READ_WRITE};
+  
 
   ControlItem ax_motor_torque_enable = {210, RAM, 1, READ_WRITE};
   ControlItem cmd_neck_goal = {214, RAM, 4, READ_WRITE};

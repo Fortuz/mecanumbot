@@ -312,7 +312,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
     {
     theta = imu_angle_;
     delta_theta = theta - last_theta_;     
-   RCLCPP_INFO(nh_->get_logger(),
+   RCLCPP_DEBUG(nh_->get_logger(),
       "Odometry, IMU based, last_theta:%f, theta:%f, delta_theta:%f",
       last_theta_,theta,delta_theta);
   }
@@ -322,7 +322,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
       last_theta_ = imu_angle_;
       delta_theta = theta - last_theta_;
       last_theta_initialized_ = true;
-      RCLCPP_INFO(nh_->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta_);
+      RCLCPP_DEBUG(nh_->get_logger(), "Odometry, IMU based, delta_theta:%f, last_theta:%f",delta_theta,last_theta_);
     }
   }
   else
@@ -338,12 +338,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   robot_pose_[2] += delta_theta;
 
   RCLCPP_DEBUG(nh_->get_logger(), "x : %f, y : %f, theta : %f", robot_pose_[0], robot_pose_[1], robot_pose_[2]);
-
-  // compute odometric instantaneouse velocity
-  v_x = delta_x / step_time;
-  v_y = delta_y / step_time;
-  w = delta_theta / step_time;
-  RCLCPP_INFO(nh_->get_logger(), "Odometry, delta_x : %f, delta_y : %f, delta_theta : %f, v_x : %f, v_y : %f, w : %f", delta_x, delta_y, delta_theta, v_x, v_y, w);
+  RCLCPP_DEBUG(nh_->get_logger(), "Odometry, delta_x : %f, delta_y : %f, delta_theta : %f, v_x : %f, v_y : %f, w : %f", delta_x, delta_y, delta_theta, v_x, v_y, w);
 
   robot_vel_[0] = v_x;
   robot_vel_[1] = v_y;
