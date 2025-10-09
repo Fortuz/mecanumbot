@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // Author: Darby Lim
-
+#include "rclcpp/rclcpp.hpp"
 #include "turtlebot3_node/dynamixel_sdk_wrapper.hpp"
 
 #include <algorithm>
