@@ -81,7 +81,7 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
     (extern_control_table.profile_acceleration_frontright.addr - extern_control_table.millis.addr) +
     extern_control_table.profile_acceleration_frontright.length
   );  //206 - 10 + 4 = 200
-}s
+}
 
 void TurtleBot3::check_device_status()
 {
