@@ -90,7 +90,8 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
     LOG_ERROR("Memory length", "[%d]", read_memory_.length);
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
-  } else {
+  } 
+  else {
     std::lock_guard<std::mutex> lock(read_data_mutex_);
     std::copy(read_data_buffer_, read_data_buffer_ + READ_DATA_SIZE, read_data_);
     // LOG_INFO("DynamixelSDKWrapper", "Succeeded to read");
@@ -163,16 +164,34 @@ bool DynamixelSDKWrapper::read_register(
     length,
     data_basket,
     &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS) {
-    if (log != NULL) {*log = packetHandler_->getTxRxResult(dxl_comm_result);}
+  if (dxl_comm_result != COMM_SUCCESS) 
+  {
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, read register failed: %d", *dxl_error);
+    if (log != NULL) 
+    {
+      *log = packetHandler_->getTxRxResult(dxl_comm_result);
+      RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Logs: %s", *log);
+      
+    }
+
     return false;
-  } else if (dxl_error != 0) {
-    if (log != NULL) {*log = packetHandler_->getRxPacketError(dxl_error);}
-    return false;
-  } else {
-    return true;
   }
 
+  else if (dxl_error != 0) {
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm success, but read register failed: %d", dxl_error);
+    if (log != NULL) 
+      {
+      *log = packetHandler_->getRxPacketError(dxl_error);
+      RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Logs: %s", *log);
+      }
+      return false;
+      
+  }
+
+  else {
+    return true;
+  }
+  RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Weird subcase, how does this even happen? %d", dxl_error);
   return false;
 }
 
