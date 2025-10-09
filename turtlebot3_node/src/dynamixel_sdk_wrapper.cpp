@@ -167,6 +167,9 @@ bool DynamixelSDKWrapper::read_register(
   if (dxl_comm_result != COMM_SUCCESS) 
   {
     RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, read register failed: %d", dxl_error);
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Error no.: %d", dxl_comm_result);
+
+
     if (log != NULL) 
     {
       *log = packetHandler_->getTxRxResult(dxl_comm_result);
