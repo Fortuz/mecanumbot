@@ -78,9 +78,9 @@ void TurtleBot3::init_dynamixel_sdk_wrapper(const std::string & usb_port)
   // void init_read_memory(const uint16_t & start_addr, const uint16_t & length);
   dxl_sdk_wrapper_->init_read_memory( // TODO: Check this, probably wrong setting
     extern_control_table.millis.addr,
-    (extern_control_table.profile_acceleration_frontright.addr - extern_control_table.millis.addr) +
-    extern_control_table.profile_acceleration_frontright.length
-  );  //206 - 10 + 4 = 200
+    (extern_control_table.present_grabber_right_position.addr - extern_control_table.millis.addr) +
+    extern_control_table.present_grabber_right_position.length
+  );  //234 - 10 + 4 = 228
 }
 
 void TurtleBot3::check_device_status()
