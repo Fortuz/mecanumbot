@@ -47,7 +47,18 @@ JointState::JointState(
       extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontright.addr,
-      extern_control_table.present_position_frontright.length)
+      extern_control_table.present_position_frontright.length),
+    //added grabber and neck addresses and positions
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_grabber_left_position.addr,
+      extern_control_table.present_grabber_left_position.length), //grabber left
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_grabber_right_position.addr,
+      extern_control_table.present_grabber_right_position.length), //grabber right
+
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_neck_position.addr,
+      extern_control_table.present_neck_position.length) //head
     };
 
   nh_->get_parameter_or<std::string>(
@@ -61,6 +72,10 @@ JointState::JointState(
     wheel_frontleft_joint_ = name_space_ + "/" + wheel_frontleft_joint_;
     wheel_backright_joint_ = name_space_ + "/" + wheel_backright_joint_;
     wheel_backleft_joint_ = name_space_ + "/" + wheel_backleft_joint_;
+    //added grabber and neck joints to namespace
+    grabber_left_joint_ = name_space_ + "/" + grabber_left_joint_;
+    grabber_right_joint_ = name_space_ + "/" + grabber_right_joint_;
+    head_joint_ = name_space_ + "/" + head_joint_;
   }
   RCLCPP_INFO(nh_->get_logger(), "Succeeded to create joint state publisher");
 }
@@ -84,7 +99,18 @@ void JointState::publish(
       extern_control_table.present_position_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_position_frontright.addr,
-      extern_control_table.present_position_frontright.length)
+      extern_control_table.present_position_frontright.length),
+    //added grabber and neck addresses and positions
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_grabber_left_position.addr,
+      extern_control_table.present_grabber_left_position.length), //grabber left
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_grabber_right_position.addr,
+      extern_control_table.present_grabber_right_position.length), //grabber right
+
+    dxl_sdk_wrapper -> get_data_from_device<int32_t>(
+      extern_control_table.present_neck_position.addr,
+      extern_control_table.present_neck_position.length) //head
   };
 
   std::array<int32_t, JOINT_NUM> velocity =
@@ -100,7 +126,8 @@ void JointState::publish(
       extern_control_table.present_velocity_frontleft.length),
     dxl_sdk_wrapper->get_data_from_device<int32_t>(
       extern_control_table.present_velocity_frontright.addr,
-      extern_control_table.present_velocity_frontright.length)
+      extern_control_table.present_velocity_frontright.length),
+      0,0,0 //grabber and neck do not have velocity data
   };
 
   // std::array<int32_t, JOINT_NUM> current =
@@ -119,15 +146,29 @@ void JointState::publish(
   msg->name.push_back(wheel_frontleft_joint_);
   msg->name.push_back(wheel_frontright_joint_);
 
+  msg->name.push_back(grabber_left_joint_);
+  msg->name.push_back(grabber_right_joint_);
+  msg->name.push_back(head_joint_);
+
   msg->position.push_back(TICK_TO_RAD * last_diff_position[0]);
   msg->position.push_back(TICK_TO_RAD * last_diff_position[1]);
   msg->position.push_back(TICK_TO_RAD * last_diff_position[2]);
   msg->position.push_back(TICK_TO_RAD * last_diff_position[3]);
 
+  //maybe, just set to the last diff position for now TODO
+  msg->position.push_back(last_diff_position[4]); //grabber left
+  msg->position.push_back(last_diff_position[5]); //grabber right
+  msg->position.push_back(last_diff_position[6]); //head
+
   msg->velocity.push_back(RPM_TO_MS * velocity[0]);
   msg->velocity.push_back(RPM_TO_MS * velocity[1]);
   msg->velocity.push_back(RPM_TO_MS * velocity[2]);
   msg->velocity.push_back(RPM_TO_MS * velocity[3]);
+
+  //TODO: they have no velocity data
+  msg->velocity.push_back(0); //grabber left
+  msg->velocity.push_back(0); //grabber right
+  msg->velocity.push_back(0); //head
 
   // msg->effort.push_back(current[0]);
   // msg->effort.push_back(current[1]);
@@ -136,6 +177,10 @@ void JointState::publish(
   last_diff_position[1] += (position[1] - last_position[1]);
   last_diff_position[2] += (position[2] - last_position[2]);
   last_diff_position[3] += (position[3] - last_position[3]);
+
+  last_diff_position[4] += (position[4] - last_position[4]); //grabber left
+  last_diff_position[5] += (position[5] - last_position[5]); //grabber right
+  last_diff_position[6] += (position[6] - last_position[6]); //head
 
   last_position = position;
 

@@ -30,7 +30,8 @@ namespace turtlebot3
 {
 namespace sensors
 {
-constexpr uint8_t JOINT_NUM = 4;
+//constexpr uint8_t JOINT_NUM = 4;
+constexpr uint8_t JOINT_NUM = 7; // 4 wheels + 2 grabbers + 1 camera
 
 // ref) http://emanual.robotis.com/docs/en/dxl/x/xl430-w250/#goal-velocity104
 constexpr double RPM_TO_MS = 0.229 * 0.0034557519189487725;
@@ -59,6 +60,11 @@ private:
   std::string wheel_backright_joint_ = "wheel_backright_joint";
   std::string wheel_frontleft_joint_ = "wheel_frontleft_joint";
   std::string wheel_frontright_joint_ = "wheel_frontright_joint";
+
+  std::string grabber_left_joint_ = "grabber_left_joint";
+  std::string grabber_right_joint_ = "grabber_right_joint";
+
+  std::string head_joint_ = "head_joint";
 };
 }  // namespace sensors
 }  // namespace turtlebot3
