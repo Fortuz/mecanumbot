@@ -304,7 +304,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
 
   delta_x = step_time * (wheel_fl + wheel_fr + wheel_bl + wheel_br) / 4.0;
-  delta_y = step_time * (-wheel_fl + wheel_fr + wheel_bl - wheel_br) / 4.0;
+  delta_y = step_time * (wheel_fl - wheel_fr - wheel_bl + wheel_br) / 4.0;
   v_x = delta_x/step_time;
   v_y = delta_y/step_time;
   if (use_imu_)
@@ -352,8 +352,8 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   RCLCPP_WARN(nh_->get_logger(), "Skipping odometry publish due to NaN or Inf values.");
   return false;
   }
-  RCLCPP_INFO(nh_->get_logger(), "Odometry calculated, dx : %f, dy : %f, dtheta : %f, v_x : %f, v_y : %f, w : %f", delta_x, delta_y, delta_theta, v_x, v_y, w);
-  RCLCPP_INFO(nh_->get_logger(), "Odometry, x : %f, y : %f, theta : %f, v_x : %f, v_y : %f, w : %f", robot_pose_[0], robot_pose_[1], robot_pose_[2], robot_vel_[0], robot_vel_[1], robot_vel_[2]);
+  RCLCPP_DEBUG(nh_->get_logger(), "Odometry calculated, dx : %f, dy : %f, dtheta : %f, v_x : %f, v_y : %f, w : %f", delta_x, delta_y, delta_theta, v_x, v_y, w);
+  RCLCPP_DEBUG(nh_->get_logger(), "Odometry, x : %f, y : %f, theta : %f, v_x : %f, v_y : %f, w : %f", robot_pose_[0], robot_pose_[1], robot_pose_[2], robot_vel_[0], robot_vel_[1], robot_vel_[2]);
   last_theta_ = theta;
   return true;
 }
