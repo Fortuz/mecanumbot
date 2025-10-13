@@ -304,7 +304,7 @@ bool Odometry::calculate_odometry(const rclcpp::Duration &duration)
   }
 
   delta_x = step_time * (wheel_fl + wheel_fr + wheel_bl + wheel_br) / 4.0;
-  delta_y = step_time * (-wheel_fl + wheel_fr + wheel_bl - wheel_br) / 4.0;
+  delta_y = step_time * (wheel_fl - wheel_fr - wheel_bl + wheel_br) / 4.0;
   v_x = delta_x/step_time;
   v_y = delta_y/step_time;
   if (use_imu_)
