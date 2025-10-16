@@ -35,7 +35,7 @@
 #define LOG_ERROR RCUTILS_LOG_ERROR_NAMED
 #define LOG_DEBUG RCUTILS_LOG_DEBUG_NAMED
 
-#define READ_DATA_SIZE 200
+#define READ_DATA_SIZE 225
 
 namespace robotis
 {
