@@ -90,15 +90,19 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     LOG_ERROR("Start address", "[%d]", read_memory_.start_addr);
     LOG_ERROR("Memory length", "[%d]", read_memory_.length);
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
+
+    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
+    portHandler_->clearPort();          // flush bad data in UART buffer
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    return;  
   } 
-  else {
+  else   {
     std::lock_guard<std::mutex> lock(read_data_mutex_);
-    LOG_INFO("DynamixelSDKWrapper", "Read length=%d, expected=%d", read_memory_.length, READ_DATA_SIZE);
-    std::copy(
-              read_data_buffer_,
-              read_data_buffer_ + std::min(static_cast<size_t>(read_memory_.length), static_cast<size_t>(READ_DATA_SIZE)),
-              read_data_);
-    // LOG_INFO("DynamixelSDKWrapper", "Succeeded to read");
+    size_t copy_len = std::min(static_cast<size_t>(read_memory_.length),
+                               static_cast<size_t>(READ_DATA_SIZE));
+    LOG_INFO("DynamixelSDKWrapper", "Read length=%d, expected=%d",
+             read_memory_.length, READ_DATA_SIZE);
+    std::copy(read_data_buffer_, read_data_buffer_ + copy_len, read_data_);
     LOG_DEBUG("DynamixelSDKWrapper", "Succeeded to read");
   }
 }
