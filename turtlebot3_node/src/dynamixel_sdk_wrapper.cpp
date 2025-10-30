@@ -93,6 +93,7 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
   } 
   else {
     std::lock_guard<std::mutex> lock(read_data_mutex_);
+    LOG_INFO("DynamixelSDKWrapper", "Read length=%d, expected=%d", read_memory_.length, READ_DATA_SIZE);
     std::copy(
               read_data_buffer_,
               read_data_buffer_ + std::min(static_cast<size_t>(read_memory_.length), static_cast<size_t>(READ_DATA_SIZE)),
