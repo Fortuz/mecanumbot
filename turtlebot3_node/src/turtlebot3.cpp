@@ -372,12 +372,6 @@ void TurtleBot3::cmd_vel_callback()
         dword[1] = static_cast<int32_t>(msg->linear.y * 100);
         dword[5] = static_cast<int32_t>(msg->angular.z * 100);
 
-        if (addr_length > sizeof(data.byte)) {
-          RCLCPP_ERROR(this->get_logger(), 
-            "Overflow: addr_length=%u > buffer=%zu", addr_length, sizeof(data.byte));
-          return;
-}
-
         dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, data.data(), &sdk_msg);
 
         RCLCPP_DEBUG(
