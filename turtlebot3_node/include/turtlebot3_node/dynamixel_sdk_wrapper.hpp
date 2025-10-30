@@ -35,7 +35,7 @@
 #define LOG_ERROR RCUTILS_LOG_ERROR_NAMED
 #define LOG_DEBUG RCUTILS_LOG_DEBUG_NAMED
 
-#define READ_DATA_SIZE 400
+#define READ_DATA_SIZE 1148 //memo_length(=228)*5+8
 
 namespace robotis
 {
