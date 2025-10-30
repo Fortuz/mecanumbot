@@ -359,27 +359,26 @@ void TurtleBot3::cmd_vel_callback()
       {
         std::string sdk_msg;
 
-        union Data {
-          int32_t dword[6];
-          uint8_t byte[4 * 6];
-        } data;
-
-        data.dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        data.dword[1] = static_cast<int32_t>(msg->linear.y * 100);
-        data.dword[2] = 0;
-        data.dword[3] = 0;
-        data.dword[4] = 0;
-        data.dword[5] = static_cast<int32_t>(msg->angular.z * 100);
-
         uint16_t start_addr = extern_control_table.cmd_velocity_linear_x.addr;
         uint16_t addr_length =
-        (extern_control_table.cmd_velocity_angular_z.addr -
-        extern_control_table.cmd_velocity_linear_x.addr) +
-        extern_control_table.cmd_velocity_angular_z.length;          
+          (extern_control_table.cmd_velocity_angular_z.addr -
+          extern_control_table.cmd_velocity_linear_x.addr) +
+          extern_control_table.cmd_velocity_angular_z.length;
 
-        uint8_t * p_data = &data.byte[0];
+        std::vector<uint8_t> data(addr_length, 0);
+        int32_t *dword = reinterpret_cast<int32_t*>(data.data());
 
-        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, p_data, &sdk_msg);
+        dword[0] = static_cast<int32_t>(msg->linear.x * 100);
+        dword[1] = static_cast<int32_t>(msg->linear.y * 100);
+        dword[5] = static_cast<int32_t>(msg->angular.z * 100);
+
+        if (addr_length > sizeof(data.byte)) {
+          RCLCPP_ERROR(this->get_logger(), 
+            "Overflow: addr_length=%u > buffer=%zu", addr_length, sizeof(data.byte));
+          return;
+}
+
+        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, data.data(), &sdk_msg);
 
         RCLCPP_DEBUG(
           this->get_logger(),
