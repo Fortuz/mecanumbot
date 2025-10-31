@@ -117,9 +117,9 @@ bool DynamixelSDKWrapper::set_data_to_device(
   bool ret = false;
 
   std::lock_guard<std::mutex> lock(write_data_mutex_);
-  RCLCPP_INFO(this->get_logger(), "######## Writing Data to Device Start ########");
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device Start ########");
   ret = write_register(device_.id, addr, length, get_data, &log);
-  RCLCPP_INFO(this->get_logger(), "######## Writing Data to Device End ########");
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device End ########");
 
   if (ret == true) {
     if (msg) *msg = "Succeeded to write data";
