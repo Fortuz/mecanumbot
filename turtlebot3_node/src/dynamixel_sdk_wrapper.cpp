@@ -71,9 +71,8 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 {
   const char * log = NULL;
   if (skip_next_rw_) {
-    if (msg) *msg = "Skipping read due to prior comm error";
     skip_next_rw_ = false;
-    return false;
+    return ;
   }
 
   bool ret = this->read_register(
