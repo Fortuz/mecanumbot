@@ -358,29 +358,33 @@ void TurtleBot3::cmd_vel_callback()
       [this](const geometry_msgs::msg::Twist::SharedPtr msg) -> void
       {
         std::string sdk_msg;
+        // inside the first callback (replace the current vector/int32_t* approach)
+        std::array<int32_t, 6> dword = {0,0,0,0,0,0};
 
+        dword[0] = static_cast<int32_t>(msg->linear.x * 100);
+        dword[1] = static_cast<int32_t>(msg->linear.y * 100);
+        dword[5] = static_cast<int32_t>(msg->angular.z * 100);
+
+        // compute addr_length and validate it against the number of bytes we will send:
         uint16_t start_addr = extern_control_table.cmd_velocity_linear_x.addr;
         uint16_t addr_length =
           (extern_control_table.cmd_velocity_angular_z.addr -
           extern_control_table.cmd_velocity_linear_x.addr) +
           extern_control_table.cmd_velocity_angular_z.length;
 
-        std::vector<uint8_t> data(addr_length, 0);
-        int32_t *dword = reinterpret_cast<int32_t*>(data.data());
+        if (addr_length < sizeof(dword)) {
+          RCLCPP_ERROR(this->get_logger(), "addr_length (%u) too small for velocity data (%zu)", addr_length, sizeof(dword));
+          return;
+        }
 
-        dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        dword[1] = static_cast<int32_t>(msg->linear.y * 100);
-        dword[5] = static_cast<int32_t>(msg->angular.z * 100);
+        // send exactly addr_length bytes (zero pad/truncate correctly)
+        std::vector<uint8_t> out_bytes(addr_length, 0);
+        std::memcpy(out_bytes.data(), dword.data(), std::min<size_t>(addr_length, sizeof(dword)));
+        RCLCPP_INFO(this->get_logger(), "start_addr=%u addr_length=%u will_write_bytes=%zu linx=%d liny=%d ang=%d",
+             start_addr, addr_length, sizeof(dword),
+             dword[0], dword[1], dword[5]);
 
-        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, data.data(), &sdk_msg);
-
-        RCLCPP_DEBUG(
-          this->get_logger(),
-          "lin_x_vel: %f lin_y_vel: %f ang_vel: %f msg : %s", 
-          msg->linear.x, 
-          msg->linear.y, 
-          msg->angular.z, 
-          sdk_msg.c_str());
+        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, out_bytes.data(), &sdk_msg)
       }
     ),
     std::function<void(const geometry_msgs::msg::TwistStamped::SharedPtr)>(
