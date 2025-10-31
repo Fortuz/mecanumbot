@@ -70,8 +70,8 @@ void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const ui
 void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 {
   const char * log = NULL;
-  if (skip_next_rw_) {
-    skip_next_rw_ = false;
+  if (rw_skip_num_ > 0) {
+    rw_skip_num_--;
     return ;
   }
 
@@ -91,10 +91,10 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 
     LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
     portHandler_->clearPort();          // flush bad data in UART buffer
-    skip_next_rw_ = true;
-    return;  
+    rw_skip_num_ = 5;
+    return;
   } 
-  else   {
+  else {
     std::lock_guard<std::mutex> lock(read_data_mutex_);
     size_t copy_len = std::min(static_cast<size_t>(read_memory_.length),
                                static_cast<size_t>(READ_DATA_SIZE));
@@ -113,9 +113,9 @@ bool DynamixelSDKWrapper::set_data_to_device(
 {
   const char * log = nullptr;
   bool ret = false;
-  if (skip_next_rw_) {
+  if (rw_skip_num_ > 0) {
     if (msg) *msg = "Skipping write due to prior comm error";
-    skip_next_rw_ = false;  // skip just one cycle
+    rw_skip_num_ --;
     return false;
   }
 
@@ -132,8 +132,8 @@ bool DynamixelSDKWrapper::set_data_to_device(
   else {
     std::string logstr = (log != nullptr) ? std::string(log) : std::string();
     if (msg) *msg = std::string("Failed to write data: ") + logstr;
-    skip_next_rw_ = true;
-    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
+    rw_skip_num_ = 5;
+    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping next cycles to avoid memory corruption");
     portHandler_->clearPort();          // flush bad data in UART buffer
     return false;
   }
