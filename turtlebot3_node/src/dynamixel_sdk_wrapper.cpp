@@ -100,8 +100,8 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     std::lock_guard<std::mutex> lock(read_data_mutex_);
     size_t copy_len = std::min(static_cast<size_t>(read_memory_.length),
                                static_cast<size_t>(READ_DATA_SIZE));
-    LOG_INFO("DynamixelSDKWrapper", "Read length=%d, expected=%d",
-             read_memory_.length, READ_DATA_SIZE);
+    /*LOG_INFO("DynamixelSDKWrapper", "Read length=%d, expected=%d",
+             read_memory_.length, READ_DATA_SIZE);*/
     std::copy(read_data_buffer_, read_data_buffer_ + copy_len, read_data_);
     LOG_DEBUG("DynamixelSDKWrapper", "Succeeded to read");
   }
@@ -117,13 +117,17 @@ bool DynamixelSDKWrapper::set_data_to_device(
   bool ret = false;
 
   std::lock_guard<std::mutex> lock(write_data_mutex_);
+  RCLCPP_INFO(this->get_logger(), "######## Writing Data to Device Start ########");
   ret = write_register(device_.id, addr, length, get_data, &log);
+  RCLCPP_INFO(this->get_logger(), "######## Writing Data to Device End ########");
 
   if (ret == true) {
-    *msg = "Succeeded to write data";
+    if (msg) *msg = "Succeeded to write data";
     return true;
-  } else {
-    *msg = "Failed to write data" + std::string(log);
+  }
+  else {
+    std::string logstr = (log != nullptr) ? std::string(log) : std::string();
+    if (msg) *msg = std::string("Failed to write data: ") + logstr;
     return false;
   }
 
