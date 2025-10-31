@@ -384,7 +384,7 @@ void TurtleBot3::cmd_vel_callback()
              start_addr, addr_length, sizeof(dword),
              dword[0], dword[1], dword[5]);
 
-        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, out_bytes.data(), &sdk_msg)
+        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, out_bytes.data(), &sdk_msg);
       }
     ),
     std::function<void(const geometry_msgs::msg::TwistStamped::SharedPtr)>(
