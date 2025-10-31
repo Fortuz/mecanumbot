@@ -117,9 +117,9 @@ bool DynamixelSDKWrapper::set_data_to_device(
   bool ret = false;
 
   std::lock_guard<std::mutex> lock(write_data_mutex_);
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device Start ########");
+  //RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device Start ########");
   ret = write_register(device_.id, addr, length, get_data, &log);
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device End ########");
+  //RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device End ########");
 
   if (ret == true) {
     if (msg) *msg = "Succeeded to write data";
@@ -168,7 +168,7 @@ bool DynamixelSDKWrapper::read_register(
 
   int32_t dxl_comm_result = COMM_RX_FAIL;
   uint8_t dxl_error = 0;
-
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Reading register: ID %d, Address %d, Length %d", id, address, length);
   dxl_comm_result = packetHandler_->readTxRx(
     portHandler_,
     id,
@@ -176,6 +176,7 @@ bool DynamixelSDKWrapper::read_register(
     length,
     data_basket,
     &dxl_error);
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Read register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) 
   {
     RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, read register failed: %d", dxl_error);
@@ -221,7 +222,7 @@ bool DynamixelSDKWrapper::write_register(
 
   int32_t dxl_comm_result = COMM_TX_FAIL;
   uint8_t dxl_error = 0;
-
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Writing register: ID %d, Address %d, Length %d", id, address, length);
   dxl_comm_result = packetHandler_->writeTxRx(
     portHandler_,
     id,
@@ -229,9 +230,13 @@ bool DynamixelSDKWrapper::write_register(
     length,
     data,
     &dxl_error);
-
+  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Write register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) {
-    if (log != NULL) {*log = packetHandler_->getTxRxResult(dxl_comm_result);}
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, write register failed: %d", dxl_error);
+    RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Error no.: %d", dxl_comm_result);
+    if (log != NULL) {
+      RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Logs: %s", *log);
+      *log = packetHandler_->getTxRxResult(dxl_comm_result);}
     return false;
   } else if (dxl_error != 0) {
     if (log != NULL) {*log = packetHandler_->getRxPacketError(dxl_error);}
