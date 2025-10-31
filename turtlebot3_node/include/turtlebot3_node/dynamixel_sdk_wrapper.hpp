@@ -136,6 +136,7 @@ private:
 
   Memory read_memory_;
 
+  bool skip_next_rw_ = false;
   std::mutex sdk_mutex_;
   std::mutex read_data_mutex_;
   std::mutex write_data_mutex_;

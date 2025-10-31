@@ -70,6 +70,12 @@ void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const ui
 void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 {
   const char * log = NULL;
+  if (skip_next_rw_) {
+    if (msg) *msg = "Skipping read due to prior comm error";
+    skip_next_rw_ = false;
+    return false;
+  }
+
   bool ret = this->read_register(
     device_.id,
     read_memory_.start_addr,
@@ -77,13 +83,6 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     &read_data_buffer_[0],
     &log);
   //  LOG_INFO("DynamixelSDKWrapper", "Read data set called, ret=%d", ret);
-  /*
-  [turtlebot3_ros-3] [ERROR] [1756826600.476925401] [Device ID]: [200]
-  [turtlebot3_ros-3] [ERROR] [1756826600.477010293] [Start address]: [10]
-  [turtlebot3_ros-3] [ERROR] [1756826600.477039183] [Memory length]: [192]
-  
-  Thought: the OpenCRs memory is sorter than this propably? Too long to read back?
-  */
 
   if (ret == false) {
     LOG_ERROR("Device ID", "[%d]", device_.id);
@@ -93,7 +92,7 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 
     LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
     portHandler_->clearPort();          // flush bad data in UART buffer
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    skip_next_rw_ = true;
     return;  
   } 
   else   {
@@ -115,8 +114,14 @@ bool DynamixelSDKWrapper::set_data_to_device(
 {
   const char * log = nullptr;
   bool ret = false;
+  if (skip_next_rw_) {
+    if (msg) *msg = "Skipping write due to prior comm error";
+    skip_next_rw_ = false;  // skip just one cycle
+    return false;
+  }
 
   std::lock_guard<std::mutex> lock(write_data_mutex_);
+  
   //RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device Start ########");
   ret = write_register(device_.id, addr, length, get_data, &log);
   //RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "######## Writing Data to Device End ########");
@@ -128,6 +133,9 @@ bool DynamixelSDKWrapper::set_data_to_device(
   else {
     std::string logstr = (log != nullptr) ? std::string(log) : std::string();
     if (msg) *msg = std::string("Failed to write data: ") + logstr;
+    skip_next_rw_ = true;
+    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
+    portHandler_->clearPort();          // flush bad data in UART buffer
     return false;
   }
 
