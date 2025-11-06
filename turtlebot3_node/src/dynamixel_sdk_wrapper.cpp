@@ -70,10 +70,10 @@ void DynamixelSDKWrapper::init_read_memory(const uint16_t & start_addr, const ui
 void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
 {
   const char * log = NULL;
-  if (rw_skip_num_ > 0) {
+  /*if (rw_skip_num_ > 0) {
     rw_skip_num_--;
     return ;
-  }
+  }*/
 
   bool ret = this->read_register(
     device_.id,
@@ -89,9 +89,11 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     LOG_ERROR("Memory length", "[%d]", read_memory_.length);
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
 
-    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping this cycle to avoid memory corruption");
+    LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
     portHandler_->clearPort();          // flush bad data in UART buffer
-    rw_skip_num_ = 5;
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
+    //rw_skip_num_ = 5;
     return;
   } 
   else {
@@ -113,11 +115,11 @@ bool DynamixelSDKWrapper::set_data_to_device(
 {
   const char * log = nullptr;
   bool ret = false;
-  if (rw_skip_num_ > 0) {
+  /*if (rw_skip_num_ > 0) {
     if (msg) *msg = "Skipping write due to prior comm error";
     rw_skip_num_ --;
     return false;
-  }
+  }*/
 
   std::lock_guard<std::mutex> lock(write_data_mutex_);
   
@@ -132,9 +134,12 @@ bool DynamixelSDKWrapper::set_data_to_device(
   else {
     std::string logstr = (log != nullptr) ? std::string(log) : std::string();
     if (msg) *msg = std::string("Failed to write data: ") + logstr;
-    rw_skip_num_ = 5;
-    LOG_WARN("DynamixelSDKWrapper", "Clearing port and skipping next cycles to avoid memory corruption");
+    //rw_skip_num_ = 5;
+    LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
     portHandler_->clearPort();          // flush bad data in UART buffer
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
+
     return false;
   }
 
