@@ -220,7 +220,7 @@ bool DynamixelSDKWrapper::write_register(
 
   int32_t dxl_comm_result = COMM_TX_FAIL;
   uint8_t dxl_error = 0;
-  RCLCPP_DEBUg(rclcpp::get_logger("DynamixelSDKWrapper"), "Writing register: ID %d, Address %d, Length %d", id, address, length);
+  RCLCPP_DEBUG(rclcpp::get_logger("DynamixelSDKWrapper"), "Writing register: ID %d, Address %d, Length %d", id, address, length);
   dxl_comm_result = packetHandler_->writeTxRx(
     portHandler_,
     id,
