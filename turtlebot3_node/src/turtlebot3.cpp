@@ -389,7 +389,7 @@ void TurtleBot3::cmd_vel_callback()
         RCLCPP_INFO(this->get_logger(), "ang_start_addr=%u ang_addr_length=%u will_write_bytes=%zu angz=%d",
              ang_start_addr, ang_addr_length, sizeof(ang_dword),
              ang_dword);
-        dxl_sdk_wrapper_->set_data_to_device(lin_start_addr, lin_addr_length, out_bytes.data(), &sdk_msg);
+        dxl_sdk_wrapper_->set_data_to_device(lin_start_addr, lin_addr_length, lin_out_bytes.data(), &sdk_msg);
         dxl_sdk_wrapper_->set_data_to_device(ang_start_addr, ang_addr_length, ang_out_bytes.data(), &sdk_msg);
 
       }
