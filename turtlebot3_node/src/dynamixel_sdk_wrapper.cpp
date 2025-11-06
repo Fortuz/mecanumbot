@@ -84,10 +84,10 @@ void DynamixelSDKWrapper::read_data_set() // TODO: The code robably fail here
     LOG_ERROR("Memory length", "[%d]", read_memory_.length);
     LOG_ERROR("DynamixelSDKWrapper", "Failed to read[%s]", log);
 
-    /*LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
-    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+    LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
     portHandler_->clearPort();          // flush bad data in UART buffer
-    std::this_thread::sleep_for(std::chrono::milliseconds(120));*/
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
     return;
   } 
   else {
@@ -121,10 +121,10 @@ bool DynamixelSDKWrapper::set_data_to_device(
   else {
     std::string logstr = (log != nullptr) ? std::string(log) : std::string();
     if (msg) *msg = std::string("Failed to write data: ") + logstr;
-    /*LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
-    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+    LOG_WARN("DynamixelSDKWrapper", "Read error: Clearing port and waiting to avoid memory corruption");
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
     portHandler_->clearPort();          // flush bad data in UART buffer
-    std::this_thread::sleep_for(std::chrono::milliseconds(120));*/
+    std::this_thread::sleep_for(std::chrono::milliseconds(60));
 
     return false;
   }
@@ -166,7 +166,7 @@ bool DynamixelSDKWrapper::read_register(
 
   int32_t dxl_comm_result = COMM_RX_FAIL;
   uint8_t dxl_error = 0;
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Reading register: ID %d, Address %d, Length %d", id, address, length);
+  RCLCPP_DEBUG(rclcpp::get_logger("DynamixelSDKWrapper"), "Reading register: ID %d, Address %d, Length %d", id, address, length);
   dxl_comm_result = packetHandler_->readTxRx(
     portHandler_,
     id,
@@ -174,7 +174,7 @@ bool DynamixelSDKWrapper::read_register(
     length,
     data_basket,
     &dxl_error);
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Read register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
+  RCLCPP_DEBUG(rclcpp::get_logger("DynamixelSDKWrapper"), "Read register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) 
   {
     RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, read register failed: %d", dxl_error);
@@ -220,7 +220,7 @@ bool DynamixelSDKWrapper::write_register(
 
   int32_t dxl_comm_result = COMM_TX_FAIL;
   uint8_t dxl_error = 0;
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Writing register: ID %d, Address %d, Length %d", id, address, length);
+  RCLCPP_DEBUg(rclcpp::get_logger("DynamixelSDKWrapper"), "Writing register: ID %d, Address %d, Length %d", id, address, length);
   dxl_comm_result = packetHandler_->writeTxRx(
     portHandler_,
     id,
@@ -228,7 +228,7 @@ bool DynamixelSDKWrapper::write_register(
     length,
     data,
     &dxl_error);
-  RCLCPP_INFO(rclcpp::get_logger("DynamixelSDKWrapper"), "Write register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
+  RCLCPP_DEBUG(rclcpp::get_logger("DynamixelSDKWrapper"), "Write register result: Comm result %d, Error %d", dxl_comm_result, dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) {
     RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Comm error, write register failed: %d", dxl_error);
     RCLCPP_ERROR(rclcpp::get_logger("DynamixelSDKWrapper"), "Error no.: %d", dxl_comm_result);
