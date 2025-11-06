@@ -359,32 +359,39 @@ void TurtleBot3::cmd_vel_callback()
       {
         std::string sdk_msg;
         // inside the first callback (replace the current vector/int32_t* approach)
-        std::array<int32_t, 6> dword = {0,0,0,0,0,0};
+        std::array<int32_t, 2> lin_dword = {0,0};
 
-        dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        dword[1] = static_cast<int32_t>(msg->linear.y * 100);
-        dword[5] = static_cast<int32_t>(msg->angular.z * 100);
+        lin_dword[0] = static_cast<int32_t>(msg->linear.x * 100);
+        lin_dword[1] = static_cast<int32_t>(msg->linear.y * 100);
+        std::int32_t ang_dword = static_cast<int32_t>(msg->angular.z * 100);
 
         // compute addr_length and validate it against the number of bytes we will send:
-        uint16_t start_addr = extern_control_table.cmd_velocity_linear_x.addr;
-        uint16_t addr_length =
-          (extern_control_table.cmd_velocity_angular_z.addr -
+        uint16_t lin_start_addr = extern_control_table.cmd_velocity_linear_x.addr;
+        uint16_t lin_addr_length =
+          (extern_control_table.cmd_velocity_linear_y.addr -
           extern_control_table.cmd_velocity_linear_x.addr) +
-          extern_control_table.cmd_velocity_angular_z.length;
-
-        if (addr_length < sizeof(dword)) {
-          RCLCPP_ERROR(this->get_logger(), "addr_length (%u) too small for velocity data (%zu)", addr_length, sizeof(dword));
+          extern_control_table.cmd_velocity_linear_y.length;
+        uint16_t ang_start_addr = extern_control_table.cmd_velocity_angular_z.addr;
+        uint16_t ang_addr_length = extern_control_table.cmd_velocity_angular_z.length;
+        if (lin_addr_length < sizeof(lin_dword)) {
+          RCLCPP_ERROR(this->get_logger(), "addr_length (%u) too small for velocity data (%zu)", lin_addr_length, sizeof(lin_dword));
           return;
         }
 
         // send exactly addr_length bytes (zero pad/truncate correctly)
-        std::vector<uint8_t> out_bytes(addr_length, 0);
-        std::memcpy(out_bytes.data(), dword.data(), std::min<size_t>(addr_length, sizeof(dword)));
-        RCLCPP_INFO(this->get_logger(), "start_addr=%u addr_length=%u will_write_bytes=%zu linx=%d liny=%d ang=%d",
-             start_addr, addr_length, sizeof(dword),
-             dword[0], dword[1], dword[5]);
+        std::vector<uint8_t> lin_out_bytes(lin_addr_length, 0);
+        std::vector<uint8_t> ang_out_bytes(ang_addr_length, 0);
+        std::memcpy(lin_out_bytes.data(), lin_dword.data(), std::min<size_t>(lin_addr_length, sizeof(lin_dword)));
+        std::memcpy(ang_out_bytes.data(), &ang_dword, std::min<size_t>(ang_addr_length, sizeof(ang_dword)));
+        RCLCPP_INFO(this->get_logger(), "lin_start_addr=%u lin_addr_length=%u will_write_bytes=%zu linx=%d liny=%d",
+             lin_start_addr, lin_addr_length, sizeof(lin_dword),
+             lin_dword[0], lin_dword[1]);
+        RCLCPP_INFO(this->get_logger(), "ang_start_addr=%u ang_addr_length=%u will_write_bytes=%zu angz=%d",
+             ang_start_addr, ang_addr_length, sizeof(ang_dword),
+             ang_dword);
+        dxl_sdk_wrapper_->set_data_to_device(lin_start_addr, lin_addr_length, out_bytes.data(), &sdk_msg);
+        dxl_sdk_wrapper_->set_data_to_device(ang_start_addr, ang_addr_length, ang_out_bytes.data(), &sdk_msg);
 
-        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, out_bytes.data(), &sdk_msg);
       }
     ),
     std::function<void(const geometry_msgs::msg::TwistStamped::SharedPtr)>(
