@@ -30,6 +30,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
+#include <mecanumbot_msgs/msg/accessory_motors.hpp> 
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
@@ -93,9 +94,7 @@ private:
   void heartbeat_timer(const std::chrono::milliseconds timeout);
 
   void cmd_vel_callback();
-  void cmd_cam_ori_callback();
-  void cmd_grabberleft_ori_callback();
-  void cmd_grabberright_ori_callback();
+  void cmd_accessory_motor_callback();
   void parameter_event_callback();
 
   Wheels wheels_;

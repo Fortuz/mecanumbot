@@ -19,6 +19,7 @@ find_package(geometry_msgs REQUIRED)
 ################################################################################
 set(msg_files
   "msg/SensorState.msg"
+  "msg/AccessoryMotors.msg"
 )
 
 set(srv_files

@@ -358,177 +358,70 @@ void TurtleBot3::cmd_vel_callback()
       [this](const geometry_msgs::msg::Twist::SharedPtr msg) -> void
       {
         std::string sdk_msg;
-        // inside the first callback (replace the current vector/int32_t* approach)
-        std::array<int32_t, 2> lin_dword = {0,0};
+        std::array<int32_t, 4> wheel_vels_dword = {0,0,0,0};
 
-        lin_dword[0] = static_cast<int32_t>(msg->linear.x * 100);
-        lin_dword[1] = static_cast<int32_t>(msg->linear.y * 100);
-        std::int32_t ang_dword = static_cast<int32_t>(msg->angular.z * 100);
+        int32_t X = static_cast<int32_t>(msg->linear.x * 100);
+        int32_t Y = static_cast<int32_t>(msg->linear.y * 100);
+        int32_t Th = static_cast<int32_t>(msg->angular.z * 100);
+
+        wheel_vels_dword[0] = X + Y - Th; //BL
+        wheel_vels_dword[1] = X - Y + Th; //BR
+        wheel_vels_dword[2] = X - Y - Th; //FL
+        wheel_vels_dword[3] = X + Y - Th; //FR
 
         // compute addr_length and validate it against the number of bytes we will send:
-        uint16_t lin_start_addr = extern_control_table.cmd_velocity_linear_x.addr;
-        uint16_t lin_addr_length =
-          (extern_control_table.cmd_velocity_linear_y.addr -
-          extern_control_table.cmd_velocity_linear_x.addr) +
-          extern_control_table.cmd_velocity_linear_y.length;
-        uint16_t ang_start_addr = extern_control_table.cmd_velocity_angular_z.addr;
-        uint16_t ang_addr_length = extern_control_table.cmd_velocity_angular_z.length;
-        if (lin_addr_length < sizeof(lin_dword)) {
+        uint16_t start_addr = extern_control_table.present_velocity_backleft.addr;
+        uint16_t addr_length =
+          (extern_control_table.present_velocity_frontright.addr -
+          extern_control_table.present_velocity_backleft.addr) +
+          extern_control_table.present_velocity_frontright.length;
+        if (addr_length < sizeof(dword)) {
           RCLCPP_ERROR(this->get_logger(), "addr_length (%u) too small for velocity data (%zu)", lin_addr_length, sizeof(lin_dword));
           return;
         }
 
         // send exactly addr_length bytes (zero pad/truncate correctly)
-        std::vector<uint8_t> lin_out_bytes(lin_addr_length, 0);
-        std::vector<uint8_t> ang_out_bytes(ang_addr_length, 0);
-        std::memcpy(lin_out_bytes.data(), lin_dword.data(), std::min<size_t>(lin_addr_length, sizeof(lin_dword)));
-        std::memcpy(ang_out_bytes.data(), &ang_dword, std::min<size_t>(ang_addr_length, sizeof(ang_dword)));
-        RCLCPP_INFO(this->get_logger(), "lin_start_addr=%u lin_addr_length=%u will_write_bytes=%zu linx=%d liny=%d",
-             lin_start_addr, lin_addr_length, sizeof(lin_dword),
-             lin_dword[0], lin_dword[1]);
-        RCLCPP_INFO(this->get_logger(), "ang_start_addr=%u ang_addr_length=%u will_write_bytes=%zu angz=%d",
-             ang_start_addr, ang_addr_length, sizeof(ang_dword),
-             ang_dword);
-        dxl_sdk_wrapper_->set_data_to_device(lin_start_addr, lin_addr_length, lin_out_bytes.data(), &sdk_msg);
-        dxl_sdk_wrapper_->set_data_to_device(ang_start_addr, ang_addr_length, ang_out_bytes.data(), &sdk_msg);
+        std::vector<uint8_t>out_bytes(addr_length, 0);
+        std::memcpy(out_bytes.data(), lin_dword.data(), std::min<size_t>(addr_length, sizeof(wheel_dword)));
+        RCLCPP_INFO(this->get_logger(), "lin_start_addr=%u lin_addr_length=%u will_write_bytes=%zu",
+             start_addr, addr_length, sizeof(wheel_vel_dword));
+        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, out_bytes.data(), &sdk_msg);
 
       }
     ),
-    std::function<void(const geometry_msgs::msg::TwistStamped::SharedPtr)>(
-      [this](const geometry_msgs::msg::TwistStamped::SharedPtr msg) -> void
-      {
-        std::string sdk_msg;
-
-        union Data {
-          int32_t dword[6];
-          uint8_t byte[4 * 6];
-        } data;
-
-        data.dword[0] = static_cast<int32_t>(msg->twist.linear.x * 100);
-        data.dword[1] = static_cast<int32_t>(msg->twist.linear.y * 100);  // Added here
-        data.dword[2] = 0;
-        data.dword[3] = 0;
-        data.dword[4] = 0;
-        data.dword[5] = static_cast<int32_t>(msg->twist.angular.z * 100);
-
-        uint16_t start_addr = extern_control_table.cmd_velocity_linear_x.addr;
-        uint16_t addr_length =
-        (extern_control_table.cmd_velocity_angular_z.addr -
-        extern_control_table.cmd_velocity_linear_x.addr) +
-        extern_control_table.cmd_velocity_angular_z.length;
-
-        uint8_t * p_data = &data.byte[0];
-
-        dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, p_data, &sdk_msg);
-
-        RCLCPP_DEBUG(
-          this->get_logger(),
-          "lin_x_vel: %f lin_y_vel: %f ang_vel: %f msg : %s",
-          msg->twist.linear.x,
-          msg->twist.linear.y,
-          msg->twist.angular.z,
-          sdk_msg.c_str());
-      }
-    )
   );
 }
 
-void TurtleBot3::cmd_cam_ori_callback()
+void TurtleBot3::cmd_accessory_motor_callback()
 {
   auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
   cmd_cam_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
-    "cmd_cam_ori",
+    "cmd_accessory_motors",
     qos,
-    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
+    [this](const mecanumbot_msgs::msg::AccessoryMotors::SharedPtr msg) -> void{
       std::string sdk_msg;
 
       union Data {
-        int32_t dword[1];
+        int32_t dword[3];
         uint8_t byte[4];
       } data;
+      data.dword[0] = static_cast<int32_t>(msg->Neck * 100);
+      data.dword[2] = static_cast<int32_t>(msg->GrabberLeft * 100);
+      data.dword[3] = static_cast<int32_t>(msg->GrabberRight * 100);
 
-      data.dword[0] = static_cast<int32_t>(msg->y * 100);
+      uint16_t start_addr = extern_control_table.cmd_neck_goal.addr;
+      uint16_t caddr_length = extern_control_table.cmd_grabber_right.length - extern_control_table.cmd_neck_goal.addr
+        + extern_control_table.cmd_grabber_right.length;          
 
-      uint16_t cstart_addr = extern_control_table.cmd_neck_goal.addr;
-      uint16_t caddr_length = extern_control_table.cmd_neck_goal.length;          
+      uint8_t * p_data = &data.byte[0];
 
-      uint8_t * cp_data = &data.byte[0];
-
-      dxl_sdk_wrapper_->set_data_to_device(cstart_addr, caddr_length, cp_data, &sdk_msg);
+      dxl_sdk_wrapper_->set_data_to_device(start_addr, addr_length, p_data, &sdk_msg);
       RCLCPP_DEBUG(
         this->get_logger(),
-        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
+        "Neck posi: %f GL posi: %f GR posi: %f msg : %s", 
         msg->x, 
-        msg->y, 
-        msg->z, 
-        sdk_msg.c_str());
-    }
-  );
-}
-
-void TurtleBot3::cmd_grabberleft_ori_callback()
-{
-  auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
-  cmd_grabberleft_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
-    "cmd_grabberleft_ori",
-    qos,
-    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
-      std::string sdk_msg;
-
-      union Data {
-        int32_t dword[1];
-        uint8_t byte[4];
-      } data;
-
-      data.dword[0] = static_cast<int32_t>(msg->z * 100);
-
-      uint16_t lstart_addr = extern_control_table.cmd_grabber_left_goal.addr;
-      uint16_t laddr_length = extern_control_table.cmd_grabber_left_goal.length;          
-
-      uint8_t * lp_data = &data.byte[0];
-
-      dxl_sdk_wrapper_->set_data_to_device(lstart_addr, laddr_length, lp_data, &sdk_msg);
-
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
-        msg->x, 
-        msg->y, 
-        msg->z, 
-        sdk_msg.c_str());
-    }
-  );
-}
-
-void TurtleBot3::cmd_grabberright_ori_callback()
-{
-  auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
-  cmd_grabberright_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
-    "cmd_grabberright_ori",
-    qos,
-    [this](const geometry_msgs::msg::Vector3::SharedPtr msg) -> void{
-      std::string sdk_msg;
-
-      union Data {
-        int32_t dword[1];
-        uint8_t byte[4];
-      } data;
-
-      data.dword[0] = static_cast<int32_t>(msg->z * 100);
-
-      uint16_t rstart_addr = extern_control_table.cmd_grabber_right_goal.addr;
-      uint16_t raddr_length = extern_control_table.cmd_grabber_right_goal.length;          
-
-      uint8_t * rp_data = &data.byte[0];
-
-      dxl_sdk_wrapper_->set_data_to_device(rstart_addr, raddr_length, rp_data, &sdk_msg);
-
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "x_ori: %f y_ori: %f z_ori: %f msg : %s", 
-        msg->x, 
-        msg->y, 
-        msg->z, 
+        msg->GrabberLeft, 
+        msg->GrabberRight, 
         sdk_msg.c_str());
     }
   );
