@@ -403,7 +403,7 @@ void TurtleBot3::cmd_accessory_motor_callback()
 
       union Data {
         int32_t dword[3];
-        uint8_t byte[4];
+        uint8_t byte[4*3];
       } data;
       data.dword[0] = static_cast<int32_t>(msg->Neck * 100);
       data.dword[1] = static_cast<int32_t>(msg->GrabberLeft * 100);
@@ -419,7 +419,7 @@ void TurtleBot3::cmd_accessory_motor_callback()
       RCLCPP_DEBUG(
         this->get_logger(),
         "Neck posi: %f GL posi: %f GR posi: %f msg : %s", 
-        msg->x, 
+        msg->Neck, 
         msg->GrabberLeft, 
         msg->GrabberRight, 
         sdk_msg.c_str());
