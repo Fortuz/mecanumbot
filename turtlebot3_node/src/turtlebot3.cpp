@@ -406,8 +406,8 @@ void TurtleBot3::cmd_accessory_motor_callback()
         uint8_t byte[4];
       } data;
       data.dword[0] = static_cast<int32_t>(msg->Neck * 100);
-      data.dword[2] = static_cast<int32_t>(msg->GrabberLeft * 100);
-      data.dword[3] = static_cast<int32_t>(msg->GrabberRight * 100);
+      data.dword[1] = static_cast<int32_t>(msg->GrabberLeft * 100);
+      data.dword[2] = static_cast<int32_t>(msg->GrabberRight * 100);
 
       uint16_t start_addr = extern_control_table.cmd_neck_goal.addr;
       uint16_t caddr_length = extern_control_table.cmd_grabber_right.length - extern_control_table.cmd_neck_goal.addr
