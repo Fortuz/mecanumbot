@@ -1,3 +1,3 @@
-float32 N_pos
-float32 GL_pos
-float32 GR_pos
+float32 n_pos
+float32 gl_pos
+float32 gr_pos
