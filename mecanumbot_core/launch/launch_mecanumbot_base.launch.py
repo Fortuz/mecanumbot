@@ -1,27 +1,87 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.substitutions import LaunchConfiguration
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-import os
 from ament_index_python.packages import get_package_share_directory
-
-yaml_file = os.path.join(
-            get_package_share_directory('mecanumbot_core'),  # <-- correct package name
-            'config',
-            'mecanumbot_core_parameters.yaml')
+import os
 
 def generate_launch_description():
+
+    # Launch arguments
+    namespace = LaunchConfiguration('namespace')
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    declare_namespace = DeclareLaunchArgument(
+        'namespace',
+        default_value='',
+        description='Robot namespace'
+    )
+
+    declare_sim_time = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='false',
+        description='Use simulation (Gazebo) clock'
+    )
+
+    # YAML config
+    yaml_file = os.path.join(
+        get_package_share_directory('mecanumbot_core'),
+        'config',
+        'mecanumbot_core_parameters.yaml'
+    )
+
+    # State publisher from another package
+    state_publisher_path = os.path.join(
+        get_package_share_directory('mecanumbot_bringup'),
+        'launch',
+        'mecanumbot_state_publisher.launch.py'
+    )
+
     return LaunchDescription([
+        declare_namespace,
+        declare_sim_time,
+
+        # mecanumbot_core IO node
         Node(
-            package='mecanumbot_core',  # <-- correct package name
+            package='mecanumbot_core',
             executable='mecanumbot_io_node',
             name='mecanumbot_io_node',
-            parameters=[yaml_file],
+            namespace=namespace,
+            parameters=[yaml_file, {'use_sim_time': use_sim_time}],
             output='screen'
         ),
+
+        # mecanumbot_core Sensor Processing node
         Node(
-            package='mecanumbot_core',  # <-- correct package name
+            package='mecanumbot_core',
             executable='mecanumbot_sensorproc_node',
             name='mecanumbot_sensorproc_node',
-            parameters=[yaml_file],
+            namespace=namespace,
+            parameters=[yaml_file, {'use_sim_time': use_sim_time}],
             output='screen'
+        ),
+
+        # LD08 Lidar driver node
+        Node(
+            package='LD08_driver',
+            executable='ld08_driver_node',
+            name='ld08_driver_node',
+            namespace=namespace,
+            parameters=[
+                {'port': '/dev/ttyUSB0'},
+                {'frame_id': 'laser_frame'},
+                {'use_sim_time': use_sim_time}
+            ],
+            output='screen'
+        ),
+
+        # State publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(state_publisher_path),
+            launch_arguments={
+                'use_sim_time': use_sim_time,
+                'namespace': namespace
+            }.items()
         )
     ])

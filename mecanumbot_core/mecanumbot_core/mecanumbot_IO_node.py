@@ -23,11 +23,11 @@ def crc8_ccitt(data: bytes) -> int:
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_IO_Node(Node):
 
-    def __init__(self):
-        super().__init__('mecanumbot_io_node')
+    def __init__(self,namespace=''):
+        super().__init__('mecanumbot_io_node', namespace=namespace)
         default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
-        self.declare_parameters(
-        namespace='',
+        sel.f.declare_parameters(
+        namespace=namespace,
         parameters=[
         ('dev_params.device_name', default_device),
         ('dev_params.baudrate', 57600),
