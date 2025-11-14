@@ -146,10 +146,10 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.imu_magnetic_x = floats[7]
         self.opencr_state.imu_magnetic_y = floats[8]
         self.opencr_state.imu_magnetic_z = floats[9]
-        self.opencr_state.orientation_w = floats[10]
-        self.opencr_state.orientation_x = floats[11]
-        self.opencr_state.orientation_y = floats[12]
-        self.opencr_state.orientation_z = floats[13]
+        self.opencr_state.imu_orientation_w = floats[10]
+        self.opencr_state.imu_orientation_x = floats[11]
+        self.opencr_state.imu_orientation_y = floats[12]
+        self.opencr_state.imu_orientation_z = floats[13]
 
     def vel_cmd_callback(self,msg):
         X_vel = msg.linear.x * 100
