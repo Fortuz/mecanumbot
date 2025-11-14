@@ -40,7 +40,7 @@ float32 imu_linear_acc_z
 float32 imu_magnetic_x 
 float32 imu_magnetic_y
 float32 imu_magnetic_z
-float32 orientation_w 
-float32 orientation_x 
-float32 orientation_y 
-float32 orientation_z 
+float32 imu_orientation_w 
+float32 imu_orientation_x 
+float32 imu_orientation_y 
+float32 imu_orientation_z 
