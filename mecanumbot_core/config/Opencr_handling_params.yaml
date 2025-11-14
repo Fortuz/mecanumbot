@@ -1,0 +1,17 @@
+mecanumbot_io_node:
+  ros__parameters:
+    dev_params:
+      device_name: "/dev/ttyACM0"
+      baudrate: 57600
+
+    packet_params:
+      payload_fmt: "<23h14f"
+      seq_size: 1
+      crc_size: 1
+      magic: "55AA" # 0x55, 0xAA
+
+    plausibility_params:
+      max_wheel_speed: 10000
+      min_pos: -1000
+      max_pos: 10000
+      max_float_abs: 1e7
