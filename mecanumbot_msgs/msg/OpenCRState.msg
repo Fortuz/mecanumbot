@@ -29,7 +29,7 @@ int16 pos_n
 int16 pos_gl  
 int16 pos_gr  
 #sensory data
-float32 voltage  
+float32 battery_voltage  
  #IMU data
 float32 imu_angular_vel_x  
 float32 imu_angular_vel_y  
