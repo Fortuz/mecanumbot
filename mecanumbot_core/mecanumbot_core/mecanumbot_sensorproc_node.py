@@ -21,7 +21,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         namespace='',
         parameters=[    #TODO
         
-        ('robot_params.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
+        ('robot_params.wheel.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
         ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
@@ -35,13 +35,15 @@ class Mecanumbot_Sensorproc_Node(Node):
          ])
         
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
-        self.vel_tick = self.get_parameter('robot_params.vel_tick').value/60 # rot/min to rot/s
+        self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
         self.wheel_sep_x = self.get_parameter('robot_params.wheel.sep_x').value # m
         self.wheel_sep_y = self.get_parameter('robot_params.wheel.sep_y').value
         self.battery_min_voltage = self.get_parameter('robot_params.battery.min_voltage').value # V
         self.battery_max_voltage = self.get_parameter('robot_params.battery.max_voltage').value # V
 
+        self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
+        self.wheel_dist_scale = (self.wheel_separation_x + self.wheel_separation_y) / 2 # 
          # Initialize messages
 
         self.cr_state = OpenCRState()
@@ -98,9 +100,9 @@ class Mecanumbot_Sensorproc_Node(Node):
 
             dt = (self.current_time - self.last_time).nanoseconds / 1e9
 
-            msg.twist.twist.linear.x = Vx_tick * self.vel_tick * 2 * math.pi * self.wheel_radius  # m/s
-            msg.twist.twist.linear.y = Vy_tick * self.vel_tick * 2 * math.pi * self.wheel_radius  # m/s
-            msg.twist.twist.angular.z = (Wz_tick * self.vel_tick * 2 * math.pi * self.wheel_radius *2) / (self.wheel_sep_x + self.wheel_sep_y)  # rad/s
+            msg.twist.twist.linear.x = Vx_tick * self.scale  # m/s
+            msg.twist.twist.linear.y = Vy_tick * self.scale # m/s
+            msg.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
             
             dx =  msg.twist.twist.linear.x * dt
             dy = msg.twist.twist.linear.y * dt
