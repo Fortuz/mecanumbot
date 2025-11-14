@@ -19,17 +19,8 @@ find_package(geometry_msgs REQUIRED)
 ################################################################################
 set(msg_files
   "msg/SensorState.msg"
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "msg/AccessoryMotors.msg"
-=======
   "msg/AccessMotorCmd.msg"
   "msg/OpenCRState.msg"
->>>>>>> 1bffb20 (Create new message types for handling opencr memory and position commands - Csenge)
-=======
-  "msg/AccessMotorCmd.msg"
-  "msg/OpenCRState.msg"
->>>>>>> 144f6513fe58770f2edaa42a55d4d407e47df7e0
 )
 
 set(srv_files
