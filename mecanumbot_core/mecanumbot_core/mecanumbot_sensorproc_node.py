@@ -66,7 +66,7 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.current_time = self.get_clock().now().nanoseconds()
         self.last_time = self.get_clock().now().nanoseconds()
-        self.dt = self.current_time - self.last_time
+        self.dt = (self.current_time - self.last_time)* 1e-9 #[s]
         
     def crstate_callback(self,data):
         self.cr_state = data
@@ -74,7 +74,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def timer_callback(self):
         self.last_time = self.current_time
         self.current_time = self.get_clock().now().nanoseconds()
-        self.dt = (self.current_time - self.last_time) / 1e9 #[s]
+        self.dt = (self.current_time - self.last_time) * 1e-9 #[s]
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
@@ -96,9 +96,6 @@ class Mecanumbot_Sensorproc_Node(Node):
             Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
             Vy_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl - self.cr_state.vel_fr)/4
             Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-
-
-            dt = (self.current_time - self.last_time).nanoseconds / 1e9
 
             msg.twist.twist.linear.x = Vx_tick * self.scale  # m/s
             msg.twist.twist.linear.y = Vy_tick * self.scale # m/s
