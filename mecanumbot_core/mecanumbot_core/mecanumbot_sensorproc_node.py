@@ -15,12 +15,11 @@ import math
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
-    def __init__(self):
-        super().__init__('mecanumbot_sensorproc_node')
+    def __init__(self,namespace=''):
+        super().__init__('mecanumbot_sensorproc_node',namespace=namespace)
         self.declare_parameters(
-        namespace='',
-        parameters=[    #TODO
-        
+        namespace=namespace,
+        parameters=[
         ('robot_params.wheel.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
@@ -30,11 +29,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
         ('odom_params.from_imu', True),
-        ('imu_params.frame_id', 'imu_link'),
-        
+        ('imu_params.frame_id', 'imu_link')
          ])
         
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
+        self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
+        self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
+        self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
+
+         # Robot parameters
         self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
         self.wheel_sep_x = self.get_parameter('robot_params.wheel.sep_x').value # m
@@ -90,8 +93,8 @@ class Mecanumbot_Sensorproc_Node(Node):
             
             msg = Odometry()
             msg.header.stamp = self.current_time.to_msg()
-            msg.header.frame_id = 'odom'
-            msg.child_frame_id = 'base_link'
+            msg.header.frame_id = self.odom_frame_id
+            msg.child_frame_id = self.odom_child_frame_id
 
             Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
             Vy_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl - self.cr_state.vel_fr)/4
