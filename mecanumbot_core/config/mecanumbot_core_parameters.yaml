@@ -1,15 +1,22 @@
+common_params:
+  ros__parameters:
+    robot_params:
+      wheel:
+        radius: 0.0325
+        separation_x: 0.129
+        separation_y: 0.300 
+        vel_tick: 0.299
+
 mecanumbot_io_node:
   ros__parameters:
     dev_params:
       device_name: "/dev/ttyACM0"
       baudrate: 57600
-
     packet_params:
       payload_fmt: "<23h14f"
       seq_size: 1
       crc_size: 1
       magic: "55AA" # 0x55, 0xAA
-
     plausibility_params:
       max_wheel_speed: 10000
       min_pos: -1000
@@ -19,10 +26,6 @@ mecanumbot_io_node:
 mecanumbot_sensorproc_node:
   ros__parameters:
     robot_params:
-      wheel:
-        radius: 0.0325
-        separation_x: 0.129
-        separation_y: 0.300
       battery:
         min_voltage: 11.0
         max_voltage: 12.6

@@ -32,6 +32,11 @@ class Mecanumbot_IO_Node(Node):
         ('dev_params.device_name', default_device),
         ('dev_params.baudrate', 57600),
 
+        #Robot parameters
+        ('robot_params.wheel.radius', 0.0325),
+        ('robot_params.wheel.separation_x', 0.129),
+        ('robot_params.wheel.separation_y', 0.300),
+        ('robot_params.wheel.vel_tick',0.299),
         # Packet parameters
         ('packet_params.payload_fmt', '<23h14f'),
         ('packet_params.seq_size', 1),
@@ -47,6 +52,9 @@ class Mecanumbot_IO_Node(Node):
         # Retrieve parameters
         self.device_name = self.get_parameter('dev_params.device_name').value
         self.baudrate = self.get_parameter('dev_params.baudrate').value
+        self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value
+        self.wheel_separation_x = self.get_parameter('robot_params.wheel.separation_x').value
+        self.wheel_separation_y = self.get_parameter('robot_params.wheel.separation_y').value
 
         self.payload_fmt = self.get_parameter('packet_params.payload_fmt').value
         self.seq_size = self.get_parameter('packet_params.seq_size').value
@@ -61,10 +69,17 @@ class Mecanumbot_IO_Node(Node):
         self.max_pos = self.get_parameter('plausibility_params.max_pos').value
         self.max_float_abs = self.get_parameter('plausibility_params.max_float_abs').value
 
+        self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
+        self.wheel_dist_scale = (self.wheel_separation_x + self.wheel_separation_y) / 2 # 
+
+         # Log parameters
+
         self.get_logger().info(f"Device: {self.device_name} @ {self.baudrate} baud")
         self.get_logger().info(f"Packet: payload_size={self.payload_size}, full_packet_size={self.full_packet_size}")
         self.get_logger().info(f"Plausibility: max_speed={self.max_wheel_speed}, pos_range=[{self.min_pos},{self.max_pos}], max_float={self.max_float_abs}")
+        
         self.init_serial()
+
         self.opencr_publisher_ = self.create_publisher(OpenCRState, 'mecanumbot/opencr_state', 10)
         timer_period = 0.05  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -77,6 +92,7 @@ class Mecanumbot_IO_Node(Node):
         self.pos_subscription = self.create_subscription(AccessMotorCmd, 'mecanumbot/cmd_accessory_pos', self.access_motor_cmd_callback, 10)
         self.vel_subscription  # prevent unused variable warning
         self.pos_subscription  # prevent unused variable warning
+
     def init_serial(self):
         try:
             self.ser = serial.Serial(self.device_name, self.baudrate, timeout=0.1)
@@ -152,13 +168,15 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.imu_orientation_z = floats[13]
 
     def vel_cmd_callback(self,msg):
-        X_vel = msg.linear.x * 100
-        Y_vel = msg.linear.y * 100
-        W_vel = msg.angular.z * 100
-        self.cmd_outputs['BL_vel']=X_vel - Y_vel - W_vel
-        self.cmd_outputs['BR_vel']=X_vel + Y_vel + W_vel
-        self.cmd_outputs['FL_vel']=X_vel + Y_vel - W_vel
-        self.cmd_outputs['FR_vel']=X_vel - Y_vel + W_vel
+        # Standard mecanum kinematics
+        Vx = msg.linear.x  # m/s
+        Vy = msg.linear.y  # m/s
+        Vz = msg.angular.z  # rad/s
+
+        self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FL_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FR_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
 
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
