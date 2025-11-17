@@ -111,8 +111,8 @@ class Mecanumbot_Sensorproc_Node(Node):
             dy = msg.twist.twist.linear.y * self.dt
             dtheta = msg.twist.twist.angular.z * self.dt
 
-            msg.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.odom.pose.pose.orientation.z) * dx - math.sin(self.odom.pose.pose.orientation.z) * dy)
-            msg.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.odom.pose.pose.orientation.z) * dx + math.cos(self.odom.pose.pose.orientation.z) * dy)
+            msg.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.odom.pose.pose.orientation.z) * dx - math.sin(self.odom.pose.pose.orientation.z) * dy)
+            msg.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.odom.pose.pose.orientation.z) * dx + math.cos(self.odom.pose.pose.orientation.z) * dy)
             msg.pose.pose.position.z = 0.0
 
             if self.odom_from_imu: #TODO
