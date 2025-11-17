@@ -56,15 +56,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.battery_state = BatteryState()
          # Publishers
 
-        self.odom_publisher = self.create_publisher(Odometry, 'mecanumbot/odom', 10)
-        self.imu_publisher = self.create_publisher(Imu, 'mecanumbot/imu', 10)
-        self.joint_state_publisher = self.create_publisher(JointState, 'mecanumbot/joint_states', 10)
-        self.battery_state_publisher = self.create_publisher(BatteryState, 'mecanumbot/battery_state', 10)
+        self.odom_publisher = self.create_publisher(Odometry, 'odom', 10)
+        self.imu_publisher = self.create_publisher(Imu, 'imu', 10)
+        self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
+        self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10)
         
         timer_period = 0.05  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         
-        self.board_subscription = self.create_subscription(OpenCRState, 'mecanumbot/opencr_state', self.crstate_callback, 10)
+        self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10)
         self.board_subscription  # prevent unused variable warning
 
         self.current_time = self.get_clock().now().nanoseconds

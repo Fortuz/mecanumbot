@@ -9,7 +9,7 @@ import os
 def generate_launch_description():
 
     # Launch arguments
-    namespace = LaunchConfiguration('namespace')
+    namespace = 'mecanumbot'
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     declare_namespace = DeclareLaunchArgument(
