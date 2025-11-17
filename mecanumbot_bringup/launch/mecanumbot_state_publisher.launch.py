@@ -29,7 +29,7 @@ def generate_launch_description():
     robot_desc = Command([
         'xacro ',
         urdf,
-        'namespace:=', 
+        ' namespace:=', 
         namespace,
     ])
 
