@@ -37,6 +37,8 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.wheel.separation_x', 0.129),
         ('robot_params.wheel.separation_y', 0.300),
         ('robot_params.wheel.vel_tick',0.299),
+        ('robot_params.accessory.neck_default', 330),
+        ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
         ('packet_params.payload_fmt', '<23h14f'),
         ('packet_params.seq_size', 1),
@@ -69,6 +71,9 @@ class Mecanumbot_IO_Node(Node):
         self.min_pos = self.get_parameter('plausibility_params.min_pos').value
         self.max_pos = self.get_parameter('plausibility_params.max_pos').value
         self.max_float_abs = self.get_parameter('plausibility_params.max_float_abs').value
+        self.neck_default = self.get_parameter('robot_params.accessory.neck_default').value
+        self.grabber_default = self.get_parameter('robot_params.accessory.grabber_default').value
+
 
         self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
         self.wheel_dist_scale = (self.wheel_separation_x + self.wheel_separation_y) / 2 # 
@@ -88,7 +93,7 @@ class Mecanumbot_IO_Node(Node):
         self.i = 0
         self.vals = None
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
-                            'N_pos':0,'GL_pos':0,'GR_pos':0}
+                            'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
         self.vel_subscription = self.create_subscription(Twist, 'mecanumbot/cmd_vel', self.vel_cmd_callback, 10)
         self.pos_subscription = self.create_subscription(AccessMotorCmd, 'mecanumbot/cmd_accessory_pos', self.access_motor_cmd_callback, 10)
         self.vel_subscription  # prevent unused variable warning
