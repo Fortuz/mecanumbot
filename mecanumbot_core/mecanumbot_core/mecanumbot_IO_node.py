@@ -86,7 +86,7 @@ class Mecanumbot_IO_Node(Node):
         
         self.init_serial()
 
-        self.opencr_publisher_ = self.create_publisher(OpenCRState, 'mecanumbot/opencr_state', 10)
+        self.opencr_publisher_ = self.create_publisher(OpenCRState, 'opencr_state', 10)
         timer_period = 0.05  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.opencr_state = OpenCRState()
@@ -94,8 +94,8 @@ class Mecanumbot_IO_Node(Node):
         self.vals = None
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
                             'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
-        self.vel_subscription = self.create_subscription(Twist, 'mecanumbot/cmd_vel', self.vel_cmd_callback, 10)
-        self.pos_subscription = self.create_subscription(AccessMotorCmd, 'mecanumbot/cmd_accessory_pos', self.access_motor_cmd_callback, 10)
+        self.vel_subscription = self.create_subscription(Twist,'cmd_vel', self.vel_cmd_callback, 10)
+        self.pos_subscription = self.create_subscription(AccessMotorCmd, 'cmd_accessory_pos', self.access_motor_cmd_callback, 10)
         self.vel_subscription  # prevent unused variable warning
         self.pos_subscription  # prevent unused variable warning
 
@@ -179,10 +179,10 @@ class Mecanumbot_IO_Node(Node):
         Vy = msg.linear.y  # m/s
         Wz = msg.angular.z  # rad/s
 
-        self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx - Vy + (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FL_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FR_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BL_vel']= (Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale
+        self.cmd_outputs['BR_vel']= (Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale
+        self.cmd_outputs['FL_vel']= (Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale
+        self.cmd_outputs['FR_vel']= (Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale
 
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
