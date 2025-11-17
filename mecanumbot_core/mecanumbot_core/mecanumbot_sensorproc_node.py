@@ -100,7 +100,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             msg.child_frame_id = self.odom_child_frame_id
 
             Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-            Vy_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl - self.cr_state.vel_fr)/4
+            Vy_tick = (self.cr_state.vel_bl - self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
             Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
 
             msg.twist.twist.linear.x = Vx_tick * self.scale  # m/s
