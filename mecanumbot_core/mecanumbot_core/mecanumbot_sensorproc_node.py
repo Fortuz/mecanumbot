@@ -2,6 +2,9 @@ import os
 import rclpy
 from rclpy.node import Node
 
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, JointState, BatteryState
@@ -32,6 +35,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('imu_params.frame_id', 'imu_link')
          ])
         
+        self.tf_broadcaster = TransformBroadcaster(self)
+
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
         self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
         self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
@@ -133,6 +138,16 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.w = 1.0
             self.odom = msg
 
+            t = TransformStamped()
+            t.header.stamp = stamp
+            t.header.frame_id = self.odom_frame_id
+            t.child_frame_id = self.odom_child_frame_id
+            t.transform.translation.x = msg.pose.pose.position.x
+            t.transform.translation.y = msg.pose.pose.position.y
+            t.transform.translation.z = 0.0
+            t.transform.rotation = msg.pose.pose.orientation
+            self.tf_broadcaster.sendTransform(t)
+            
     def set_imu(self):
             
             msg = Imu()
