@@ -28,7 +28,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
-        ('odom_params.from_imu', True),
+        ('odom_params.from_imu', False),
         ('imu_params.frame_id', 'imu_link')
          ])
         
