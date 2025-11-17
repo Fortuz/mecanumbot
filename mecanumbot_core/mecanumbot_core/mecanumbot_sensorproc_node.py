@@ -127,7 +127,7 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.y = 0.0
                 msg.pose.pose.orientation.z = self.odom.pose.pose.orientation.z + dtheta  # rad
                 msg.pose.pose.orientation.w = 1.0
-                self.odom = msg
+            self.odom = msg
 
     def set_imu(self):
             
