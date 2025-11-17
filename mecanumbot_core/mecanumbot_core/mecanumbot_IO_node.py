@@ -174,10 +174,10 @@ class Mecanumbot_IO_Node(Node):
         Vy = msg.linear.y  # m/s
         Wz = msg.angular.z  # rad/s
 
-        self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FL_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FR_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx - Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FL_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FR_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
 
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
