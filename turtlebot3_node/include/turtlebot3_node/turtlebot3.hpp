@@ -30,7 +30,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include <mecanumbot_msgs/msg/accessory_motors.hpp> 
+#include <mecanumbot_msgs/msg/access_motor_cmd.hpp> 
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>

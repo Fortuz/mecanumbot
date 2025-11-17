@@ -398,16 +398,16 @@ void TurtleBot3::cmd_accessory_motor_callback()
   cmd_cam_ori_sub_ = node_handle_-> create_subscription<geometry_msgs::msg::Vector3>(
     "cmd_accessory_motors",
     qos,
-    [this](const mecanumbot_msgs::msg::AccessoryMotors::SharedPtr msg) -> void{
+    [this](const mecanumbot_msgs::msg::AccessMotorCmd::SharedPtr msg) -> void{
       std::string sdk_msg;
 
       union Data {
         int32_t dword[3];
         uint8_t byte[4*3];
       } data;
-      data.dword[0] = static_cast<int32_t>(msg->Neck * 100);
-      data.dword[1] = static_cast<int32_t>(msg->GrabberLeft * 100);
-      data.dword[2] = static_cast<int32_t>(msg->GrabberRight * 100);
+      data.dword[0] = static_cast<int32_t>(msg->n_pos * 100);
+      data.dword[1] = static_cast<int32_t>(msg->gl_pos * 100);
+      data.dword[2] = static_cast<int32_t>(msg->gr_pos * 100);
 
       uint16_t start_addr = extern_control_table.cmd_neck_goal.addr;
       uint16_t caddr_length = extern_control_table.cmd_grabber_right.length - extern_control_table.cmd_neck_goal.addr
