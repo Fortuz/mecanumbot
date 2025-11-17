@@ -67,8 +67,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.board_subscription = self.create_subscription(OpenCRState, 'mecanumbot/opencr_state', self.crstate_callback, 10)
         self.board_subscription  # prevent unused variable warning
 
-        self.current_time = self.get_clock().now().nanoseconds()
-        self.last_time = self.get_clock().now().nanoseconds()
+        self.current_time = self.get_clock().now().nanoseconds
+        self.last_time = self.get_clock().now().nanoseconds
         self.dt = (self.current_time - self.last_time)* 1e-9 #[s]
         
     def crstate_callback(self,data):
@@ -76,7 +76,7 @@ class Mecanumbot_Sensorproc_Node(Node):
 
     def timer_callback(self):
         self.last_time = self.current_time
-        self.current_time = self.get_clock().now().nanoseconds()
+        self.current_time = self.get_clock().now().nanoseconds
         self.dt = (self.current_time - self.last_time) * 1e-9 #[s]
         self.set_odom()
         self.set_imu()

@@ -26,7 +26,7 @@ class Mecanumbot_IO_Node(Node):
     def __init__(self,namespace=''):
         super().__init__('mecanumbot_io_node', namespace=namespace)
         default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
-        sel.f.declare_parameters(
+        self.declare_parameters(
         namespace=namespace,
         parameters=[
         ('dev_params.device_name', default_device),
