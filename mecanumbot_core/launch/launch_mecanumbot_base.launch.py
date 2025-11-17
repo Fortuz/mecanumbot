@@ -10,6 +10,8 @@ def generate_launch_description():
 
     # Launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time')
+    namespace = LaunchConfiguration('namespace')
+
 
     declare_namespace = DeclareLaunchArgument(
         'namespace',
