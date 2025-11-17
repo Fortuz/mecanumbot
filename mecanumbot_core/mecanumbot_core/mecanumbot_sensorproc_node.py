@@ -15,13 +15,12 @@ import math
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
-    def __init__(self):
-        super().__init__('mecanumbot_sensorproc_node')
+    def __init__(self,namespace=''):
+        super().__init__('mecanumbot_sensorproc_node',namespace=namespace)
         self.declare_parameters(
-        namespace='',
-        parameters=[    #TODO
-        
-        ('robot_params.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
+        namespace=namespace,
+        parameters=[
+        ('robot_params.wheel.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
         ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
@@ -30,18 +29,24 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
         ('odom_params.from_imu', True),
-        ('imu_params.frame_id', 'imu_link'),
-        
+        ('imu_params.frame_id', 'imu_link')
          ])
         
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
-        self.vel_tick = self.get_parameter('robot_params.vel_tick').value/60 # rot/min to rot/s
+        self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
+        self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
+        self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
+
+         # Robot parameters
+        self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
         self.wheel_sep_x = self.get_parameter('robot_params.wheel.sep_x').value # m
         self.wheel_sep_y = self.get_parameter('robot_params.wheel.sep_y').value
         self.battery_min_voltage = self.get_parameter('robot_params.battery.min_voltage').value # V
         self.battery_max_voltage = self.get_parameter('robot_params.battery.max_voltage').value # V
 
+        self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
+        self.wheel_dist_scale = (self.wheel_separation_x + self.wheel_separation_y) / 2 # 
          # Initialize messages
 
         self.cr_state = OpenCRState()
@@ -64,7 +69,7 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.current_time = self.get_clock().now().nanoseconds()
         self.last_time = self.get_clock().now().nanoseconds()
-        self.dt = self.current_time - self.last_time
+        self.dt = (self.current_time - self.last_time)* 1e-9 #[s]
         
     def crstate_callback(self,data):
         self.cr_state = data
@@ -72,7 +77,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def timer_callback(self):
         self.last_time = self.current_time
         self.current_time = self.get_clock().now().nanoseconds()
-        self.dt = (self.current_time - self.last_time) / 1e9 #[s]
+        self.dt = (self.current_time - self.last_time) * 1e-9 #[s]
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
@@ -88,19 +93,16 @@ class Mecanumbot_Sensorproc_Node(Node):
             
             msg = Odometry()
             msg.header.stamp = self.current_time.to_msg()
-            msg.header.frame_id = 'odom'
-            msg.child_frame_id = 'base_link'
+            msg.header.frame_id = self.odom_frame_id
+            msg.child_frame_id = self.odom_child_frame_id
 
             Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
             Vy_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl - self.cr_state.vel_fr)/4
             Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
 
-
-            dt = (self.current_time - self.last_time).nanoseconds / 1e9
-
-            msg.twist.twist.linear.x = Vx_tick * self.vel_tick * 2 * math.pi * self.wheel_radius  # m/s
-            msg.twist.twist.linear.y = Vy_tick * self.vel_tick * 2 * math.pi * self.wheel_radius  # m/s
-            msg.twist.twist.angular.z = (Wz_tick * self.vel_tick * 2 * math.pi * self.wheel_radius *2) / (self.wheel_sep_x + self.wheel_sep_y)  # rad/s
+            msg.twist.twist.linear.x = Vx_tick * self.scale  # m/s
+            msg.twist.twist.linear.y = Vy_tick * self.scale # m/s
+            msg.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
             
             dx =  msg.twist.twist.linear.x * dt
             dy = msg.twist.twist.linear.y * dt
