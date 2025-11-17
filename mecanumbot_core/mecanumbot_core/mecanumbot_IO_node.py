@@ -64,6 +64,7 @@ class Mecanumbot_IO_Node(Node):
         self.payload_size = struct.calcsize(self.payload_fmt)
         self.full_packet_size = len(self.magic) + self.seq_size + self.payload_size + self.crc_size
 
+        self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.max_wheel_speed = self.get_parameter('plausibility_params.max_wheel_speed').value
         self.min_pos = self.get_parameter('plausibility_params.min_pos').value
         self.max_pos = self.get_parameter('plausibility_params.max_pos').value
