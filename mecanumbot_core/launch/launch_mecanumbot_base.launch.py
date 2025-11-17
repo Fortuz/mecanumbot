@@ -40,7 +40,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        namespace,
+        declare_namespace,
         declare_sim_time,
 
         # mecanumbot_core IO node
