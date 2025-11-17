@@ -142,8 +142,8 @@
   </link>
 
   <joint name="${namespace}wheel_backright_joint" type="continuous">
-    <parent link="base_link"/>
-    <child link="wheel_backright_link"/>
+    <parent link="${namespace}base_link"/>
+    <child link="${namespace}wheel_backright_link"/>
     <origin xyz="-0.064 -0.1522 0.02345" rpy="1.57 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
@@ -177,7 +177,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://mecanumbot_description/meshes/arm_right.stl" scale="0.001 0.001 0.${namespace}001"/>
+        <mesh filename="package://mecanumbot_description/meshes/arm_right.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="green"/>
     </visual>

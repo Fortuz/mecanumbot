@@ -29,8 +29,8 @@ def generate_launch_description():
     robot_desc = Command([
         'xacro ',
         urdf,
-        ' namespace:=',
-        PythonExpression(['"', namespace, '" + "/" if "', namespace, '" != "" else ""']),
+        'namespace:=', 
+        namespace,
     ])
 
     # Major refactor of the robot_state_publisher
