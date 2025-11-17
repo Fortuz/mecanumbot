@@ -46,7 +46,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.battery_max_voltage = self.get_parameter('robot_params.battery.max_voltage').value # V
 
         self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
-        self.wheel_dist_scale = (self.wheel_separation_x + self.wheel_separation_y) / 2 # 
+        self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2 # 
          # Initialize messages
 
         self.cr_state = OpenCRState()
