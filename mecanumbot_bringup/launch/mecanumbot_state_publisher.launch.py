@@ -51,5 +51,6 @@ def generate_launch_description():
             output='screen',
             parameters=[
                     rsp_params,
-                    {'use_sim_time': use_sim_time}])
+                    {'use_sim_time': use_sim_time,
+                     'namespace': namespace}])
     ])
