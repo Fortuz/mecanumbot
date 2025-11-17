@@ -92,7 +92,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_odom(self):
             
             msg = Odometry()
-            msg.header.stamp = self.current_time.to_msg()
+            stamp = Time()
+            stamp.sec = self.current_time // 1_000_000_000
+            stamp.nanosec = self.current_time % 1_000_000_000
+            msg.header.stamp = stamp
             msg.header.frame_id = self.odom_frame_id
             msg.child_frame_id = self.odom_child_frame_id
 
@@ -152,7 +155,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_joint_state(self):
             
             msg = JointState()
-            msg.header.stamp = self.current_time.to_msg()
+            stamp = Time()
+            stamp.sec = self.current_time // 1_000_000_000
+            stamp.nanosec = self.current_time % 1_000_000_000
+            msg.header.stamp = stamp
             msg.header.frame_id = 'base_link'
 
             msg.name = ['wheel_backleft_joint', 'wheel_backright_joint', 'wheel_frontleft_joint', 'wheel_frontright_joint']
@@ -174,7 +180,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
     
             msg = BatteryState()
-            msg.header.stamp = self.current_time.to_msg()
+            stamp = Time()
+            stamp.sec = self.current_time // 1_000_000_000
+            stamp.nanosec = self.current_time % 1_000_000_000
+            msg.header.stamp = stamp
             msg.voltage = self.cr_state.battery_voltage  # Volts
             msg.design_capacity = 1.8
             msg.capacity = 1.8
