@@ -92,6 +92,8 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state = OpenCRState()
         self.i = 0
         self.vals = None
+        self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
+                            'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
         self.vel_subscription = self.create_subscription(Twist, 'mecanumbot/cmd_vel', self.vel_cmd_callback, 10)
         self.pos_subscription = self.create_subscription(AccessMotorCmd, 'mecanumbot/cmd_accessory_pos', self.access_motor_cmd_callback, 10)
         self.vel_subscription  # prevent unused variable warning
