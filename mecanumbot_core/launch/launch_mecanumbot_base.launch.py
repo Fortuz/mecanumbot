@@ -65,7 +65,7 @@ def generate_launch_description():
         # LD08 Lidar driver node
         Node(
             package='ld08_driver',
-            executable='ld08_driver_node',
+            executable='ld08_driver',
             name='ld08_driver_node',
             namespace=namespace,
             parameters=[
