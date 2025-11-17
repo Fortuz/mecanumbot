@@ -5,7 +5,7 @@ common_params:
         radius: 0.0325
         separation_x: 0.129
         separation_y: 0.300 
-        vel_tick: 0.299
+        vel_tick: 0.229
       accessory:
         neck_default: 330
         grabber_default: 512
