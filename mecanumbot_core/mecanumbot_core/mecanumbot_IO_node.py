@@ -36,7 +36,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.wheel.radius', 0.0325),
         ('robot_params.wheel.separation_x', 0.129),
         ('robot_params.wheel.separation_y', 0.300),
-        ('robot_params.wheel.vel_tick',0.299),
+        ('robot_params.wheel.vel_tick',0.229),
         ('robot_params.accessory.neck_default', 330),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
@@ -179,10 +179,10 @@ class Mecanumbot_IO_Node(Node):
         Vy = msg.linear.y  # m/s
         Wz = msg.angular.z  # rad/s
 
-        self.cmd_outputs['BL_vel']= (1/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['BR_vel']= (1/self.scale) * (Vx - Vy + (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FL_vel']= (1/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
-        self.cmd_outputs['FR_vel']= (1/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx + Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx - Vy + (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FL_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
+        self.cmd_outputs['FR_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
 
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
