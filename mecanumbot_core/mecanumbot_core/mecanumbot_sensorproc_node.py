@@ -107,9 +107,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             msg.twist.twist.linear.y = Vy_tick * self.scale # m/s
             msg.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
             
-            dx =  msg.twist.twist.linear.x * dt
-            dy = msg.twist.twist.linear.y * dt
-            dtheta = msg.twist.twist.angular.z * dt
+            dx =  msg.twist.twist.linear.x * self.dt
+            dy = msg.twist.twist.linear.y * self.dt
+            dtheta = msg.twist.twist.angular.z * self.dt
 
             msg.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.odom.pose.pose.orientation.z) * dx - math.sin(self.odom.pose.pose.orientation.z) * dy)
             msg.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.odom.pose.pose.orientation.z) * dx + math.cos(self.odom.pose.pose.orientation.z) * dy)
