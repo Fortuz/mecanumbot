@@ -11,7 +11,7 @@ import serial
 import struct
 import time
 import math
-
+from builtin_interfaces.msg import Time
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -129,7 +129,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_imu(self):
             
             msg = Imu()
-            msg.header.stamp = self.current_time.to_msg()
+            stamp = Time()
+            stamp.sec = self.current_time // 1_000_000_000
+            stamp.nanosec = self.current_time % 1_000_000_000
+            msg.header.stamp = stamp
             msg.header.frame_id = self.imu_frame_id
 
             # Fill IMU data from OpenCRState
