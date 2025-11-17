@@ -9,12 +9,11 @@ import os
 def generate_launch_description():
 
     # Launch arguments
-    namespace = 'mecanumbot'
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     declare_namespace = DeclareLaunchArgument(
         'namespace',
-        default_value='',
+        default_value='mecanumbot',
         description='Robot namespace'
     )
 
@@ -47,7 +46,7 @@ def generate_launch_description():
             package='mecanumbot_core',
             executable='mecanumbot_io_node',
             name='mecanumbot_io_node',
-            namespace=namespace,
+            namespace=declare_namespace,
             parameters=[yaml_file, {'use_sim_time': use_sim_time}],
             output='screen'
         ),
@@ -57,7 +56,7 @@ def generate_launch_description():
             package='mecanumbot_core',
             executable='mecanumbot_sensorproc_node',
             name='mecanumbot_sensorproc_node',
-            namespace=namespace,
+            namespace=declare_namespace,
             parameters=[yaml_file, {'use_sim_time': use_sim_time}],
             output='screen'
         ),
@@ -67,7 +66,7 @@ def generate_launch_description():
             package='ld08_driver',
             executable='ld08_driver',
             name='ld08_driver_node',
-            namespace=namespace,
+            namespace=declare_namespace,
             parameters=[
                 {'port': '/dev/ttyUSB0'},
                 {'frame_id': 'laser_frame'},
@@ -81,7 +80,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(state_publisher_path),
             launch_arguments={
                 'use_sim_time': use_sim_time,
-                'namespace': namespace
+                'namespace': declare_namespace
             }.items()
         )
     ])
