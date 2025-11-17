@@ -172,7 +172,7 @@ class Mecanumbot_IO_Node(Node):
         # Standard mecanum kinematics
         Vx = msg.linear.x  # m/s
         Vy = msg.linear.y  # m/s
-        Vz = msg.angular.z  # rad/s
+        Wz = msg.angular.z  # rad/s
 
         self.cmd_outputs['BL_vel']= (4/self.scale) * (Vx - Vy - (Wz * self.wheel_dist_scale))
         self.cmd_outputs['BR_vel']= (4/self.scale) * (Vx + Vy + (Wz * self.wheel_dist_scale))
