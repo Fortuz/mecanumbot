@@ -15,7 +15,7 @@
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
-  <exec_depend>turtlebot3_node</exec_depend>
+  <exec_depend>mecanumbot_core</exec_depend>
 
 
   <export>
