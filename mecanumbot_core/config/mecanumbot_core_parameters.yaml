@@ -27,11 +27,11 @@ mecanumbot_sensorproc_node:
   ros__parameters:
     robot_params:
       battery:
-        min_voltage: 11.0
+        min_voltage: 9.9
         max_voltage: 12.6
     odom_params:
       frame_id: "odom"
       child_frame_id: "base_footprint"
-      from_imu: true
+      from_imu: false
     imu_params:
       frame_id: "imu_link"
