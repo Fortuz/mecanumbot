@@ -71,7 +71,7 @@ def generate_launch_description():
             namespace= namespace,
             parameters=[
                 {'port': '/dev/ttyUSB0'},
-                {'frame_id': [namespace, 'base_scan']},
+                {'frame_id': [namespace, '/base_scan']},
                 {'use_sim_time': use_sim_time}
             ],
             output='screen'
