@@ -223,7 +223,7 @@ class Mecanumbot_Sensorproc_Node(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    sensorproc_node = Mecanumbot_Sensorproc_Node()
+    sensorproc_node = Mecanumbot_Sensorproc_Node(namespace = args.namespace)
 
     rclpy.spin(sensorproc_node)
 
