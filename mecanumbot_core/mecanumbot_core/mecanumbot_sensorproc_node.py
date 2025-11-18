@@ -44,12 +44,13 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
         self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
 
-        if self.namespace != '':
+        if self.namespace != '' and self.namespace is not None:
+
             self.odom_frame_id = self.namespace + '/' + self.odom_frame_id
             self.odom_child_frame_id = self.namespace + '/' + self.odom_child_frame_id
             self.imu_frame_id = self.namespace + '/' + self.imu_frame_id
-        
-
+        self.get_logger().info(f'Namespace: {self.namespace}')
+        self.get_logger().info(f'Odom Frame ID: {self.odom_frame_id}, Child Frame ID: {self.odom_child_frame_id}, IMU Frame ID: {self.imu_frame_id}')
          # Robot parameters
         self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
