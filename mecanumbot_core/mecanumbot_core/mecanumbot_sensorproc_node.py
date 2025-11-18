@@ -219,11 +219,10 @@ class Mecanumbot_Sensorproc_Node(Node):
             msg.charge = msg.capacity * msg.percentage
 
             self.battery_state = msg
-    
 def main(args=None):
     rclpy.init(args=args)
 
-    sensorproc_node = Mecanumbot_Sensorproc_Node(namespace='mecanumbot')
+    sensorproc_node = Mecanumbot_Sensorproc_Node()
 
     rclpy.spin(sensorproc_node)
 
