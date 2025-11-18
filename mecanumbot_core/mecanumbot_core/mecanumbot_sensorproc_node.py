@@ -36,7 +36,8 @@ class Mecanumbot_Sensorproc_Node(Node):
          ])
         
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.namespace = namespace
+        resolved_namespace = self.get_namespace().strip('/')
+        self.namespace = resolved_namespace
 
          # Odom parameters
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
