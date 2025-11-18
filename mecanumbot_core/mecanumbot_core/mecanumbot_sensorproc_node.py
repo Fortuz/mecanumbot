@@ -15,6 +15,8 @@ import struct
 import time
 import math
 from builtin_interfaces.msg import Time
+import math
+from tf_transformations import quaternion_from_euler # You may need to install 'ros-humble-tf-transformations'
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
