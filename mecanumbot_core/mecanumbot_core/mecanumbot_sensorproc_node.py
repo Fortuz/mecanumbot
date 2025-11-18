@@ -52,7 +52,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.odom_frame_id = self.namespace + '/' + self.odom_frame_id
             self.odom_child_frame_id = self.namespace + '/' + self.odom_child_frame_id
             self.imu_frame_id = self.namespace + '/' + self.imu_frame_id
-        self.get_logger().info(f'Namespace: {namespace}')
+        self.get_logger().info(f'Namespace: {self.namespace}')
         self.get_logger().info(f'Odom Frame ID: {self.odom_frame_id}, Child Frame ID: {self.odom_child_frame_id}, IMU Frame ID: {self.imu_frame_id}')
          # Robot parameters
         self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
@@ -143,11 +143,15 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
             else:
+                new_yaw = self.odom.pose.pose.orientation.z + dtheta 
+                # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
+                quaternion = quaternion_from_euler(0, 0, new_yaw) 
+
+                msg.pose.pose.orientation.x = quaternion[0]
+                msg.pose.pose.orientation.y = quaternion[1]
+                msg.pose.pose.orientation.z = quaternion[2]
+                msg.pose.pose.orientation.w = quaternion[3]
                 # Orientation from odometry integration (not implemented)
-                msg.pose.pose.orientation.x = 0.0
-                msg.pose.pose.orientation.y = 0.0
-                msg.pose.pose.orientation.z = self.odom.pose.pose.orientation.z + dtheta  # rad
-                msg.pose.pose.orientation.w = 1.0
             self.odom = msg
 
             t = TransformStamped()
