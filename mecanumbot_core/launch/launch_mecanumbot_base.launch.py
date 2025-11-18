@@ -59,7 +59,7 @@ def generate_launch_description():
             executable='mecanumbot_sensorproc_node',
             name='mecanumbot_sensorproc_node',
             namespace= namespace,
-            parameters=[yaml_file, {'use_sim_time': use_sim_time}],
+            parameters=[yaml_file, {'use_sim_time': use_sim_time, 'namespace': namespace}],
             output='screen'
         ),
 
