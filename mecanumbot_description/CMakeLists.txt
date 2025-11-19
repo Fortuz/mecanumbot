@@ -21,7 +21,7 @@ find_package(urdf REQUIRED)
 ################################################################################
 # Install
 ################################################################################
-install(DIRECTORY meshes rviz urdf
+install(DIRECTORY meshes rviz param maps urdf udev
   DESTINATION share/${PROJECT_NAME}
 )
 
