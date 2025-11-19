@@ -2,6 +2,9 @@ import os
 import rclpy
 from rclpy.node import Node
 
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, JointState, BatteryState
@@ -12,6 +15,8 @@ import struct
 import time
 import math
 from builtin_interfaces.msg import Time
+import math
+from tf_transformations import quaternion_from_euler # You may need to install 'ros-humble-tf-transformations'
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -32,11 +37,23 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('imu_params.frame_id', 'imu_link')
          ])
         
+        self.tf_broadcaster = TransformBroadcaster(self)
+        resolved_namespace = self.get_namespace().strip('/')
+        self.namespace = resolved_namespace
+
+         # Odom parameters
         self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
         self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
         self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
         self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
 
+        if self.namespace != '' and self.namespace is not None:
+
+            self.odom_frame_id = self.namespace + '/' + self.odom_frame_id
+            self.odom_child_frame_id = self.namespace + '/' + self.odom_child_frame_id
+            self.imu_frame_id = self.namespace + '/' + self.imu_frame_id
+        self.get_logger().info(f'Namespace: {self.namespace}')
+        self.get_logger().info(f'Odom Frame ID: {self.odom_frame_id}, Child Frame ID: {self.odom_child_frame_id}, IMU Frame ID: {self.imu_frame_id}')
          # Robot parameters
         self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
         self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
@@ -126,13 +143,27 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
             else:
+                new_yaw = self.odom.pose.pose.orientation.z + dtheta 
+                # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
+                quaternion = quaternion_from_euler(0, 0, new_yaw) 
+
+                msg.pose.pose.orientation.x = quaternion[0]
+                msg.pose.pose.orientation.y = quaternion[1]
+                msg.pose.pose.orientation.z = quaternion[2]
+                msg.pose.pose.orientation.w = quaternion[3]
                 # Orientation from odometry integration (not implemented)
-                msg.pose.pose.orientation.x = 0.0
-                msg.pose.pose.orientation.y = 0.0
-                msg.pose.pose.orientation.z = self.odom.pose.pose.orientation.z + dtheta  # rad
-                msg.pose.pose.orientation.w = 1.0
             self.odom = msg
 
+            t = TransformStamped()
+            t.header.stamp = stamp
+            t.header.frame_id = self.odom_frame_id
+            t.child_frame_id = self.odom_child_frame_id
+            t.transform.translation.x = msg.pose.pose.position.x
+            t.transform.translation.y = msg.pose.pose.position.y
+            t.transform.translation.z = 0.0
+            t.transform.rotation = msg.pose.pose.orientation
+            self.tf_broadcaster.sendTransform(t)
+            
     def set_imu(self):
             
             msg = Imu()
@@ -195,7 +226,6 @@ class Mecanumbot_Sensorproc_Node(Node):
             msg.charge = msg.capacity * msg.percentage
 
             self.battery_state = msg
-    
 def main(args=None):
     rclpy.init(args=args)
 
