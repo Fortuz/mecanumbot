@@ -27,8 +27,8 @@ def generate_launch_description():
 
     # YAML config
     yaml_file = os.path.join(
-        get_package_share_directory('mecanumbot_core'),
-        'config',
+        get_package_share_directory('mecanumbot_description'),
+        'param',
         'mecanumbot_core_parameters.yaml'
     )
 
