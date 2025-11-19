@@ -19,7 +19,8 @@ find_package(geometry_msgs REQUIRED)
 ################################################################################
 set(msg_files
   "msg/SensorState.msg"
-  "msg/AccessoryMotors.msg"
+  "msg/AccessMotorCmd.msg"
+  "msg/OpenCRState.msg"
 )
 
 set(srv_files

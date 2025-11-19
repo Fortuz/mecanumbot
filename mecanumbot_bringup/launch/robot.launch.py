@@ -113,8 +113,8 @@ def generate_launch_description():
                               'namespace': namespace}.items(),
         ),
         Node(
-            package='turtlebot3_node',
-            executable='turtlebot3_ros',
+            package='mecanumbot_core',
+            executable='mecanumbot_IO_node',
             parameters=[
                 tb3_param_dir,
                 {'namespace': namespace}],

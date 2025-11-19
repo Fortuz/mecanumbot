@@ -29,8 +29,8 @@ def generate_launch_description():
     robot_desc = Command([
         'xacro ',
         urdf,
-        ' namespace:=',
-        PythonExpression(['"', namespace, '" + "/" if "', namespace, '" != "" else ""']),
+        ' namespace:=', 
+        namespace,
     ])
 
     # Major refactor of the robot_state_publisher
@@ -51,5 +51,8 @@ def generate_launch_description():
             output='screen',
             parameters=[
                     rsp_params,
-                    {'use_sim_time': use_sim_time}])
+                    {'use_sim_time': use_sim_time,
+                     'namespace': namespace}],
+            remappings=[('/joint_states', '/mecanumbot/joint_states')])
+            
     ])
