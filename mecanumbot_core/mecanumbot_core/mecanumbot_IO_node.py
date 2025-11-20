@@ -87,11 +87,14 @@ class Mecanumbot_IO_Node(Node):
         self.init_serial()
 
         self.opencr_publisher_ = self.create_publisher(OpenCRState, 'opencr_state', 10)
-        timer_period = 0.05  # seconds
+        timer_period = 0.01  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.opencr_state = OpenCRState()
+
         self.i = 0
+        self.rx_buffer = bytearray()
         self.vals = None
+
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
                             'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
         self.vel_subscription = self.create_subscription(Twist,'cmd_vel', self.vel_cmd_callback, 10)
@@ -207,59 +210,53 @@ class Mecanumbot_IO_Node(Node):
         self.i += 1
 
     def read_thread_fn(self):
-        buf = bytearray()
+
         try:
-            # read some bytes (blocking read with timeout)
+            # Append new serial data to persistent buffer
             chunk = self.ser.read(self.ser.in_waiting or 1)
             if chunk:
-                buf.extend(chunk)
+                self.rx_buffer.extend(chunk)
 
-            # avoid buffer growing too large
-            if len(buf) > 4096:
-                # keep last 2048 bytes as a fallback
-                buf = buf[-2048:]
+            # Limit buffer size
+            if len(self.rx_buffer) > 4096:
+                self.rx_buffer = self.rx_buffer[-2048:]
 
-            # search for magic header
-            idx = buf.find(self.magic)
+            # Try to find a packet
+            idx = self.rx_buffer.find(self.magic)
             if idx == -1:
-                # not found yet, continue reading
-                time.sleep(0.001)
+                return  # no header yet
 
-            # If found but not enough bytes for full packet yet, continue reading
-            if len(buf) - idx < self.full_packet_size:
-                time.sleep(0.001)
+            if len(self.rx_buffer) - idx < self.full_packet_size:
+                return  # full packet not yet available
 
-            # we have at least one full candidate packet
             start = idx
             end = start + self.full_packet_size
-            packet = bytes(buf[start:end])
+            packet = bytes(self.rx_buffer[start:end])
 
-            # extract components
             seq = packet[len(self.magic)]
-            payload_bytes = packet[len(self.magic) + self.seq_size : len(self.magic) + self.seq_size + self.payload_size]
+            payload_bytes = packet[len(self.magic) + self.seq_size :
+                                len(self.magic) + self.seq_size + self.payload_size]
             recv_crc = packet[-1]
 
-            # compute CRC over all but last byte (including magic and seq and payload)
             computed_crc = crc8_ccitt(packet[:-1])
 
             if computed_crc != recv_crc:
-                # CRC mismatch -> drop this magic occurrence and continue searching
-                # drop just the first byte of the current search window to resync
-                del buf[start]
+                # Bad packet → discard header only
+                del self.rx_buffer[start:start+1]
+                return
 
-            # CRC ok -> unpack payload
-            try:
-                self.vals = struct.unpack(self.payload_fmt, payload_bytes)
-            except struct.error:
-                # something wrong with size/format; drop header and resync
-                del buf[start]
+            # Good packet → parse
+            self.vals = struct.unpack(self.payload_fmt, payload_bytes)
+
             if not self.plausible_payload():
-                # payload fails heuristic plausibility -> drop header and resync
-                del buf[start]
-            # Valid packet: consume bytes up to end
-            del buf[:end]
-            self.update_opencr_state_in()
+                del self.rx_buffer[start:start+1]
+                return
 
+            # Remove parsed packet from buffer
+            del self.rx_buffer[:end]
+
+            # Update state
+            self.update_opencr_state_in()
         except serial.SerialException as e:
             self.get_logger().error(f"Serial error in read thread: {e}")
             time.sleep(0.5)
