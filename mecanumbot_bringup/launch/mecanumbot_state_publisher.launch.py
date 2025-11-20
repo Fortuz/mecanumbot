@@ -53,6 +53,6 @@ def generate_launch_description():
                     rsp_params,
                     {'use_sim_time': use_sim_time,
                      'namespace': namespace}],
-            remappings=[('/joint_states', '/mecanumbot/joint_states'),('/tf', '/mecanumbot/tf'),('/tf_static', '/mecanumbot/tf_static')],)
+            remappings=[('/joint_states', '/mecanumbot/joint_states')],)
             
     ])
