@@ -198,6 +198,7 @@ class Mecanumbot_IO_Node(Node):
                                     int(self.cmd_outputs['BL_vel']), int(self.cmd_outputs['BR_vel']), int(self.cmd_outputs['FL_vel']), int(self.cmd_outputs['FR_vel']),
                                     int(self.cmd_outputs['N_pos']), int(self.cmd_outputs['GL_pos']), int(self.cmd_outputs['GR_pos']))
         self.ser.write(message_bytes)
+        self.ser.flush()       # force immediate transmission
         time.sleep(0.02)
 
     def timer_callback(self):
