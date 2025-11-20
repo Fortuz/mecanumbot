@@ -6,7 +6,7 @@ amcl:
     alpha3: 0.2
     alpha4: 0.2
     alpha5: 0.2
-    base_frame_id: "base_link"
+    base_frame_id: "mecanumbot/base_link"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -14,37 +14,30 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 15.0
-    laser_min_range: 0.1
+    laser_max_range: 12.0
+    laser_min_range: 0.15
     laser_model_type: "likelihood_field"
     max_beams: 60
-    max_particles: 2000
-    min_particles: 500
-    odom_frame_id: "odom"
+    max_particles: 2000 
+    min_particles: 800 
+    odom_frame_id: "mecanumbot/odom"
     pf_err: 0.05
     pf_z: 0.99
-    recovery_alpha_fast: 0.2
-    recovery_alpha_slow: 0.1
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
     resample_interval: 1
     robot_model_type: "nav2_amcl::OmniMotionModel"
     save_pose_rate: 0.5
-    sigma_hit: 0.2
+    sigma_hit: 0.1  # Giảm để tăng độ nhạy (mặc định: 0.2)
     tf_broadcast: true
-    transform_tolerance: 1.0
-    #transform_timeout: 0.3 - not in original Turtlebot
+    transform_tolerance: 0.5 # Giám xuống nếu TF cập nhật đều và ổn định [mặc định: 1.]
     update_min_a: 0.2
     update_min_d: 0.25
-    z_hit: 0.5
+    z_hit: 0.8  # Tăng độ tin tưởng vào điểm đo chính xác [mặc định: 0.5]
     z_max: 0.05
-    z_rand: 0.5
+    z_rand: 0.2  # Giảm độ ngẫu nhiên (nhiễu) trong dữ liệu laser [mặc định 0.5]
     z_short: 0.05
     scan_topic: scan
-map_server:
-   ros__parameters:
-     frame_id: "map"
-     use_sim_time: False
-     yaml_filename: "/home/fortuz/dev_ws/src/mecanumbot/mecanumbot_bringup/maps/AI_room_lounge.yaml" # create env var ROS_WS_DIR to your workspace path
-##### In the random mecanumbot file I found
 
 amcl_map_client:
   ros__parameters:
@@ -53,13 +46,13 @@ amcl_map_client:
 amcl_rclcpp_node:
   ros__parameters:
     use_sim_time: False
-#### random insert's end
+
 bt_navigator:
   ros__parameters:
     use_sim_time: False
     global_frame: map
-    robot_base_frame: base_link
-    odom_topic: /odom
+    robot_base_frame: mecanumbot/base_link
+    odom_topic: odom
     default_bt_xml_filename: "navigate_w_replanning_and_recovery.xml"
     bt_loop_duration: 10
     default_server_timeout: 20
@@ -99,11 +92,7 @@ bt_navigator:
     - nav2_controller_selector_bt_node
     - nav2_goal_checker_selector_bt_node
 
-bt_navigator_navigate_through_poses_rclcpp_node:
-  ros__parameters:
-    use_sim_time: False
-
-bt_navigator_navigate_to_pose_rclcpp_node:
+bt_navigator_rclcpp_node:
   ros__parameters:
     use_sim_time: False
 
@@ -116,67 +105,65 @@ controller_server:
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     progress_checker_plugin: "progress_checker"
-    goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
+    goal_checker_plugins: ["general_goal_checker"]
     controller_plugins: ["FollowPath"]
 
     # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.3
-      movement_time_allowance: 15.0
-    # Goal checker parameters
-    #precise_goal_checker:
-    #  plugin: "nav2_controller::SimpleGoalChecker"
-    #  xy_goal_tolerance: 0.25
-    #  yaw_goal_tolerance: 0.25
-    #  stateful: True
+      movement_time_allowance: 10.0
+
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.1
-      yaw_goal_tolerance: 0.4
-    # DWB parameters
+      xy_goal_tolerance: 0.1      #0.25
+      yaw_goal_tolerance: 0.4     #0.25
 
     FollowPath:
       plugin: "nav2_rotation_shim_controller::RotationShimController"
       primary_controller: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      angular_dist_threshold: 0.3 
+      angular_dist_threshold: 0.3 # Sai lêch góc lớn hơn giá trị này để kích hoạt quay
       forward_sampling_distance: 0.1
-      angular_disengage_threshold: 0.2
+      angular_disengage_threshold: 0.2 # sai lệch góc bé hơn giá trị này sẽ dừng lại
       rotate_to_heading_angular_vel: 1.2   #0.8
       max_angular_accel: 3.0   #2.0
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: true
       rotate_to_heading_once: false
-      allow_reversing: true
+      allow_reversing: false
 
       desired_linear_vel: 0.3
       lookahead_dist: 0.3    #0.5
+
+controller_server_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
 local_costmap:
   local_costmap:
     ros__parameters:
-      transform_timeout: 1.0
       update_frequency: 5.0
       publish_frequency: 2.0
-      global_frame: odom
-      robot_base_frame: base_link
+      global_frame: mecanumbot/odom
+      robot_base_frame: mecanumbot/base_link
       use_sim_time: False
       rolling_window: true
       width: 3
       height: 3
+      footprint: "[ [-0.16, -0.13], [-0.16, 0.13], [0.16, 0.13], [0.16, -0.13] ]"
       resolution: 0.05
-      robot_radius: 0.22
-      plugins: ["obstacle_layer","voxel_layer", "inflation_layer"]
+      plugins: ["obstacle_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 0.5
-        inflation_radius: 1.0
+        inflation_radius: 0.3 #1.0
+        cost_scaling_factor: 0.5 #3.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
         observation_sources: scan
         scan:
-          topic: /scan
+          topic: scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -192,7 +179,7 @@ local_costmap:
         mark_threshold: 0
         observation_sources: scan
         scan:
-          topic: /scan
+          topic: scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -202,7 +189,6 @@ local_costmap:
           obstacle_max_range: 2.5
           obstacle_min_range: 0.0
       static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
       always_send_full_costmap: True
   local_costmap_client:
@@ -211,15 +197,16 @@ local_costmap:
   local_costmap_rclcpp_node:
     ros__parameters:
       use_sim_time: False
+
 global_costmap:
   global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
       global_frame: map
-      robot_base_frame: base_link
-      use_sim_time: False
-      robot_radius: 0.22
+      robot_base_frame: mecanumbot/base_link
+      use_sim_time: True
+      footprint: "[ [-0.16, -0.13], [-0.16, 0.13], [0.16, 0.13], [0.16, -0.13] ]"
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "voxel_layer", "inflation_layer"]
@@ -228,7 +215,7 @@ global_costmap:
         enabled: True
         observation_sources: scan
         scan:
-          topic: /scan
+          topic: scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -248,7 +235,7 @@ global_costmap:
         mark_threshold: 0
         observation_sources: scan
         scan:
-          topic: /scan
+          topic: scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
@@ -263,7 +250,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 0.5
-        inflation_radius: 0.55
+        inflation_radius: 0.3
       always_send_full_costmap: True
   global_costmap_client:
     ros__parameters:
@@ -271,6 +258,11 @@ global_costmap:
   global_costmap_rclcpp_node:
     ros__parameters:
       use_sim_time: False
+
+map_server:
+  ros__parameters:
+    use_sim_time: False
+    yaml_filename: "map.yaml"
 
 map_saver:
   ros__parameters:
@@ -282,45 +274,35 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 5.0
+    expected_planner_frequency: 20.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
       tolerance: 0.5
-      use_astar: true
+      use_astar: false
       allow_unknown: true
 
-smoother_server:
+planner_server_rclcpp_node:
   ros__parameters:
     use_sim_time: False
-    smoother_plugins: ["simple_smoother"]
-    simple_smoother:
-      plugin: "nav2_smoother::SimpleSmoother"
-      tolerance: 1.0e-10
-      max_its: 1000
-      do_refinement: True
 
-behavior_server:
+recoveries_server:
   ros__parameters:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    recovery_plugins: ["spin", "backup", "wait"]
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_recoveries/Spin"
     backup:
-      plugin: "nav2_behaviors/BackUp"
-    drive_on_heading:
-      plugin: "nav2_behaviors/DriveOnHeading"
+      plugin: "nav2_recoveries/BackUp"
     wait:
-      plugin: "nav2_behaviors/Wait"
-    assisted_teleop:
-      plugin: "nav2_behaviors/AssistedTeleop"
-    global_frame: map
+      plugin: "nav2_recoveries/Wait"
+    global_frame: odom
     robot_base_frame: base_link
-    transform_tolerance: 0.1
-    use_sim_time: True
+    transform_timeout: 0.1
+    use_sim_time: true
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
@@ -332,7 +314,6 @@ robot_state_publisher:
 
 waypoint_follower:
   ros__parameters:
-    use_sim_time: False
     loop_rate: 2000
     stop_on_failure: false
     waypoint_task_executor_plugin: "wait_at_waypoint"
@@ -341,21 +322,6 @@ waypoint_follower:
       enabled: True
       waypoint_pause_duration: 200
 
-velocity_smoother:
-  ros__parameters:
-    use_sim_time: True
-    smoothing_frequency: 20.0
-    scale_velocities: False
-    feedback: "OPEN_LOOP"
-    max_velocity: [0.26, 0.26, 1.0]
-    min_velocity: [-0.26, -0.26, -1.0]
-    max_accel: [2.5, 2.5, 3.2]
-    max_decel: [-2.5, -2.5, -3.2]
-    odom_topic: "odom"
-    odom_duration: 0.1
-    deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 1.0
-    
 lifecycle_manager:
   ros__parameters:
     autostart: true
