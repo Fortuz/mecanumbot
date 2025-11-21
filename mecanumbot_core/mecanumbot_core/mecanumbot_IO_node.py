@@ -9,6 +9,7 @@ import serial
 import struct
 import time
 import math
+import threading
 ############################################### HELPER FUNCTIONS ################################################
 def crc8_ccitt(data: bytes) -> int:
     crc = 0x00
@@ -85,6 +86,7 @@ class Mecanumbot_IO_Node(Node):
         self.get_logger().info(f"Plausibility: max_speed={self.max_wheel_speed}, pos_range=[{self.min_pos},{self.max_pos}], max_float={self.max_float_abs}")
         
         self.init_serial()
+        self.init_reader_thread()
 
         self.opencr_publisher_ = self.create_publisher(OpenCRState, 'opencr_state', 10)
         timer_period = 0.01  # seconds
@@ -109,10 +111,15 @@ class Mecanumbot_IO_Node(Node):
         except serial.SerialException as e:
             self.get_logger().error(f"Error opening serial port: {e}")
             self.ser = None
+    def init_reader_thread(self):
+        self.reader = threading.Thread(target=self.read_thread_fn, args=(self.ser,), daemon=True)
+        self.reader.start()
     def close_serial(self):
         if self.ser is not None:
             self.ser.close()
         self.get_logger().info("Serial port closed.")
+        if self.reader is not None:
+            self.reader.join(timeout=1.0)
     # Plausibility check for received payload
     # Returns True if the payload is plausible, False otherwise
     # A payload is plausible if it fits within certain ranges for wheel speeds, positions, and float values
@@ -203,7 +210,7 @@ class Mecanumbot_IO_Node(Node):
 
     def timer_callback(self):
         #self.get_logger().info("Timer callback triggered")
-        self.read_thread_fn()
+        self.update_opencr_state_in()
         self.opencr_publisher_.publish(self.opencr_state)
         #self.get_logger().info("OpencR State Published")
         #self.get_logger().info('Publishing: "%s"' % self.opencr_state)
@@ -257,7 +264,7 @@ class Mecanumbot_IO_Node(Node):
             del self.rx_buffer[:end]
 
             # Update state
-            self.update_opencr_state_in()
+            
         except serial.SerialException as e:
             self.get_logger().error(f"Serial error in read thread: {e}")
             time.sleep(0.5)
