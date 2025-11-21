@@ -78,23 +78,25 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
         self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10)
         
-        timer_period = 0.05  # seconds
+        timer_period = 0.01  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         
         self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10)
         self.board_subscription  # prevent unused variable warning
 
-        self.current_time = self.get_clock().now().nanoseconds
-        self.last_time = self.get_clock().now().nanoseconds
-        self.dt = (self.current_time - self.last_time)* 1e-9 #[s]
+        self.current_time = self.get_clock().now()
+        self.last_time = self.get_clock().now()
+        self.dt = (self.current_time.nanoseconds - self.last_time.nanoseconds) * 1e-9 #[s]
+
+        self.last_yaw_angle = 0.0
         
     def crstate_callback(self,data):
         self.cr_state = data
 
     def timer_callback(self):
         self.last_time = self.current_time
-        self.current_time = self.get_clock().now().nanoseconds
-        self.dt = (self.current_time - self.last_time) * 1e-9 #[s]
+        self.current_time = self.get_clock().now()
+        self.dt = (self.current_time.nanoseconds - self.last_time.nanoseconds) * 1e-9 #[s]
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
@@ -109,10 +111,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_odom(self):
             
             msg = Odometry()
-            stamp = Time()
-            stamp.sec = self.current_time // 1_000_000_000
-            stamp.nanosec = self.current_time % 1_000_000_000
-            msg.header.stamp = stamp
+            msg.header.stamp = self.current_time.to_msg()
             msg.header.frame_id = self.odom_frame_id
             msg.child_frame_id = self.odom_child_frame_id
 
@@ -143,10 +142,10 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
             else:
-                new_yaw = self.odom.pose.pose.orientation.z + dtheta 
+                new_yaw = self.last_yaw_angle + dtheta 
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
                 quaternion = quaternion_from_euler(0, 0, new_yaw) 
-
+                self.last_yaw_angle = new_yaw
                 msg.pose.pose.orientation.x = quaternion[0]
                 msg.pose.pose.orientation.y = quaternion[1]
                 msg.pose.pose.orientation.z = quaternion[2]
@@ -155,7 +154,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.odom = msg
 
             t = TransformStamped()
-            t.header.stamp = stamp
+            t.header.stamp = self.current_time.to_msg()
             t.header.frame_id = self.odom_frame_id
             t.child_frame_id = self.odom_child_frame_id
             t.transform.translation.x = msg.pose.pose.position.x
@@ -167,10 +166,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_imu(self):
             
             msg = Imu()
-            stamp = Time()
-            stamp.sec = self.current_time // 1_000_000_000
-            stamp.nanosec = self.current_time % 1_000_000_000
-            msg.header.stamp = stamp
+            msg.header.stamp = self.current_time.to_msg()
             msg.header.frame_id = self.imu_frame_id
 
             # Fill IMU data from OpenCRState
@@ -190,10 +186,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_joint_state(self):
             
             msg = JointState()
-            stamp = Time()
-            stamp.sec = self.current_time // 1_000_000_000
-            stamp.nanosec = self.current_time % 1_000_000_000
-            msg.header.stamp = stamp
+            msg.header.stamp = self.current_time.to_msg()
             msg.header.frame_id = 'base_link'
 
             msg.name = ['wheel_backleft_joint', 'wheel_backright_joint', 'wheel_frontleft_joint', 'wheel_frontright_joint']
@@ -215,10 +208,7 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
     
             msg = BatteryState()
-            stamp = Time()
-            stamp.sec = self.current_time // 1_000_000_000
-            stamp.nanosec = self.current_time % 1_000_000_000
-            msg.header.stamp = stamp
+            msg.header.stamp = self.current_time.to_msg()
             msg.voltage = self.cr_state.battery_voltage  # Volts
             msg.design_capacity = 1.8
             msg.capacity = 1.8
