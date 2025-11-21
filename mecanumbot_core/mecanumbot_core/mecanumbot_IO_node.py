@@ -146,10 +146,10 @@ class Mecanumbot_IO_Node(Node):
 
     def update_opencr_state_in(self):
         with self.rx_lock:
-        if self.vals is None:
-            self.get_logger().warn("No valid data received yet.")
-            return
-        vals = self.vals
+            if self.vals is None:
+                self.get_logger().warn("No valid data received yet.")
+                return
+            vals = self.vals
         shorts = vals[:23]
         floats = vals[23:]
         self.opencr_state.header.stamp = self.current_time.to_msg()
