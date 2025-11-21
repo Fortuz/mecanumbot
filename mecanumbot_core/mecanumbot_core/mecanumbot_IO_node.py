@@ -84,7 +84,8 @@ class Mecanumbot_IO_Node(Node):
         self.get_logger().info(f"Device: {self.device_name} @ {self.baudrate} baud")
         self.get_logger().info(f"Packet: payload_size={self.payload_size}, full_packet_size={self.full_packet_size}")
         self.get_logger().info(f"Plausibility: max_speed={self.max_wheel_speed}, pos_range=[{self.min_pos},{self.max_pos}], max_float={self.max_float_abs}")
-        
+
+        self.rx_lock = threading.Lock() 
         self.init_serial()
         self.init_reader_thread()
 
@@ -126,10 +127,9 @@ class Mecanumbot_IO_Node(Node):
     # Plausibility check for received payload
     # Returns True if the payload is plausible, False otherwise
     # A payload is plausible if it fits within certain ranges for wheel speeds, positions, and float values
-    def plausible_payload(self):
-        # vals: tuple of 23 shorts then 14 floats
-        shorts = self.vals[:23]
-        floats = self.vals[23:]
+    def plausible_payload(self, vals):
+        shorts = vals[:23]
+        floats = vals[23:]
         # wheel velocities check
         for v in shorts[:4]:
             if abs(v) > self.max_wheel_speed:
@@ -145,12 +145,14 @@ class Mecanumbot_IO_Node(Node):
         return True
 
     def update_opencr_state_in(self):
+        with self.rx_lock:
         if self.vals is None:
-            self.get_logger().warning("No valid data received yet.")
+            self.get_logger().warn("No valid data received yet.")
             return
-        shorts = self.vals[:23]
-        floats = self.vals[23:]
-        self.opencr_state.header.stamp = self.get_clock().now().to_msg()
+        vals = self.vals
+        shorts = vals[:23]
+        floats = vals[23:]
+        self.opencr_state.header.stamp = self.current_time.to_msg()
         self.opencr_state.cmd_vel_bl = shorts[0]
         self.opencr_state.cmd_vel_br = shorts[1]
         self.opencr_state.cmd_vel_fl = shorts[2]
@@ -223,63 +225,74 @@ class Mecanumbot_IO_Node(Node):
         self.update_motor_cmds_out()
         self.i += 1
 
-    def read_thread_fn(self):
+def read_thread_fn(self):
+    """Continuously read serial data, extract packets, and update self.vals safely."""
+    if self.ser is None:
+        self.get_logger().error("Serial not initialized; reader thread exiting.")
+        return
 
+    while rclpy.ok():
         try:
-            # Append new serial data to persistent buffer
+            # Read available bytes (non-blocking due to timeout)
             chunk = self.ser.read(self.ser.in_waiting or 1)
             if chunk:
                 self.rx_buffer.extend(chunk)
 
-            # Limit buffer size
+            # Keep buffer bounded
             if len(self.rx_buffer) > 4096:
                 self.rx_buffer = self.rx_buffer[-2048:]
 
-            # Try to find a packet
+            # Try to find magic header
             idx = self.rx_buffer.find(self.magic)
             if idx == -1:
-                return  # no header yet
+                time.sleep(0.001)
+                continue
 
+            # Not enough bytes for full packet -> wait
             if len(self.rx_buffer) - idx < self.full_packet_size:
-                return  # full packet not yet available
+                time.sleep(0.001)
+                continue
 
+            # Extract packet
             start = idx
             end = start + self.full_packet_size
             packet = bytes(self.rx_buffer[start:end])
 
             seq = packet[len(self.magic)]
-            payload_bytes = packet[len(self.magic) + self.seq_size :
-                                len(self.magic) + self.seq_size + self.payload_size]
+            payload_bytes = packet[len(self.magic) + self.seq_size:
+                                   len(self.magic) + self.seq_size + self.payload_size]
             recv_crc = packet[-1]
 
+            # Compute CRC
             computed_crc = crc8_ccitt(packet[:-1])
 
+            # Bad CRC → discard only magic byte and keep scanning
             if computed_crc != recv_crc:
-                # Bad packet → discard header only
-                del self.rx_buffer[start:start+1]
-                return
+                del self.rx_buffer[start:start + 1]
+                continue
 
-            # Good packet → parse
-            self.vals = struct.unpack(self.payload_fmt, payload_bytes)
+            # Unpack packet
+            vals = struct.unpack(self.payload_fmt, payload_bytes)
 
-            if not self.plausible_payload():
-                del self.rx_buffer[start:start+1]
-                return
+            # Check plausibility
+            if not self.plausible_payload(vals):
+                del self.rx_buffer[start:start + 1]
+                continue
+
+            # Success — commit parsed values
+            with self.rx_lock:
+                self.vals = vals
 
             # Remove parsed packet from buffer
             del self.rx_buffer[:end]
 
-            # Update state
-            
         except serial.SerialException as e:
             self.get_logger().error(f"Serial error in read thread: {e}")
             time.sleep(0.5)
+
         except Exception as e:
             self.get_logger().error(f"Unexpected error in read thread: {e}")
-            time.sleep(0.1)
-        finally:
-            if not self.ser.is_open:
-                self.get_logger().info("Serial closed, exiting read thread.")
+            time.sleep(0.05)
 
 def main(args=None):
     rclpy.init(args=args)
