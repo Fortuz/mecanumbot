@@ -146,7 +146,7 @@ class Mecanumbot_IO_Node(Node):
 
     def update_opencr_state_in(self):
         if self.vals is None:
-            rclpy.logwarn("No valid data received yet.")
+            rclpy.get_logger().warning("No valid data received yet.")
             return
         shorts = self.vals[:23]
         floats = self.vals[23:]
