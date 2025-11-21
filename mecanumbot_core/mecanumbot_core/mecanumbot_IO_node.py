@@ -111,9 +111,11 @@ class Mecanumbot_IO_Node(Node):
         except serial.SerialException as e:
             self.get_logger().error(f"Error opening serial port: {e}")
             self.ser = None
+
     def init_reader_thread(self):
         self.reader = threading.Thread(target=self.read_thread_fn, args=(self.ser,), daemon=True)
         self.reader.start()
+    
     def close_serial(self):
         if self.ser is not None:
             self.ser.close()
@@ -142,6 +144,9 @@ class Mecanumbot_IO_Node(Node):
         return True
 
     def update_opencr_state_in(self):
+        if self.vals in None:
+            rclpy.logwarn("No valid data received yet.")
+            return
         shorts = self.vals[:23]
         floats = self.vals[23:]
         self.opencr_state.header.stamp = self.get_clock().now().to_msg()
