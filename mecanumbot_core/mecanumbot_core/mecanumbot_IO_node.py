@@ -152,7 +152,7 @@ class Mecanumbot_IO_Node(Node):
             vals = self.vals
         shorts = vals[:23]
         floats = vals[23:]
-        self.opencr_state.header.stamp = self.current_time.to_msg()
+        self.opencr_state.header.stamp = self.get_clock().now().to_msg()
         self.opencr_state.cmd_vel_bl = shorts[0]
         self.opencr_state.cmd_vel_br = shorts[1]
         self.opencr_state.cmd_vel_fl = shorts[2]
