@@ -114,7 +114,7 @@ class Mecanumbot_IO_Node(Node):
             self.ser = None
 
     def init_reader_thread(self):
-        self.reader = threading.Thread(target=self.read_thread_fn, args=(self.ser,), daemon=True)
+        self.reader = threading.Thread(target=self.read_thread_fn, daemon=True)
         self.reader.start()
     
     def close_serial(self):
@@ -145,7 +145,7 @@ class Mecanumbot_IO_Node(Node):
         return True
 
     def update_opencr_state_in(self):
-        if self.vals in None:
+        if self.vals is None:
             rclpy.logwarn("No valid data received yet.")
             return
         shorts = self.vals[:23]
