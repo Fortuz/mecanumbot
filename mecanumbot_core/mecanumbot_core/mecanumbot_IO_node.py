@@ -88,6 +88,7 @@ class Mecanumbot_IO_Node(Node):
         self.init_serial()
         self.init_reader_thread()
 
+        self.vals = None
         self.opencr_publisher_ = self.create_publisher(OpenCRState, 'opencr_state', 10)
         timer_period = 0.01  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -95,7 +96,7 @@ class Mecanumbot_IO_Node(Node):
 
         self.i = 0
         self.rx_buffer = bytearray()
-        self.vals = None
+        
 
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
                             'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
