@@ -9,7 +9,7 @@ from launch_ros.actions import PushRosNamespace
 def generate_launch_description():
     map_name = 'AI_room_lounge'
     mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
-    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'nav2_params.yaml')
+    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
     map_file = os.path.join(mecanumbot_description_pkg_share,'maps',map_name, f"{map_name}.yaml")
 
     # Declare a namespace argument
