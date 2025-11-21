@@ -225,74 +225,74 @@ class Mecanumbot_IO_Node(Node):
         self.update_motor_cmds_out()
         self.i += 1
 
-def read_thread_fn(self):
-    """Continuously read serial data, extract packets, and update self.vals safely."""
-    if self.ser is None:
-        self.get_logger().error("Serial not initialized; reader thread exiting.")
-        return
+    def read_thread_fn(self):
+        """Continuously read serial data, extract packets, and update self.vals safely."""
+        if self.ser is None:
+            self.get_logger().error("Serial not initialized; reader thread exiting.")
+            return
 
-    while rclpy.ok():
-        try:
-            # Read available bytes (non-blocking due to timeout)
-            chunk = self.ser.read(self.ser.in_waiting or 1)
-            if chunk:
-                self.rx_buffer.extend(chunk)
+        while rclpy.ok():
+            try:
+                # Read available bytes (non-blocking due to timeout)
+                chunk = self.ser.read(self.ser.in_waiting or 1)
+                if chunk:
+                    self.rx_buffer.extend(chunk)
 
-            # Keep buffer bounded
-            if len(self.rx_buffer) > 4096:
-                self.rx_buffer = self.rx_buffer[-2048:]
+                # Keep buffer bounded
+                if len(self.rx_buffer) > 4096:
+                    self.rx_buffer = self.rx_buffer[-2048:]
 
-            # Try to find magic header
-            idx = self.rx_buffer.find(self.magic)
-            if idx == -1:
-                time.sleep(0.001)
-                continue
+                # Try to find magic header
+                idx = self.rx_buffer.find(self.magic)
+                if idx == -1:
+                    time.sleep(0.001)
+                    continue
 
-            # Not enough bytes for full packet -> wait
-            if len(self.rx_buffer) - idx < self.full_packet_size:
-                time.sleep(0.001)
-                continue
+                # Not enough bytes for full packet -> wait
+                if len(self.rx_buffer) - idx < self.full_packet_size:
+                    time.sleep(0.001)
+                    continue
 
-            # Extract packet
-            start = idx
-            end = start + self.full_packet_size
-            packet = bytes(self.rx_buffer[start:end])
+                # Extract packet
+                start = idx
+                end = start + self.full_packet_size
+                packet = bytes(self.rx_buffer[start:end])
 
-            seq = packet[len(self.magic)]
-            payload_bytes = packet[len(self.magic) + self.seq_size:
-                                   len(self.magic) + self.seq_size + self.payload_size]
-            recv_crc = packet[-1]
+                seq = packet[len(self.magic)]
+                payload_bytes = packet[len(self.magic) + self.seq_size:
+                                    len(self.magic) + self.seq_size + self.payload_size]
+                recv_crc = packet[-1]
 
-            # Compute CRC
-            computed_crc = crc8_ccitt(packet[:-1])
+                # Compute CRC
+                computed_crc = crc8_ccitt(packet[:-1])
 
-            # Bad CRC → discard only magic byte and keep scanning
-            if computed_crc != recv_crc:
-                del self.rx_buffer[start:start + 1]
-                continue
+                # Bad CRC → discard only magic byte and keep scanning
+                if computed_crc != recv_crc:
+                    del self.rx_buffer[start:start + 1]
+                    continue
 
-            # Unpack packet
-            vals = struct.unpack(self.payload_fmt, payload_bytes)
+                # Unpack packet
+                vals = struct.unpack(self.payload_fmt, payload_bytes)
 
-            # Check plausibility
-            if not self.plausible_payload(vals):
-                del self.rx_buffer[start:start + 1]
-                continue
+                # Check plausibility
+                if not self.plausible_payload(vals):
+                    del self.rx_buffer[start:start + 1]
+                    continue
 
-            # Success — commit parsed values
-            with self.rx_lock:
-                self.vals = vals
+                # Success — commit parsed values
+                with self.rx_lock:
+                    self.vals = vals
 
-            # Remove parsed packet from buffer
-            del self.rx_buffer[:end]
+                # Remove parsed packet from buffer
+                del self.rx_buffer[:end]
 
-        except serial.SerialException as e:
-            self.get_logger().error(f"Serial error in read thread: {e}")
-            time.sleep(0.5)
+            except serial.SerialException as e:
+                self.get_logger().error(f"Serial error in read thread: {e}")
+                time.sleep(0.5)
 
-        except Exception as e:
-            self.get_logger().error(f"Unexpected error in read thread: {e}")
-            time.sleep(0.05)
+            except Exception as e:
+                self.get_logger().error(f"Unexpected error in read thread: {e}")
+                time.sleep(0.05)
 
 def main(args=None):
     rclpy.init(args=args)
