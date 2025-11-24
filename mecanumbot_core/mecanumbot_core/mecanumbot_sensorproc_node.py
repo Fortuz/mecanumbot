@@ -127,11 +127,11 @@ class Mecanumbot_Sensorproc_Node(Node):
             #self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
             
             dx =  msg.twist.twist.linear.x * self.dt
-            dy = msg.twist.twist.linear.y * self.dt
+            dy =  msg.twist.twist.linear.y * self.dt
             dtheta = msg.twist.twist.angular.z * self.dt
 
-            msg.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
-            msg.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.x += (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.y += (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
             msg.pose.pose.position.z = 0.0
             #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
             #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
@@ -142,7 +142,7 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
             else:
-                new_yaw = self.last_yaw_angle + dtheta 
+                new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
                 quaternion = quaternion_from_euler(0, 0, new_yaw) 
                 self.last_yaw_angle = new_yaw
