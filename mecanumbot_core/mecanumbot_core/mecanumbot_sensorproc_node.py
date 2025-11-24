@@ -130,8 +130,8 @@ class Mecanumbot_Sensorproc_Node(Node):
             dy =  msg.twist.twist.linear.y * self.dt
             dtheta = msg.twist.twist.angular.z * self.dt
 
-            msg.pose.pose.position.x = self.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
-            msg.pose.pose.position.y = self.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
             msg.pose.pose.position.z = 0.0
             #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
             self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
