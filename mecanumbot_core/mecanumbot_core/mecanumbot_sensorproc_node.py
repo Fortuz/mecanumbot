@@ -16,7 +16,7 @@ import time
 import math
 from builtin_interfaces.msg import Time
 import math
-from tf_transformations import quaternion_from_euler # You may need to install 'ros-humble-tf-transformations'
+from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -137,10 +137,16 @@ class Mecanumbot_Sensorproc_Node(Node):
             #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
             if self.odom_from_imu: #TODO
                 # Orientation from IMU
-                msg.pose.pose.orientation.x = 0.0
-                msg.pose.pose.orientation.y = 0.0
+                msg.pose.pose.orientation.x = self.cr_state.imu_orientation_x
+                msg.pose.pose.orientation.y = self.cr_state.imu_orientation_y
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
+                # Update last_yaw_angle from IMU quaternion
+                e = euler_from_quaternion(self.cr_state.imu_orientation_x, 
+                                           self.cr_state.imu_orientation_y, 
+                                           self.cr_state.imu_orientation_z, 
+                                           self.cr_state.imu_orientation_w)
+                self.last_yaw_angle = e[2]  # Yaw angle
             else:
                 new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
