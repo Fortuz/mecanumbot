@@ -33,7 +33,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
-        ('odom_params.from_imu', False),
+        ('odom_params.from_imu', True),
         ('imu_params.frame_id', 'imu_link')
          ])
         
@@ -151,6 +151,7 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = quaternion[2]
                 msg.pose.pose.orientation.w = quaternion[3]
                 # Orientation from odometry integration (not implemented)
+
             self.odom = msg
 
             t = TransformStamped()

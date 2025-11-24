@@ -34,6 +34,6 @@ mecanumbot_sensorproc_node:
     odom_params:
       frame_id: "odom"
       child_frame_id: "base_footprint"
-      from_imu: false
+      from_imu: true
     imu_params:
       frame_id: "imu_link"
