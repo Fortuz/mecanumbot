@@ -125,16 +125,16 @@ class Mecanumbot_Sensorproc_Node(Node):
             #self.get_logger().info(f'Wheel ticks: BL: {self.cr_state.vel_bl}, BR: {self.cr_state.vel_br}, FL: {self.cr_state.vel_fl}, FR: {self.cr_state.vel_fr}')
             #self.get_logger().info(f'Wheel tick Velocities: Vx_tick: {Vx_tick}, Vy_tick: {Vy_tick}, Wz_tick: {Wz_tick}, scale: {self.scale}, wheel_dist_scale: {self.wheel_dist_scale}')
             #self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
-            
+        
             dx =  msg.twist.twist.linear.x * self.dt
             dy =  msg.twist.twist.linear.y * self.dt
             dtheta = msg.twist.twist.angular.z * self.dt
 
-            msg.pose.pose.position.x += (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
-            msg.pose.pose.position.y += (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.x = self.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
+            msg.pose.pose.position.y = self.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
             msg.pose.pose.position.z = 0.0
             #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
-            #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
+            self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
             if self.odom_from_imu: #TODO
                 # Orientation from IMU
                 msg.pose.pose.orientation.x = 0.0
