@@ -142,10 +142,10 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
                 # Update last_yaw_angle from IMU quaternion
-                e = euler_from_quaternion(self.cr_state.imu_orientation_x, 
+                e = euler_from_quaternion((self.cr_state.imu_orientation_x, 
                                            self.cr_state.imu_orientation_y, 
                                            self.cr_state.imu_orientation_z, 
-                                           self.cr_state.imu_orientation_w)
+                                           self.cr_state.imu_orientation_w))
                 self.last_yaw_angle = e[2]  # Yaw angle
             else:
                 new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
