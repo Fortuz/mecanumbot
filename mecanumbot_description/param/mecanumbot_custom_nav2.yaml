@@ -416,8 +416,8 @@ docking_server:
     undock_linear_tolerance: 0.05
     undock_angular_tolerance: 0.1
     max_retries: 3
-    base_frame: "base_link"
-    fixed_frame: "odom"
+    base_frame: "mecanumbot/base_link"
+    fixed_frame: "mecanumbot/odom"
     dock_backwards: false
     dock_prestaging_tolerance: 0.5
 
