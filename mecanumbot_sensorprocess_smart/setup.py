@@ -13,11 +13,15 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='temesi',
+    maintainer='Csenge Hubay',
     maintainer_email='csengehubay@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
-    tests_require=['pytest'],
+    description='Functions for extracting and processing data from mecanumbot sensors',
+    license='Apache License 2.0',
+    extras_require={
+        'test': [
+            'pytest',
+        ],
+    },
     entry_points={
         'console_scripts': [
         
