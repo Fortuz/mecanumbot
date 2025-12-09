@@ -50,7 +50,7 @@ def generate_launch_description():
             name='mecanumbot_io_node',
             namespace= namespace,
             parameters=[yaml_file, {'use_sim_time': use_sim_time}],
-            remappings=[('/mecanumbot/cmd_vel','/cmd_vel')],
+            remappings=[('/mecanumbot/cmd_vel','/cmd_vel'),('/mecanumbot/cmd_accessory_pos','/cmd_accessory_pos') ],
             output='screen'
         ),
 
