@@ -60,6 +60,7 @@ def generate_launch_description():
             name='mecanumbot_sensorproc_node',
             namespace= namespace,
             parameters=[yaml_file, {'use_sim_time': use_sim_time, 'namespace': namespace}],
+            remappings=[('/mecanumbot/cmd_vel','/cmd_vel')],
             #remappings=[('/tf', '/mecanumbot/tf'),('/tf_static', '/mecanumbot/tf_static')],
             output='screen'
         ),
