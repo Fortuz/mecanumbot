@@ -38,7 +38,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.wheel.separation_x', 0.129),
         ('robot_params.wheel.separation_y', 0.300),
         ('robot_params.wheel.vel_tick',0.229),
-        ('robot_params.accessory.neck_default', 330),
+        ('robot_params.accessory.neck_default', 850),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
         ('packet_params.payload_fmt', '<23h14f'),

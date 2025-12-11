@@ -7,7 +7,7 @@ common_params:
         separation_y: 0.300 
         vel_tick: 0.229
       accessory:
-        neck_default: 330
+        neck_default: 850
         grabber_default: 512
 mecanumbot_io_node:
   ros__parameters:
