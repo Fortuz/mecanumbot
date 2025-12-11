@@ -15,7 +15,6 @@ Panels:
         - /Map1/Topic1
         - /LaserScan1
         - /LaserScan1/Topic1
-        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 879
   - Class: rviz_common/Selection
@@ -281,17 +280,26 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Class: rviz_default_plugins/MarkerArray
+    - Alpha: 1
+      Arrow Length: 0.30000001192092896
+      Axes Length: 0.30000001192092896
+      Axes Radius: 0.009999999776482582
+      Class: rviz_default_plugins/PoseArray
+      Color: 255; 25; 0
       Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        {}
+      Head Length: 0.07000000029802322
+      Head Radius: 0.029999999329447746
+      Name: PoseArray
+      Shaft Length: 0.23000000417232513
+      Shaft Radius: 0.009999999776482582
+      Shape: Arrow (Flat)
       Topic:
         Depth: 5
         Durability Policy: Volatile
+        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /marker
+        Value: /mecanumbot/dets
       Value: true
   Enabled: true
   Global Options:
@@ -337,7 +345,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 12.501142501831055
+      Distance: 7.056922435760498
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -352,10 +360,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.389796495437622
+      Pitch: 1.2747966051101685
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.500917911529541
+      Yaw: 2.9759154319763184
     Saved: ~
 Window Geometry:
   Displays:
