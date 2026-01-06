@@ -31,7 +31,7 @@ class Mecanumbot_IO_Node(Node):
         namespace=namespace,
         parameters=[
         ('dev_params.device_name', default_device),
-        ('dev_params.baudrate', 57600),
+        ('dev_params.baudrate', 1000000),
 
         #Robot parameters
         ('robot_params.wheel.radius', 0.0325),
