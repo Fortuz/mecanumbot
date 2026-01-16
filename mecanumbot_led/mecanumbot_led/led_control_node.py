@@ -48,6 +48,7 @@ class LedServiceNode(Node):
         # Create services
         self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback)
         self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback)
+        self.duration_ms = 1000
 
     def set_led_status_callback(self, request, response):
         
