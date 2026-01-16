@@ -34,7 +34,7 @@ def read_feedback(ser):
                 FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color,cs = static["buf"]
                 static["state"] = 0
                 if (FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color) == cs:
-                    return (FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color)
+                    return (FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color)
                 return None
     return None
 
@@ -46,9 +46,16 @@ class LedServiceNode(Node):
         self.serial_port = serial.Serial('/dev/arduino_nano', 115200, timeout=1) # Udev rule should be set first
 
         # Create services
+        self.last_feedback = None
         self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback)
         self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback)
+        self.timer = self.create_timer(0.05, self.timer_callback) # period_sec
         self.duration_ms = 1000
+
+    def timer_callback(self):
+        fb = read_feedback(self.serial_port)
+        if fb:
+            self.last_feedback = fb
 
     def set_led_status_callback(self, request, response):
         
@@ -64,41 +71,39 @@ class LedServiceNode(Node):
             self.duration_ms
         )
         try:
+            self.get_logger().info("Sending packet to Arduino")
             self.serial_port.write(packet)
-            return response
+            response.success = True
+            response.message = "No error"
         except Exception as e:
-            return response
+            response.success = False
+            response.message = e
+            self.get_logger().error(e)
+        return response
 
 
-    def get_led_status_callback(self, request, response):
+    def get_led_status_callback(self,request, response):
         try:
-            self.serial_port.write(bytes([FEEDBACK_START]))  # example GET command byte
-
             # Read fixed length response
-            data = self.serial_port.read(10)
-
-            if len(data) != 10:
-                self.get_logger().error(f"Incomplete packet: {len(data)} bytes")
+            data = self.last_feedback
+            if data is None or len(data) != 8:
+                e = f"Incomplete packet: {len(data)} bytes"
+                self.get_logger().error(e)
+                (response.fl_mode, response.fl_color,
+                response.fr_mode, response.fr_color,
+                response.br_mode, response.br_color,
+                response.bl_mode, response.bl_color) = (404,404,404,404,404,404,404,404)
                 return response
 
-            if data[0] != FEEDBACK_START:
-                self.get_logger().error("Invalid START byte")
-                return response
 
-            fl_m  = data[1]
-            fl_c  = data[2]
-            fr_m  = data[3]
-            fr_c  = data[4]
-            bl_m  = data[5]
-            bl_c  = data[6]
-            br_m  = data[7]
-            br_c  = data[8]
-            cs    = data[9]
-
-            # Verify checksum
-            if (fl_m ^ fl_c ^ fr_m ^ fr_c ^ bl_m ^ bl_c ^ br_m ^ br_c) != cs:
-                self.get_logger().error("Checksum mismatch")
-                return response
+            fl_m  = data[0]
+            fl_c  = data[1]
+            fr_m  = data[2]
+            fr_c  = data[3]
+            bl_m  = data[4]
+            bl_c  = data[5]
+            br_m  = data[6]
+            br_c  = data[7]
 
             # Assign to ROS response
             response.fl_mode  = fl_m
@@ -109,11 +114,15 @@ class LedServiceNode(Node):
             response.bl_color = bl_c
             response.br_mode  = br_m
             response.br_color = br_c
+            return response 
 
         except Exception as e:
-            self.get_logger().error(f"Serial error: {e}")
+            e = "Serial error: {e}"
+            self.get_logger().error(e)
+            response.success = False
+            response.message = e
+            return response
 
-        return response
 
 def main(args=None):
     rclpy.init(args=args)
