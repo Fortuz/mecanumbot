@@ -7,7 +7,7 @@ from mecanumbot_msgs.srv  import GetLedStatus,SetLedStatus
 
 START_BYTE = 0xAA
 FEEDBACK_START = 0xAB
-
+REQUEST_BYTE = 0xAC
 
 def build_packet(FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color, duration_ms):
     tL = duration_ms & 0xFF
@@ -23,7 +23,7 @@ def read_feedback(ser):
         static["buf"] = []
 
     while ser.in_waiting:
-        b = ord(ser.read(1))
+        b = ser.read(1)[0]
         if static["state"] == 0:
             if b == FEEDBACK_START:
                 static["buf"] = []
@@ -49,13 +49,7 @@ class LedServiceNode(Node):
         self.last_feedback = None
         self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback)
         self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback)
-        self.timer = self.create_timer(0.05, self.timer_callback) # period_sec
         self.duration_ms = 1000
-
-    def timer_callback(self):
-        fb = read_feedback(self.serial_port)
-        if fb:
-            self.last_feedback = fb
 
     def set_led_status_callback(self, request, response):
         
@@ -84,8 +78,9 @@ class LedServiceNode(Node):
 
     def get_led_status_callback(self,request, response):
         try:
+            self.serial_port.write(bytes([REQUEST_BYTE]))
             # Read fixed length response
-            data = self.last_feedback
+            data = read_feedback(self.serial_port)
             if data is None or len(data) != 8:
                 e = f"Incomplete packet: {len(data)} bytes"
                 self.get_logger().error(e)
