@@ -9,7 +9,7 @@ class LedServiceNode(Node):
         super().__init__('mecanumbot_led_service_node')
 
         # Initialize serial connection
-        self.serial_port = serial.Serial('/dev/arduino_nano', 9600, timeout=1) # Udev rule should be set first
+        self.serial_port = serial.Serial('/dev/arduino_nano', 115200, timeout=1) # Udev rule should be set first
 
         # Create services
         self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback)
