@@ -18,7 +18,7 @@ class LedServiceNode(Node):
     def set_led_status_callback(self, request, response):
         # Send command over serial
         data = f"{request.fl_mode},{request.fl_color},{request.fr_mode},{request.fr_color}," \
-               f"{request.br_mode},{request.br_color},{request.bl_mode},{request.bl_color}" #\n
+               f"{request.br_mode},{request.br_color},{request.bl_mode},{request.bl_color}\n" #\n
         
         self.serial_port.write(data.encode())
 
