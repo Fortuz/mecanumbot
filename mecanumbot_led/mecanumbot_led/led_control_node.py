@@ -64,7 +64,7 @@ class LedServiceNode(Node):
             self.duration_ms
         )
         try:
-            self.ser.write(packet)
+            self.serial_port.write(packet)
             return response
         except Exception as e:
             return response
@@ -81,7 +81,7 @@ class LedServiceNode(Node):
                 self.get_logger().error(f"Incomplete packet: {len(data)} bytes")
                 return response
 
-            if data[0] != START_BYTE:
+            if data[0] != FEEDBACK_START:
                 self.get_logger().error("Invalid START byte")
                 return response
 
