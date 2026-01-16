@@ -2,7 +2,41 @@ import rclpy
 from rclpy.node import Node
 import serial
 
-from mecanumbot_msgs.srv  import GetLedStatus, SetLedStatus
+from mecanumbot_msgs.srv  import GetLedStatus,GetLedStatusResponse, SetLedStatus,SetLedStatusResponse
+
+
+START_BYTE = 0xAA
+FEEDBACK_START = 0xAB
+
+
+def build_packet(FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color, duration_ms):
+    tL = duration_ms & 0xFF
+    tH = (duration_ms >> 8) & 0xFF
+    checksum = FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color ^ tL ^ tH
+    return bytes([START_BYTE, FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color, tL, tH, checksum])
+
+
+def read_feedback(ser):
+    static = read_feedback.__dict__
+    if "state" not in static:
+        static["state"] = 0
+        static["buf"] = []
+
+    while ser.in_waiting:
+        b = ord(ser.read(1))
+        if static["state"] == 0:
+            if b == FEEDBACK_START:
+                static["buf"] = []
+                static["state"] = 1
+        elif static["state"] == 1:
+            static["buf"].append(b)
+            if len(static["buf"]) == 9:
+                FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color,cs = static["buf"]
+                static["state"] = 0
+                if (FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color) == cs:
+                    return (FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color)
+                return None
+    return None
 
 class LedServiceNode(Node):
     def __init__(self):
@@ -16,47 +50,68 @@ class LedServiceNode(Node):
         self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback)
 
     def set_led_status_callback(self, request, response):
-        # Send command over serial
-        data = f"{request.fl_mode},{request.fl_color},{request.fr_mode},{request.fr_color}," \
-               f"{request.br_mode},{request.br_color},{request.bl_mode},{request.bl_color}\n" #\n
         
-        self.serial_port.write(data.encode())
+        packet = build_packet(
+            request.fl_mode,
+            request.fl_color,
+            request.fr_mode,
+            request.fr_color,
+            request.bl_mode,
+            request.bl_color,
+            request.br_mode,
+            request.br_color,
+            self.duration_ms
+        )
+        try:
+            self.ser.write(packet)
+            return response
+        except Exception as e:
+            return response
 
-        # (Optional) wait for ACK or process response from microcontroller
-        response.success = True
-        response.message = "No error"
-        self.get_logger().info(f"Set new data: {data}")
-        return response
 
     def get_led_status_callback(self, request, response):
         try:
-            # Send GET command over serial
-            self.serial_port.write(b"GET\n")
-            
-            # Read the response line from the serial port
-            raw = self.serial_port.readline().decode().strip()
-            self.get_logger().info(f"Received raw data: {raw}")
+            self.serial_port.write(bytes([FEEDBACK_START]))  # example GET command byte
 
-            # Check length (expecting exactly 16 characters → 8 values)
-            if len(raw) != 16:
-                self.get_logger().error(f"Unexpected data length: {len(raw)}. Data: {raw}")
-                return response  # Optionally set all fields to -1 or 0 to indicate error
+            # Read fixed length response
+            data = self.serial_port.read(10)
 
-            # Split into 2-character chunks
-            chunks = [raw[i:i+2] for i in range(0, len(raw), 2)]
+            if len(data) != 10:
+                self.get_logger().error(f"Incomplete packet: {len(data)} bytes")
+                return response
 
-            # Convert to integers (base 16)
-            values = [int(chunk, 16) for chunk in chunks]
+            if data[0] != START_BYTE:
+                self.get_logger().error("Invalid START byte")
+                return response
 
-            # Assign values to response fields
-            (response.fl_mode, response.fl_color,
-            response.fr_mode, response.fr_color,
-            response.br_mode, response.br_color,
-            response.bl_mode, response.bl_color) = values
+            fl_m  = data[1]
+            fl_c  = data[2]
+            fr_m  = data[3]
+            fr_c  = data[4]
+            bl_m  = data[5]
+            bl_c  = data[6]
+            br_m  = data[7]
+            br_c  = data[8]
+            cs    = data[9]
+
+            # Verify checksum
+            if (fl_m ^ fl_c ^ fr_m ^ fr_c ^ bl_m ^ bl_c ^ br_m ^ br_c) != cs:
+                self.get_logger().error("Checksum mismatch")
+                return response
+
+            # Assign to ROS response
+            response.fl_mode  = fl_m
+            response.fl_color = fl_c
+            response.fr_mode  = fr_m
+            response.fr_color = fr_c
+            response.bl_mode  = bl_m
+            response.bl_color = bl_c
+            response.br_mode  = br_m
+            response.br_color = br_c
 
         except Exception as e:
-            self.get_logger().error(f"Error parsing serial data: {e}")
-            # Optionally set all response fields to 0 or -1 here
+            self.get_logger().error(f"Serial error: {e}")
+
         return response
 
 def main(args=None):
