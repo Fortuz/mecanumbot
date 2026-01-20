@@ -218,9 +218,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             ]
             posis = [*[item*self.dt for item in vels],*access_posis] 
             msg.position = posis
-            msg.velocity = [*vels,*[0,0,0]]
+            msg.velocity = [*vels,0.0,0.0,0.0]
 
-            msg.effort = [0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0]  # Effort is not provided by OpenCRState
+            msg.effort = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Effort is not provided by OpenCRState
 
             self.joint_state = msg
 
