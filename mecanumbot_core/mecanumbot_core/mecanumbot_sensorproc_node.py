@@ -192,7 +192,6 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         msg = JointState()
         msg.header.stamp = self.current_time.to_msg()
-        msg.header.frame_id = {self.namespace}
         msg.name = [
             f'{self.namespace}/wheel_backleft_joint', 
             f'{self.namespace}/wheel_backright_joint', 
