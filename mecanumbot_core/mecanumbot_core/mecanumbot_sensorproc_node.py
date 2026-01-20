@@ -15,7 +15,7 @@ from builtin_interfaces.msg import Time
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 
 TICK_TO_RAD = 0.005061
-MIDPOINT_COMPENSATE_CONSTANT = 2.619 #150deg diff in rads
+MIDPOINT_COMPENSATE_CONSTANT = 3.66519 #210deg diff in rads
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -203,9 +203,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             f'{self.namespace}/grabber_right_joint']
 
         access_posis = [
-            self.cr_state.pos_n * TICK_TO_RAD - MIDPOINT_COMPENSATE_CONSTANT,
-            -self.cr_state.pos_gl * TICK_TO_RAD + MIDPOINT_COMPENSATE_CONSTANT,
-            -self.cr_state.pos_gr * TICK_TO_RAD + MIDPOINT_COMPENSATE_CONSTANT
+            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_n * TICK_TO_RAD,
+            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
+            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
         ]
 
         msg.position = [0.0,0.0,0.0,0.0, *access_posis]
