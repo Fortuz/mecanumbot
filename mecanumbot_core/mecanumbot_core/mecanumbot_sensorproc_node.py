@@ -17,6 +17,8 @@ import math
 from builtin_interfaces.msg import Time
 import math
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
+
+TICK_TO_RAD = 0.005061
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -210,9 +212,9 @@ class Mecanumbot_Sensorproc_Node(Node):
                 self.cr_state.vel_fr * self.vel_tick * 2 * math.pi
             ]
             access_posis = [
-                 self.cr_state.pos_n,
-                 self.cr_state.pos_gl,
-                 self.cr_state.pos_gr
+                 self.cr_state.pos_n * TICK_TO_RAD,
+                 self.cr_state.pos_gl * TICK_TO_RAD,
+                 self.cr_state.pos_gr *TICK_TO_RAD
             ]
             posis = [*[item*self.dt for item in vels],*access_posis] 
             msg.position = posis
