@@ -10,12 +10,8 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, JointState, BatteryState
 from geometry_msgs.msg import Twist
 from mecanumbot_msgs.msg import OpenCRState
-import serial
-import struct
-import time
 import math
 from builtin_interfaces.msg import Time
-import math
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 
 TICK_TO_RAD = 0.005061
@@ -196,7 +192,7 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         msg = JointState()
         msg.header.stamp = self.current_time.to_msg()
-
+        msg.header.frame_id = {self.namespace}
         msg.name = [
             f'{self.namespace}/wheel_backleft_joint', 
             f'{self.namespace}/wheel_backright_joint', 
@@ -205,28 +201,15 @@ class Mecanumbot_Sensorproc_Node(Node):
             f'{self.namespace}/head_joint',
             f'{self.namespace}/grabber_left_joint',
             f'{self.namespace}/grabber_right_joint']
-        vels = [
-            self.cr_state.vel_bl * self.vel_tick * 2 * math.pi,
-            self.cr_state.vel_br * self.vel_tick * 2 * math.pi,
-            self.cr_state.vel_fl * self.vel_tick * 2 * math.pi,
-            self.cr_state.vel_fr * self.vel_tick * 2 * math.pi
-        ]
-
-        # accumulate wheel positions
-        if not hasattr(self, "wheel_pos"):
-            self.wheel_pos = [0.0, 0.0, 0.0, 0.0]
-
-        for i in range(4):
-            self.wheel_pos[i] += vels[i] * self.dt
 
         access_posis = [
-            self.cr_state.pos_n * TICK_TO_RAD,
-            self.cr_state.pos_gl * TICK_TO_RAD,
-            self.cr_state.pos_gr * TICK_TO_RAD
+            self.cr_state.pos_n * TICK_TO_RAD - math.pi,
+            self.cr_state.pos_gl * TICK_TO_RAD - math.pi,
+            self.cr_state.pos_gr * TICK_TO_RAD - math.pi
         ]
 
-        msg.position = [*self.wheel_pos, *access_posis]
-        msg.velocity = [*vels, 0.0, 0.0, 0.0]
+        msg.position = [0.0,0.0,0.0,0.0, *access_posis]
+        msg.velocity = [0.0] * 7
         msg.effort   = [0.0] * 7
 
         self.joint_state = msg
