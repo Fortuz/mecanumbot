@@ -15,7 +15,7 @@ from builtin_interfaces.msg import Time
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 
 TICK_TO_RAD = 0.005061
-MIDPOINT_COMPENSATE_CONSTANT = 3.66519 #210deg diff in rads
+MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
