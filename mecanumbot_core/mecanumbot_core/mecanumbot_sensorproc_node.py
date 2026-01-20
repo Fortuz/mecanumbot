@@ -196,19 +196,29 @@ class Mecanumbot_Sensorproc_Node(Node):
             msg.header.stamp = self.current_time.to_msg()
             msg.header.frame_id = 'base_link'
 
-            msg.name = ['wheel_backleft_joint', 'wheel_backright_joint', 'wheel_frontleft_joint', 'wheel_frontright_joint']
+            msg.name = [f'{self.namespace}/wheel_backleft_joint', 
+                        f'{self.namespace}/wheel_backright_joint', 
+                        f'{self.namespace}/wheel_frontleft_joint', 
+                        f'{self.namespace}/wheel_frontright_joint',
+                        f'{self.namespace}/head_joint'
+                        f'{self.namespace}/grabber_left_joint',
+                        f'{self.namespace}/grabber_right_joint']
             vels = [
                 self.cr_state.vel_bl * self.vel_tick * 2 * math.pi,  # m/s
                 self.cr_state.vel_br * self.vel_tick * 2 * math.pi,  # m/s
                 self.cr_state.vel_fl * self.vel_tick * 2 * math.pi,  # m/s
-                self.cr_state.vel_fr * self.vel_tick * 2 * math.pi   # m/s
+                self.cr_state.vel_fr * self.vel_tick * 2 * math.pi
             ]
-
-            posis = [item*self.dt for item in vels]
+            access_posis = [
+                 self.cr_state.pos_n,
+                 self.cr_state.pos_gl,
+                 self.cr_state.pos_gr
+            ]
+            posis = [*[item*self.dt for item in vels],*access_posis] 
             msg.position = posis
-            msg.velocity = vels
+            msg.velocity = [*vels,*[0,0,0]]
 
-            msg.effort = [0.0, 0.0, 0.0, 0.0]  # Effort is not provided by OpenCRState
+            msg.effort = [0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0]  # Effort is not provided by OpenCRState
 
             self.joint_state = msg
 
