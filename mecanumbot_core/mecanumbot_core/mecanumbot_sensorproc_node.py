@@ -193,36 +193,44 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.imu = msg
 
     def set_joint_state(self):
-            
-            msg = JointState()
-            msg.header.stamp = self.current_time.to_msg()
-            msg.header.frame_id = 'base_link'
 
-            msg.name = [f'{self.namespace}/wheel_backleft_joint', 
-                        f'{self.namespace}/wheel_backright_joint', 
-                        f'{self.namespace}/wheel_frontleft_joint', 
-                        f'{self.namespace}/wheel_frontright_joint',
-                        f'{self.namespace}/head_joint'
-                        f'{self.namespace}/grabber_left_joint',
-                        f'{self.namespace}/grabber_right_joint']
-            vels = [
-                self.cr_state.vel_bl * self.vel_tick * 2 * math.pi,  # m/s
-                self.cr_state.vel_br * self.vel_tick * 2 * math.pi,  # m/s
-                self.cr_state.vel_fl * self.vel_tick * 2 * math.pi,  # m/s
-                self.cr_state.vel_fr * self.vel_tick * 2 * math.pi
-            ]
-            access_posis = [
-                 self.cr_state.pos_n * TICK_TO_RAD,
-                 self.cr_state.pos_gl * TICK_TO_RAD,
-                 self.cr_state.pos_gr *TICK_TO_RAD
-            ]
-            posis = [*[item*self.dt for item in vels],*access_posis] 
-            msg.position = posis
-            msg.velocity = [*vels,0.0,0.0,0.0]
+        msg = JointState()
+        msg.header.stamp = self.current_time.to_msg()
 
-            msg.effort = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Effort is not provided by OpenCRState
+        msg.name = [
+            f'{self.namespace}/wheel_backleft_joint', 
+            f'{self.namespace}/wheel_backright_joint', 
+            f'{self.namespace}/wheel_frontleft_joint', 
+            f'{self.namespace}/wheel_frontright_joint',
+            f'{self.namespace}/head_joint',
+            f'{self.namespace}/grabber_left_joint',
+            f'{self.namespace}/grabber_right_joint']
+        vels = [
+            self.cr_state.vel_bl * self.vel_tick * 2 * math.pi,
+            self.cr_state.vel_br * self.vel_tick * 2 * math.pi,
+            self.cr_state.vel_fl * self.vel_tick * 2 * math.pi,
+            self.cr_state.vel_fr * self.vel_tick * 2 * math.pi
+        ]
 
-            self.joint_state = msg
+        # accumulate wheel positions
+        if not hasattr(self, "wheel_pos"):
+            self.wheel_pos = [0.0, 0.0, 0.0, 0.0]
+
+        for i in range(4):
+            self.wheel_pos[i] += vels[i] * self.dt
+
+        access_posis = [
+            self.cr_state.pos_n * TICK_TO_RAD,
+            self.cr_state.pos_gl * TICK_TO_RAD,
+            self.cr_state.pos_gr * TICK_TO_RAD
+        ]
+
+        msg.position = [*self.wheel_pos, *access_posis]
+        msg.velocity = [*vels, 0.0, 0.0, 0.0]
+        msg.effort   = [0.0] * 7
+
+        self.joint_state = msg
+        
 
     def set_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
     
