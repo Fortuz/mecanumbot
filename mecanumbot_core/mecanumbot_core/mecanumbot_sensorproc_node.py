@@ -204,8 +204,8 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         access_posis = [
             self.cr_state.pos_n * TICK_TO_RAD - MIDPOINT_COMPENSATE_CONSTANT,
-            self.cr_state.pos_gl * TICK_TO_RAD - MIDPOINT_COMPENSATE_CONSTANT,
-            self.cr_state.pos_gr * TICK_TO_RAD - MIDPOINT_COMPENSATE_CONSTANT
+            -self.cr_state.pos_gl * TICK_TO_RAD + MIDPOINT_COMPENSATE_CONSTANT,
+            -self.cr_state.pos_gr * TICK_TO_RAD + MIDPOINT_COMPENSATE_CONSTANT
         ]
 
         msg.position = [0.0,0.0,0.0,0.0, *access_posis]
