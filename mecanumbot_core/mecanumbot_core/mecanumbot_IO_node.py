@@ -44,7 +44,7 @@ class Mecanumbot_IO_Node(Node):
         ('packet_params.payload_fmt', '<23h14f'),
         ('packet_params.seq_size', 1),
         ('packet_params.crc_size', 1),
-        ('packet_params.magic', '55AA'),  # list because YAML can't store bytes
+        ('packet_params.magic', 'AA55'),  # list because YAML can't store bytes
 
         # Plausibility parameters
         ('plausibility_params.max_wheel_speed', 10000),
@@ -218,7 +218,7 @@ class Mecanumbot_IO_Node(Node):
                                     int(self.cmd_outputs['BL_vel']), int(self.cmd_outputs['BR_vel']), int(self.cmd_outputs['FL_vel']), int(self.cmd_outputs['FR_vel']),
                                     int(self.cmd_outputs['N_pos']), int(self.cmd_outputs['GL_pos']), int(self.cmd_outputs['GR_pos']))
         self.ser.write(message_bytes)
-        self.ser.flush()       # force immediate transmission
+        self.ser.flush()
         #time.sleep(0.02)
 
     def timer_callback(self):
