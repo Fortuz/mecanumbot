@@ -10,6 +10,9 @@ import struct
 import time
 import math
 import threading
+
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 ############################################### HELPER FUNCTIONS ################################################
 def crc8_ccitt(data: bytes) -> int:
     crc = 0x00
@@ -26,6 +29,9 @@ class Mecanumbot_IO_Node(Node):
 
     def __init__(self,namespace=''):
         super().__init__('mecanumbot_io_node', namespace=namespace)
+        self.callback_group = ReentrantCallbackGroup()
+        self.cmd_lock = threading.Lock()
+
         default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
         self.declare_parameters(
         namespace=namespace,
@@ -52,6 +58,7 @@ class Mecanumbot_IO_Node(Node):
         ('plausibility_params.max_pos', 10000),
         ('plausibility_params.max_float_abs', 1e7),
          ])
+        
         # Retrieve parameters
         self.device_name = self.get_parameter('dev_params.device_name').value
         self.baudrate = self.get_parameter('dev_params.baudrate').value
@@ -92,7 +99,9 @@ class Mecanumbot_IO_Node(Node):
         self.vals = None
         self.opencr_publisher_ = self.create_publisher(OpenCRState, 'opencr_state', 10)
         timer_period = 0.01  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer = self.create_timer(timer_period, 
+                                       self.timer_callback
+                                       callback_group=self.callback_group)
         self.opencr_state = OpenCRState()
 
         self.i = 0
@@ -101,8 +110,16 @@ class Mecanumbot_IO_Node(Node):
 
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
                             'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
-        self.vel_subscription = self.create_subscription(Twist,'cmd_vel', self.vel_cmd_callback, 10)
-        self.pos_subscription = self.create_subscription(AccessMotorCmd, 'cmd_accessory_pos', self.access_motor_cmd_callback, 10)
+        self.vel_subscription = self.create_subscription(Twist,
+                                                         'cmd_vel', 
+                                                         self.vel_cmd_callback, 
+                                                         10,
+                                                         callback_group = self.callback_group)
+        self.pos_subscription = self.create_subscription(AccessMotorCmd, 
+                                                         'cmd_accessory_pos', 
+                                                         self.access_motor_cmd_callback,
+                                                         10,
+                                                         callback_group=self.callback_group)
         self.vel_subscription  # prevent unused variable warning
         self.pos_subscription  # prevent unused variable warning
 
@@ -196,16 +213,16 @@ class Mecanumbot_IO_Node(Node):
         Vx = msg.linear.x  # m/s
         Vy = msg.linear.y  # m/s
         Wz = msg.angular.z  # rad/s
+        with self.cmd_lock:
+            self.cmd_outputs['BL_vel']= min((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
+            self.cmd_outputs['BR_vel']= min((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
+            self.cmd_outputs['FL_vel']= min((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
+            self.cmd_outputs['FR_vel']= min((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
 
-        self.cmd_outputs['BL_vel']= min((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
-        self.cmd_outputs['BR_vel']= min((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
-        self.cmd_outputs['FL_vel']= min((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
-        self.cmd_outputs['FR_vel']= min((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
-
-        self.cmd_outputs['BL_vel']= max((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
-        self.cmd_outputs['BR_vel']= max((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
-        self.cmd_outputs['FL_vel']= max((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
-        self.cmd_outputs['FR_vel']= max((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
+            self.cmd_outputs['BL_vel']= max((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
+            self.cmd_outputs['BR_vel']= max((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
+            self.cmd_outputs['FL_vel']= max((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
+            self.cmd_outputs['FR_vel']= max((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
 
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
@@ -214,12 +231,13 @@ class Mecanumbot_IO_Node(Node):
 
     def update_motor_cmds_out(self):
         fmt = '<7h'
-        message_bytes = struct.pack(fmt,
-                                    int(self.cmd_outputs['BL_vel']), int(self.cmd_outputs['BR_vel']), int(self.cmd_outputs['FL_vel']), int(self.cmd_outputs['FR_vel']),
-                                    int(self.cmd_outputs['N_pos']), int(self.cmd_outputs['GL_pos']), int(self.cmd_outputs['GR_pos']))
-        self.ser.write(message_bytes)
-        self.ser.flush()       # force immediate transmission
-        #time.sleep(0.02)
+        with self.cmd_lock:
+            message_bytes = struct.pack(fmt,
+                                        int(self.cmd_outputs['BL_vel']), int(self.cmd_outputs['BR_vel']), int(self.cmd_outputs['FL_vel']), int(self.cmd_outputs['FR_vel']),
+                                        int(self.cmd_outputs['N_pos']), int(self.cmd_outputs['GL_pos']), int(self.cmd_outputs['GR_pos']))
+            self.ser.write(message_bytes)
+            self.ser.flush()       # force immediate transmission
+            #time.sleep(0.02)
 
     def timer_callback(self):
         #self.get_logger().info("Timer callback triggered")
@@ -304,15 +322,18 @@ def main(args=None):
 
     io_node = Mecanumbot_IO_Node()
 
-    rclpy.spin(io_node)
+    # Use the MultiThreadedExecutor
+    # num_threads=None will default to the number of CPU cores
+    executor = MultiThreadedExecutor()
+    executor.add_node(io_node)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    io_node.close_serial()
-    io_node.destroy_node()
-    rclpy.shutdown()
-
-
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        io_node.close_serial()
+        io_node.destroy_node()
+        rclpy.shutdown()
 if __name__ == '__main__':
     main()
