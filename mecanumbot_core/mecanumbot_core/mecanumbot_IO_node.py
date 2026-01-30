@@ -47,7 +47,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.accessory.neck_default', 850),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
-        ('packet_params.payload_fmt', '<23h14f'),
+        ('packet_params.payload_fmt', '<27h14f'),
         ('packet_params.seq_size', 1),
         ('packet_params.crc_size', 1),
         ('packet_params.magic', '55AA'),  # list because YAML can't store bytes
@@ -260,8 +260,7 @@ class Mecanumbot_IO_Node(Node):
 
         while rclpy.ok():
             try:
-                # Read available bytes (non-blocking due to timeout)
-                chunk = self.ser.read(self.ser.in_waiting or 1)
+                chunk = self.ser.read(256) #self.ser.read(self.ser.in_waiting or 1)
                 if chunk:
                     self.rx_buffer.extend(chunk)
 
