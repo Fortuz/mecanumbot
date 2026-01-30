@@ -109,12 +109,12 @@ controller_server:
       min_speed_xy: 0.0
       max_speed_xy: 0.22
       min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_y: 2.5
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_y: -2.5
-      decel_lim_theta: -3.2
+      acc_lim_x: 2.0
+      acc_lim_y: 2.0
+      acc_lim_theta: 2.0
+      decel_lim_x: -2.0
+      decel_lim_y: -2.0
+      decel_lim_theta: -2.0
       vx_samples: 20
       vy_samples: 10
       vtheta_samples: 20
@@ -128,14 +128,14 @@ controller_server:
       stateful: True
       critics: ["RotateToGoal","Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "Twirling","PreferForward"]
       BaseObstacle.scale: 0.02
-      PathAlign.scale: 16.0
+      PathAlign.scale: 0.0
       PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 24.0
+      GoalAlign.scale: 0.0
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      Twirling.scale: 2.0
-      RotateToGoal.scale: 10.0
+      Twirling.scale: 0.0
+      RotateToGoal.scale: 30.0
       RotateToGoal.slowing_factor: 1.0
       RotateToGoal.lookahead_time: 1.0
 
@@ -261,8 +261,7 @@ behavior_server:
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
-
+    rotational_acc_lim: 2.0
 waypoint_follower:
   ros__parameters:
     loop_rate: 20
@@ -279,10 +278,10 @@ velocity_smoother:
     smoothing_frequency: 5.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.5, 2.0]
-    min_velocity: [-0.5, -0.5, -2.0]
-    max_accel: [2.5, 2.5, 3.2]
-    max_decel: [-2.5, -2.5, -3.2]
+    max_velocity: [0.5, 0.5, 1.0]
+    min_velocity: [-0.5, -0.5, -1.0]
+    max_accel: [2.0, 2.0, 2.0]
+    max_decel: [-2.0, -2.0, -2.0]
     odom_topic: "/mecanumbot/odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
@@ -300,8 +299,6 @@ collision_monitor:
     source_timeout: 1.0
     base_shift_correction: True
     stop_pub_timeout: 2.0
-    # Polygons represent zone around the robot for "stop", "slowdown" and "limit" action types,
-    # and robot footprint for "approach" action type.
     polygons: ["FootprintApproach"]
     FootprintApproach:
       type: "polygon"

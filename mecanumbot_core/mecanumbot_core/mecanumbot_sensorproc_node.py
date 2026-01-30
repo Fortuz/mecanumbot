@@ -13,6 +13,8 @@ from mecanumbot_msgs.msg import OpenCRState
 import math
 from builtin_interfaces.msg import Time
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 
 TICK_TO_RAD = 0.005061
 MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
@@ -20,7 +22,9 @@ MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
 class Mecanumbot_Sensorproc_Node(Node):
 
     def __init__(self,namespace=''):
+
         super().__init__('mecanumbot_sensorproc_node',namespace=namespace)
+        self.callback_group = ReentrantCallbackGroup()
         self.declare_parameters(
         namespace=namespace,
         parameters=[
@@ -72,15 +76,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.battery_state = BatteryState()
          # Publishers
 
-        self.odom_publisher = self.create_publisher(Odometry, 'odom', 10)
-        self.imu_publisher = self.create_publisher(Imu, 'imu', 10)
-        self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10)
-        self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10)
+        self.odom_publisher = self.create_publisher(Odometry, 'odom', 10,callback_group=self.callback_group)
+        self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
+        self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
+        self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10,callback_group=self.callback_group)
         
         timer_period = 0.01  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
         
-        self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10)
+        self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10,callback_group=self.callback_group)
         self.board_subscription  # prevent unused variable warning
 
         self.current_time = self.get_clock().now()
@@ -230,15 +234,13 @@ def main(args=None):
     rclpy.init(args=args)
 
     sensorproc_node = Mecanumbot_Sensorproc_Node()
+    executor = MultiThreadedExecutor()
+    executor.add_node(sensorproc_node)
 
-    rclpy.spin(sensorproc_node)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    sensorproc_node.destroy_node()
-    rclpy.shutdown()
-
-
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+        
 if __name__ == '__main__':
     main()

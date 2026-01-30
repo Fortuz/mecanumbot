@@ -18,7 +18,7 @@ mecanumbot_io_node:
       payload_fmt: "<23h14f"
       seq_size: 1
       crc_size: 1
-      magic: "55AA" # 0x55, 0xAA
+      magic: "AA55" # 0x55, 0xAA
     plausibility_params:
       max_wheel_speed: 10000
       min_pos: -1000
