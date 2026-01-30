@@ -47,7 +47,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.accessory.neck_default', 850),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
-        ('packet_params.payload_fmt', '<27h14f'),
+        ('packet_params.payload_fmt', '<28h14f'),
         ('packet_params.seq_size', 1),
         ('packet_params.crc_size', 1),
         ('packet_params.magic', '55AA'),  # list because YAML can't store bytes
