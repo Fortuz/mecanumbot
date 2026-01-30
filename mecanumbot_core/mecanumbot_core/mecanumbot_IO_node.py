@@ -263,7 +263,7 @@ class Mecanumbot_IO_Node(Node):
 
         while rclpy.ok():
             try:
-                chunk = self.ser.read(256) #self.ser.read(self.ser.in_waiting or 1)
+                chunk = self.ser.read(self.ser.in_waiting or 1)
                 if chunk:
                     self.rx_buffer.extend(chunk)
 
@@ -298,6 +298,7 @@ class Mecanumbot_IO_Node(Node):
                 # Bad CRC → discard only magic byte and keep scanning
                 if computed_crc != recv_crc:
                     del self.rx_buffer[start:start + 1]
+                    self.get_logger.warning(f'Magic byte wrong, computed: {computed_crc}, recieved: {recv_crc}')
                     continue
 
                 # Unpack packet
