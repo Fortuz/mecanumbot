@@ -47,7 +47,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.accessory.neck_default', 850),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
-        ('packet_params.payload_fmt', '<28h14f'),
+        ('packet_params.payload_fmt', '<27h14f'),
         ('packet_params.seq_size', 1),
         ('packet_params.crc_size', 1),
         ('packet_params.magic', '55AA'),  # list because YAML can't store bytes
@@ -145,19 +145,22 @@ class Mecanumbot_IO_Node(Node):
     # Returns True if the payload is plausible, False otherwise
     # A payload is plausible if it fits within certain ranges for wheel speeds, positions, and float values
     def plausible_payload(self, vals):
-        shorts = vals[:26]
-        floats = vals[26:]
+        shorts = vals[:27]
+        floats = vals[27:]
         # wheel velocities check
         for v in shorts[:4]:
             if abs(v) > self.max_wheel_speed:
+                self.get_logger().warn("Wheel speed too high")
                 return False
         # positions check
         for p in shorts[20:23]:
             if p < self.min_pos or p > self.max_pos:
+                self.get_logger().warn("Minimum or maximum position wrong.")
                 return False
         # floats check
         for f in floats:
             if math.isnan(f) or math.isinf(f) or abs(f) > self.max_float_abs:
+                self.get_logger().warn("Payload has float error")
                 return False
         return True
 
@@ -167,8 +170,8 @@ class Mecanumbot_IO_Node(Node):
                 self.get_logger().warn("No valid data received yet.")
                 return
             vals = self.vals
-        shorts = vals[:26]
-        floats = vals[26:]
+        shorts = vals[:27]
+        floats = vals[27:]
         self.opencr_state.header.stamp = self.get_clock().now().to_msg()
         self.opencr_state.cmd_vel_bl = shorts[0]
         self.opencr_state.cmd_vel_br = shorts[1]
