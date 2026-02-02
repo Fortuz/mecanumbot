@@ -3,6 +3,8 @@ from rclpy.node import Node
 import serial
 
 from mecanumbot_msgs.srv  import GetLedStatus,SetLedStatus
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 
 
 START_BYTE = 0xAA
@@ -45,10 +47,11 @@ class LedServiceNode(Node):
         # Initialize serial connection
         self.serial_port = serial.Serial('/dev/arduino_nano', 115200, timeout=1) # Udev rule should be set first
 
+        self.callback_group = ReentrantCallbackGroup()
         # Create services
         self.last_feedback = None
-        self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback)
-        self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback)
+        self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback,callback_group=self.callback_group)
+        self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback, callback_group=self.callback_group)
         self.duration_ms = 1000
 
     def set_led_status_callback(self, request, response):
@@ -122,9 +125,16 @@ class LedServiceNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = LedServiceNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
