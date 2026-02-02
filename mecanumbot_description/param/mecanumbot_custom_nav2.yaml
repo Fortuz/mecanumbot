@@ -99,7 +99,18 @@ controller_server:
 
     # DWB parameters
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
+      plugin: "nav2_rotation_shim_controller::RotationShimController"
+      
+      primary_controller: "dwb_core::DWBLocalPlanner" 
+      angular_dist_threshold: 0.785
+      forward_sampling_distance: 1.0
+      angular_disengage_threshold: 0.3925
+      rotate_to_heading_angular_vel: 1.8
+      max_angular_accel: 1.0
+      simulate_ahead_time: 1.0
+      rotate_to_goal_heading: true
+      
+      # --- DWB PARAMETERS (FLATTENED) ---
       debug_trajectory_details: True
       min_vel_x: -0.22
       min_vel_y: -0.22
@@ -134,7 +145,7 @@ controller_server:
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      Twirling.scale: 3.0
+      Twirling.scale: 1.0
       RotateToGoal.scale: 30.0
       RotateToGoal.slowing_factor: 1.0
       RotateToGoal.lookahead_time: 1.0
