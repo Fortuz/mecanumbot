@@ -150,7 +150,7 @@ class Mecanumbot_IO_Node(Node):
         # wheel velocities check
         for v in shorts[:4]:
             if abs(v) > self.max_wheel_speed:
-                self.get_logger().warn("Wheel speed too high")
+                self.get_logger().warn(f"Wheel speed too high: {v}")
                 return False
         # positions check
         for p in shorts[20:23]:
