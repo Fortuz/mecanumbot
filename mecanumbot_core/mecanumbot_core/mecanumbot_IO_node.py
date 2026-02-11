@@ -30,7 +30,7 @@ class Mecanumbot_IO_Node(Node):
     def __init__(self,namespace=''):
         super().__init__('mecanumbot_io_node', namespace=namespace)
         self.callback_group = ReentrantCallbackGroup()
-        self.cmd_lock = threading.Lock()
+        self.cmd_lock = threading.RLock()
 
         default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
         self.declare_parameters(
@@ -215,38 +215,59 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.imu_orientation_y = floats[12]
         self.opencr_state.imu_orientation_z = floats[13]
 
-    def vel_cmd_callback(self,msg):
+    def vel_cmd_callback(self, msg):
         # Standard mecanum kinematics
-        Vx = msg.linear.x  # m/s
-        Vy = msg.linear.y  # m/s
-        Wz = msg.angular.z  # rad/s
-        with self.cmd_lock:
-            self.cmd_outputs['BL_vel']= min((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
-            self.cmd_outputs['BR_vel']= min((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
-            self.cmd_outputs['FL_vel']= min((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,300)
-            self.cmd_outputs['FR_vel']= min((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,300)
+        Vx = msg.linear.x
+        Vy = msg.linear.y
+        Wz = msg.angular.z
 
-            self.cmd_outputs['BL_vel']= max((Vx + Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
-            self.cmd_outputs['BR_vel']= max((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
-            self.cmd_outputs['FL_vel']= max((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
-            self.cmd_outputs['FR_vel']= max((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
+        # Calculate raw velocities
+        # Note: Pre-calculating reduces time inside the lock
+        bl_raw = (Vx + Vy - (Wz * self.wheel_dist_scale)) / self.scale
+        br_raw = (Vx - Vy + (Wz * self.wheel_dist_scale)) / self.scale
+        fl_raw = (Vx - Vy - (Wz * self.wheel_dist_scale)) / self.scale
+        fr_raw = (Vx + Vy + (Wz * self.wheel_dist_scale)) / self.scale
+
+        with self.cmd_lock:
+            # Correct clamping logic: max(min(val, upper), lower)
+            self.cmd_outputs['BL_vel'] = max(min(bl_raw, 300), -300)
+            self.cmd_outputs['FL_vel'] = max(min(fl_raw, 300), -300)
+            self.cmd_outputs['BR_vel'] = max(min(br_raw, 300), -300)
+            self.cmd_outputs['FR_vel'] = max(min(fr_raw, 300), -300)
+
+            
+            # Send immediately (Event-Driven)
             self.update_motor_cmds_out()
 
-    def access_motor_cmd_callback(self,msg):
-        self.cmd_outputs['N_pos']=msg.n_pos*100
-        self.cmd_outputs['GL_pos']=msg.gl_pos*100
-        self.cmd_outputs['GR_pos']=msg.gr_pos*100
-        self.update_motor_cmds_out()
+    def access_motor_cmd_callback(self, msg):
+        with self.cmd_lock:
+            # Now safely updates the shared dictionary
+            self.cmd_outputs['N_pos'] = msg.n_pos * 100
+            self.cmd_outputs['GL_pos'] = msg.gl_pos * 100
+            self.cmd_outputs['GR_pos'] = msg.gr_pos * 100
+            
+            # Send immediately (Event-Driven)
+            self.update_motor_cmds_out()
 
     def update_motor_cmds_out(self):
         fmt = '<7h'
+        # RLock allows us to re-acquire the lock here safely
         with self.cmd_lock:
-            message_bytes = struct.pack(fmt,
-                                        int(self.cmd_outputs['BL_vel']), int(self.cmd_outputs['BR_vel']), int(self.cmd_outputs['FL_vel']), int(self.cmd_outputs['FR_vel']),
-                                        int(self.cmd_outputs['N_pos']), int(self.cmd_outputs['GL_pos']), int(self.cmd_outputs['GR_pos']))
-            self.ser.write(message_bytes)
-            self.ser.flush()       # force immediate transmission
-            #time.sleep(0.02)
+            try:
+                message_bytes = struct.pack(fmt,
+                                            int(self.cmd_outputs['BL_vel']), 
+                                            int(self.cmd_outputs['BR_vel']), 
+                                            int(self.cmd_outputs['FL_vel']), 
+                                            int(self.cmd_outputs['FR_vel']),
+                                            int(self.cmd_outputs['N_pos']), 
+                                            int(self.cmd_outputs['GL_pos']), 
+                                            int(self.cmd_outputs['GR_pos']))
+                
+                if self.ser is not None and self.ser.is_open:
+                    self.ser.write(message_bytes)
+                    self.ser.flush()
+            except serial.SerialException as e:
+                self.get_logger().error(f"Serial write failed: {e}")
 
     def timer_callback(self):
         self.get_logger().info("Timer callback triggered")
