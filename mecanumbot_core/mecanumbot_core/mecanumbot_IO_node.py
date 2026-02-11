@@ -230,13 +230,11 @@ class Mecanumbot_IO_Node(Node):
             self.cmd_outputs['BR_vel']= max((Vx - Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
             self.cmd_outputs['FL_vel']= max((Vx - Vy - (Wz * self.wheel_dist_scale))/self.scale,-300)
             self.cmd_outputs['FR_vel']= max((Vx + Vy + (Wz * self.wheel_dist_scale))/self.scale,-300)
-            self.update_motor_cmds_out()
-            
+
     def access_motor_cmd_callback(self,msg):
         self.cmd_outputs['N_pos']=msg.n_pos*100
         self.cmd_outputs['GL_pos']=msg.gl_pos*100
         self.cmd_outputs['GR_pos']=msg.gr_pos*100
-        self.update_motor_cmds_out()
 
     def update_motor_cmds_out(self):
         fmt = '<7h'
@@ -254,7 +252,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_publisher_.publish(self.opencr_state)
         #self.get_logger().info("OpencR State Published")
         #self.get_logger().info('Publishing: "%s"' % self.opencr_state)
-        #self.update_motor_cmds_out()
+        self.update_motor_cmds_out()
         self.i += 1
 
     def read_thread_fn(self):
