@@ -266,7 +266,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_publisher_.publish(self.opencr_state)
         #self.get_logger().info("OpencR State Published")
         #self.get_logger().info('Publishing: "%s"' % self.opencr_state)
-        self.update_motor_cmds_out()
+        #self.update_motor_cmds_out()
         self.i += 1
 
     def read_thread_fn(self):
