@@ -124,7 +124,7 @@ class Mecanumbot_IO_Node(Node):
                                                          10,
                                                          callback_group=self.callback_group)
         
-        self.GPIO_pin = 2
+        self.GPIO_pin = 27
         wiringpi.pinMode(self.GPIO_pin,1)    
         wiringpi.digitalWrite(self.GPIO_pin,0)   
         self.vel_subscription  # prevent unused variable warning
