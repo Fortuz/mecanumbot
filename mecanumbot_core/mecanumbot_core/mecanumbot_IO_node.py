@@ -13,6 +13,9 @@ import threading
 
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
+
+import wiringpi
+import time
 ############################################### HELPER FUNCTIONS ################################################
 def crc8_ccitt(data: bytes) -> int:
     crc = 0x00
@@ -120,6 +123,10 @@ class Mecanumbot_IO_Node(Node):
                                                          self.access_motor_cmd_callback,
                                                          10,
                                                          callback_group=self.callback_group)
+        
+        self.GPIO_pin = 2
+        wiringpi.pinMode(self.GPIO_pin,1)    
+        wiringpi.digitalWrite(self.GPIO_pin,0)   
         self.vel_subscription  # prevent unused variable warning
         self.pos_subscription  # prevent unused variable warning
 
@@ -216,6 +223,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.imu_orientation_z = floats[13]
 
     def vel_cmd_callback(self, msg):
+        wiringpi.digitalWrite(self.GPIO_pin,1)
         # Standard mecanum kinematics
         Vx = msg.linear.x
         Vy = msg.linear.y
@@ -235,6 +243,7 @@ class Mecanumbot_IO_Node(Node):
             self.update_motor_cmds_out()
 
     def access_motor_cmd_callback(self, msg):
+        wiringpi.digitalWrite(self.GPIO_pin,1)
         with self.cmd_lock:
             self.cmd_outputs['N_pos'] = msg.n_pos * 100
             self.cmd_outputs['GL_pos'] = msg.gl_pos * 100
@@ -255,8 +264,11 @@ class Mecanumbot_IO_Node(Node):
                                             int(self.cmd_outputs['GR_pos']))
                 
                 if self.ser is not None and self.ser.is_open:
+
                     self.ser.write(message_bytes)
                     self.ser.flush()
+                    time.sleep(0.1)
+                    wiringpi.digitalWrite(self.GPIO_pin,0)
             except serial.SerialException as e:
                 self.get_logger().error(f"Serial write failed: {e}")
 
@@ -338,7 +350,7 @@ class Mecanumbot_IO_Node(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-
+    wiringpi.wiringPiSetupGpio()
     io_node = Mecanumbot_IO_Node()
 
     executor = MultiThreadedExecutor()
