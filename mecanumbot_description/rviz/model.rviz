@@ -17,6 +17,7 @@ Panels:
         - /Pose1
         - /Path1
         - /Path2
+        - /Pose2
       Splitter Ratio: 0.5
     Tree Height: 879
   - Class: rviz_common/Selection
@@ -222,7 +223,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 240
+      Max Intensity: 242
       Min Color: 0; 0; 0
       Min Intensity: 68
       Name: LaserScan
@@ -338,6 +339,26 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /plan_smoothed
       Value: true
+    - Alpha: 1
+      Axes Length: 0.15000000596046448
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.05000000074505806
+      Head Radius: 0.10000000149011612
+      Name: Pose
+      Shaft Length: 0.15000000596046448
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /mecanumbot/subject_pose
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -382,25 +403,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 12.810647010803223
+      Distance: 5.254646301269531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.3594154119491577
-        Y: -0.9300194382667542
-        Z: -0.6758777499198914
+        X: 1.0843242406845093
+        Y: -2.488804817199707
+        Z: 0.5272811651229858
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8297966122627258
+      Pitch: 0.9347965121269226
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.705915927886963
+      Yaw: 2.095916509628296
     Saved: ~
 Window Geometry:
   Displays:

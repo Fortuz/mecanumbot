@@ -8,7 +8,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    map_name = 'exp_take_0'
+    map_name = 'LED_exp'
     mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
     rviz_config_dir = os.path.join(get_package_share_directory('mecanumbot_description'),'rviz','model.rviz')
     param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
