@@ -46,6 +46,7 @@ $ echo 'export ROS_DOMAIN_ID=19' >> ~/.bashrc
 $ echo 'export LDS_MODEL=LDS-02' >> ~/.bashrc
 $ echo 'export TURTLEBOT3_MODEL=mecanumbot' >> ~/.bashrc
 $ echo 'export ROS_LOCALHOST_ONLY=0' >> ~/.bashrc
+$ echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp " >> ~/.bashrc
 $ echo "alias start_robot='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py'" >> ~/.bashrc
 $ echo "alias start_robot_with_led='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py & ros2 run mecanumbot_led mecanumbot_led_service & wait'" >> ~/.bashrc
 $ source ~/.bashrc
@@ -86,6 +87,7 @@ $ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
 PC
 
 ```
+$ echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp " >> ~/.bashrc
 $ cd ~/dev_ws
 $ source_ros
 $ source_ws
