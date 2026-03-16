@@ -12,7 +12,7 @@
 
 #####  **Function:**
 
- receieves the state elements of the OpenCR board, converts them into a custom message. Takes motor command messages and sends them to the board to process.
+ receieves the state elements of the OpenCR board, converts them into a custom message. Takes motor command messages and sends them to the board to process.Sets and resets GPIO pin 27 when recieving a velocity or position command for signal delay tests. 
 
 ##### **Subscribers:**
 
@@ -25,7 +25,7 @@
 
 ---
 
-#### mecanumbot_sensorproc_node
+#### mecanumbot_sensorproc_node:
 
 ##### **Function:**
 
