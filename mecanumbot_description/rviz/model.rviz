@@ -18,6 +18,7 @@ Panels:
         - /Path1
         - /Path2
         - /Pose2
+        - /Map2
       Splitter Ratio: 0.5
     Tree Height: 879
   - Class: rviz_common/Selection
@@ -225,7 +226,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 242
       Min Color: 0; 0; 0
-      Min Intensity: 68
+      Min Intensity: 70
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
@@ -359,6 +360,27 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /mecanumbot/subject_pose
       Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /local_costmap/costmap
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /local_costmap/costmap_updates
+      Use Timestamp: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -403,16 +425,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 5.254646301269531
+      Distance: 39.91778564453125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.0843242406845093
-        Y: -2.488804817199707
-        Z: 0.5272811651229858
+        X: 4.828838348388672
+        Y: 14.808741569519043
+        Z: -9.137468338012695
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
