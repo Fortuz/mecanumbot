@@ -1,8 +1,8 @@
 amcl:
   ros__parameters:
     use_sim_time: False
-    alpha1: 0.4 # noise in rot from rot
-    alpha2: 0.6 # noise in rot from trans
+    alpha1: 0.2 # noise in rot from rot
+    alpha2: 0.2 # noise in rot from trans
     alpha3: 0.2 # noise in trans from trans 
     alpha4: 0.2 # noise in trans from rot
     alpha5: 0.2 # translation noise
@@ -94,8 +94,8 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.20  #prev 0.3 [m]
-      yaw_goal_tolerance: 0.1 # prev 0.3 [rad] 15deg
+      xy_goal_tolerance: 0.30  #prev 0.3 [m]
+      yaw_goal_tolerance: 0.3 # prev 0.3 [rad] 15deg
 
     
     FollowPath:
@@ -136,7 +136,7 @@ controller_server:
       angular_granularity: 0.025
       transform_tolerance: 0.5
       xy_goal_tolerance: 0.30
-      trans_stopped_velocity: 0.05
+      trans_stopped_velocity: 0.1 # below this, the velocity is considered being stopped 
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["RotateToGoal","Oscillation", "ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "Twirling","PreferForward"]
@@ -147,12 +147,15 @@ controller_server:
       GoalAlign.forward_point_distance: 0.1
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      Twirling.scale: 0.5
-      Oscillation.oscillation_reset_dist: 0.05
-      Oscillation.oscillation_reset_angle: 0.2
+      # penalisation of unnecessary turns
+      Twirling.scale: 1.0
+      # penalisation of oscillation behaviour (going back and forth or turning left to right slightly to match goal)
+      Oscillation.scale: 20.0
+      Oscillation.oscillation_reset_dist: 0.5
+      Oscillation.oscillation_reset_angle: 1.0
       Oscillation.oscillation_reset_time: -1.0
       RotateToGoal.scale: 30.0
-      RotateToGoal.slowing_factor: 1.0
+      RotateToGoal.slowing_factor: 2.0 # how slowly the robot should rot to goal
       RotateToGoal.lookahead_time: 1.0
 
 local_costmap:
