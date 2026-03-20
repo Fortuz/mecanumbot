@@ -17,7 +17,7 @@ ROS 2 nodes for low-level communication with OpenCR and conversion of raw board 
 | `cmd_vel`           | `geometry_msgs/msg/Twist`            | Converts commanded base velocity to four wheel commands with mecanum kinematics, clamps values, serializes and sends to OpenCR. |
 | `cmd_accessory_pos` | `mecanumbot_msgs/msg/AccessMotorCmd` | Converts neck/gripper targets to board units and sends command packet to OpenCR.                                                |
 
-### Additional behavior
+### Behavior
 
 - Opens a serial link to OpenCR (`/dev/ttyACM0` by default on Linux) and runs a background reader thread.
 - Uses CRC8-CCITT and payload plausibility checks before accepting inbound packets.
