@@ -4,23 +4,13 @@ ROS 2 LED control service node for the robot LED controller (Arduino Nano over s
 
 ## Node: `mecanumbot_led_service_node`
 
-### Publishers
-| Topic | Data type | Function |
-|---|---|---|
-| None | - | This node does not publish ROS topics. |
-
-### Subscribers
-| Topic | Data type | Processing |
-|---|---|---|
-| None | - | This node does not subscribe to ROS topics. |
-
 ### Services handled
 | Service | Type | Behavior |
 |---|---|---|
 | `set_led_status` | `mecanumbot_msgs/srv/SetLedStatus` | Builds a command packet with mode/color per panel and writes it to serial (`/dev/arduino_nano`). |
 | `get_led_status` | `mecanumbot_msgs/srv/GetLedStatus` | Sends a status request byte, parses serial feedback frame, and returns current LED state fields. |
 
-### Additional behavior
+### Behavior
 - Uses a custom byte protocol with start byte, checksum, and fixed frame layout.
 - Performs serial parsing and checksum validation for returned LED feedback.
 - Communicates directly with Arduino Nano at `115200` baud.
