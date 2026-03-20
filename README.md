@@ -58,6 +58,7 @@ $ source ~/.bashrc
 $ ssh ubuntu@192.168.1.240
 $ start_robot_with_led
 ```
+
 ## Connect new PC to robot
 
 [Remote PC]
@@ -67,22 +68,23 @@ Install Ubuntu 22.04 OP system [Ubuntu 22.04](https://emanual.robotis.com/docs/e
 Install ROS2 Humble [ROS2 Humble install tutorial](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/)
 
 Set static IP for computer on MecanumNet (192.168.1.XXX, XXX between 2 and 255)
+
 <p align="center">
   <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/MecanumNet_settings.png" width="600" alt="Architecture">
 </p>
 
 ```
-$ sudo apt update 
-$ sudo apt install ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-tf-transformations ros-humble-py-trees ros-humble-py-trees-ros ros-humble--rmw-cyclonedds-cpp 
+$ sudo apt update
+$ sudo apt install ros-humble-navigation2 ros-humble-nav2-bringup ros-humble-tf-transformations ros-humble-py-trees ros-humble-py-trees-ros ros-humble--rmw-cyclonedds-cpp
 $ pip install torch
 $ mkdir mecanumbot_directories #makes stuff prettier to have all in one space
-$ cd mecanumbot_directories 
+$ cd mecanumbot_directories
 $ git clone https://github.com/VisualComputingInstitute/DR-SPAAM-Detector.git  # leg detector nn
 $ cd DR-SPAAM-DEetector/dr_spaam
 $ python setup.py install
 $ cd ../../
 $ mkdir mecanumbot_ws &c cd mecanumbot_ws
-$ mkdir src && cd src 
+$ mkdir src && cd src
 $ git clone https://github.com/Fortuz/mecanumbot
 $ git clone https://github.com/Fortuz/mecanumbot_remote
 $ git clone https://github.com/Fortuz/mecanumbot_msgs
