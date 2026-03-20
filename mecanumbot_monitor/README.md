@@ -1,30 +1,25 @@
-# Mecanumbot Monitor package
+# mecanumbot_monitor
 
-**Function:** monitor and publish diagnostic state for robot wheels and accessories.
+ROS 2 utility nodes that generate deterministic command patterns for drivetrain and accessory testing.
 
----
+## Node: `wheel_monitor`
 
-## Nodes:
+### Publishers
+| Topic | Data type | Function |
+|---|---|---|
+| `cmd_vel` | `geometry_msgs/msg/Twist` | Publishes a timed velocity ramp on linear `x` to exercise base command path and low-level command transmission behavior. |
 
-#### wheel_monitor (from `wheel_monitor.py`)
+### Behaviour
+- Alternates between idle and publishing phases in a fixed loop count.
+- Designed for repeatable drivetrain command testing and logging.
 
-##### **Function:**
-Runs a timed loop and publishes `geometry_msgs/Twist` velocity commands on `cmd_vel` to exercise the drivetrain for the GPIO testing of serial command execution in mecanumbot_io_node.
+## Node: `accessory_monitor`
 
-##### **Publishes:**
+### Publishers
+| Topic | Data type | Function |
+|---|---|---|
+| `cmd_accessory_pos` | `mecanumbot_msgs/msg/AccessMotorCmd` | Publishes staged accessory position commands (camera/neck and grippers) for repeatable actuation testing. |
 
-* `cmd_vel` (`geometry_msgs/Twist`) — periodically publishes increasing linear x velocity values in a looped sequence.
-
----
-
-#### accessory_monitor (from `accessory_monitor.py`)
-
-##### **Function:**
-Runs a timed loop and publishes `mecanumbot_msgs/AccessMotorCmd` commands on `cmd_accessory_pos` to exercise accessory actuators (camera/neck and gripper)  for the GPIO testing of serial command execution in mecanumbot_io_node.
-
-##### **Publishes:**
-
-* `cmd_accessory_pos` (`mecanumbot_msgs/AccessMotorCmd`) — cyclically publishes position commands for `n_pos`, `gl_pos`, and `gr_pos` to drive the accessory mechanisms through a test sequence.
-
----
-
+### Behavior
+- Cycles through predefined accessory poses (camera up/down, gripper open/close) with idle periods between bursts.
+- Useful for validating command path timing in `mecanumbot_io_node`.

@@ -1,41 +1,26 @@
-# Mecanumbot description package
+# mecanumbot_description
 
-**Function:** contains data files needed to operate the mecanumbot
+Robot description and runtime assets package.
 
-## Data folders
+This package does not contain ROS nodes. It provides files consumed by launch files and nodes in other packages.
 
-#### maps:
+|--
 
-Contains .yaml descriptions and .pgm map files (occupancy grids) for rviz map loading.
+## File and folder functions
 
----
+| Path | Function |
+|---|---|
+| `maps/` | Occupancy map assets (`.pgm` + `.yaml`) used by Nav2 and RViz. |
+| `meshes/` | 3D mesh resources for robot visualization/simulation. |
+| `param/mecanumbot_custom_nav2.yaml` | Nav2 parameter set for localization/navigation behavior. |
+| `param/mecanumbot_slam_mapping.yaml` | SLAM Toolbox parameter set for map creation. |
+| `rviz/model.rviz` | RViz display layout for quick bringup visualization. |
+| `udev/90_mecanumbot_nano.rules` | Udev rule for persistent device naming/permissions for Arduino Nano (LED handling). |
+| `udev/99-turtlebot3-cdc.rules` | Udev rule for board serial device handling. |
+| `urdf/mecanumbot.urdf` | Main robot model consumed by `robot_state_publisher`. |
+| `urdf/common_properties.urdf` | Shared URDF properties/macros referenced by the main model. |
 
-#### meshes:
+## Additional notes
 
-Stereolitography files (.stl) of robot parts, important for simulations (#TODO)
-
----
-
-#### param:
-
-Contains .yaml files with parameters to customize node operations
-
----
-
-#### udev:
-
-Udev rules (*.rules) are configuration files controlling the response to a given device in the event of its connection (e.g. remapping to port)
-These need to be placed in either **/usr/lib/udev/rules.d** or **/usr/local/lib/udev/rules.d** to be applicable.
-
-To apply new rules, place them to the correct folder then
-
-```
-$ sudo udevadm control --reload-rules # apply new rules
-$ sudo udevadm trigger #set rules to device
-```
-
----
-
-#### urdf:
-
-Contains URDF (Unified Robot Description Format ) files, which depict the robot. The most important usecase is simulations and visualisations (needed for state_publishers).
+- Udev rules must be installed to your system udev rules directory to take effect.
+- Parameter files in this package are loaded by launch files in `mecanumbot_bringup`.
