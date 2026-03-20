@@ -48,7 +48,7 @@ def generate_launch_description():
     param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
     detected_ssid = get_wifi_ssid()
     map_name, map_file = choose_default_map(detected_ssid)
-    yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'config','lidar_peopledetect_config.yaml')
+    yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
     return LaunchDescription([
         LogInfo(msg=f"[launch_external] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"),
         LogInfo(msg=f"[launch_external] Chosen map setting: {map_name} ({map_file})"),
