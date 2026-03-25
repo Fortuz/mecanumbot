@@ -82,6 +82,9 @@ def generate_launch_description():
             executable="mecanumbot_lidar_detect_people",
             name="mecanumbot_lidar_detect_people",  # must match YAML top-level key
             output="screen",
-            parameters=[yaml_file]
+            parameters=[yaml_file],
+            remappings=[
+                ('map', '/map')  # <--- ADD THIS LINE
+            ]
 )
     ])

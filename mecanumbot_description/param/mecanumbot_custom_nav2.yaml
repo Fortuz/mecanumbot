@@ -1,8 +1,8 @@
 amcl:
   ros__parameters:
     use_sim_time: False
-    alpha1: 0.2 # noise in rot from rot
-    alpha2: 0.2 # noise in rot from trans
+    alpha1: 0.6 # noise in rot from rot
+    alpha2: 0.5 # noise in rot from trans
     alpha3: 0.2 # noise in trans from trans 
     alpha4: 0.2 # noise in trans from rot
     alpha5: 0.2 # translation noise
@@ -17,7 +17,7 @@ amcl:
     laser_max_range: 12.0
     laser_min_range: 0.15
     laser_model_type: "likelihood_field"
-    max_beams: 60
+    max_beams: 90 # number of laser beams to consider when updating situation on map
     max_particles: 2000 
     min_particles: 800 
     odom_frame_id: "/mecanumbot/odom"
@@ -28,14 +28,14 @@ amcl:
     resample_interval: 1
     robot_model_type: "nav2_amcl::OmniMotionModel"
     save_pose_rate: 0.5
-    sigma_hit: 0.1  
+    sigma_hit: 0.1 # standard deviation for hit part of laser model, in meters  
     tf_broadcast: true
     transform_tolerance: 0.5 
-    update_min_a: 0.2
-    update_min_d: 0.25
+    update_min_a: 0.1 
+    update_min_d: 0.2
     z_hit: 0.8  
     z_max: 0.05
-    z_rand: 0.2  
+    z_rand: 0.05
     z_short: 0.05
     scan_topic: /mecanumbot/scan
 
@@ -106,7 +106,7 @@ controller_server:
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5 
       angular_disengage_threshold: 0.3925
-      rotate_to_heading_angular_vel: 1.0
+      rotate_to_heading_angular_vel: 0.8
       max_angular_accel: 0.8
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: true
@@ -118,20 +118,20 @@ controller_server:
       min_vel_y: -0.22
       max_vel_x: 0.16
       max_vel_y: 0.16
-      max_vel_theta: 2.00
+      max_vel_theta: 1.00
       min_speed_xy: 0.0
       max_speed_xy: 0.18
       min_speed_theta: 0.0
       acc_lim_x: 1.5
       acc_lim_y: 1.5
-      acc_lim_theta: 2.0
+      acc_lim_theta: 1.2
       decel_lim_x: -1.5
       decel_lim_y: -1.5
-      decel_lim_theta: -2.0
-      vx_samples: 30
-      vy_samples: 20
-      vtheta_samples: 30
-      sim_time: 2.0
+      decel_lim_theta: -1.2
+      vx_samples: 20
+      vy_samples: 15
+      vtheta_samples: 20
+      sim_time: 1.5
       linear_granularity: 0.025
       angular_granularity: 0.02
       transform_tolerance: 0.5
@@ -148,14 +148,14 @@ controller_server:
       PathDist.scale: 40.0
       GoalDist.scale: 20.0
       # penalisation of unnecessary turns
-      Twirling.scale: 0.5
+      Twirling.scale: 1.0
       # penalisation of oscillation behaviour (going back and forth or turning left to right slightly to match goal)
-      Oscillation.scale: 8.0
+      Oscillation.scale: 10.0
       Oscillation.oscillation_reset_dist: 0.5
       Oscillation.oscillation_reset_angle: 1.0
       Oscillation.oscillation_reset_time: -1.0
       RotateToGoal.scale: 20.0
-      RotateToGoal.slowing_factor: 2.0 # how slowly the robot should rot to goal
+      RotateToGoal.slowing_factor: 4.0 # how slowly the robot should rot to goal
       RotateToGoal.lookahead_time: 1.0
       PreferForward.scale: 5.0
 
