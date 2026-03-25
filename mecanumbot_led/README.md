@@ -25,6 +25,8 @@ ROS 2 LED control service node for the robot LED controller (Arduino Nano over s
 | `WAVE_LEFT`  | `2`   |
 | `PULSE`      | `3`   |
 | `SOLID`      | `4`   |
+| `FAST_BLINK` | `5`   |
+| `SLOW_BLINK` | `6`   |
 
 | Color    | Value |
 | -------- | ----- |
