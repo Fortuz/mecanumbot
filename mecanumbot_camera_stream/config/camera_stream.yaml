@@ -16,3 +16,5 @@ camera_image_publisher_node:
 
     queue_size: 10
     reopen_delay_sec: 2.0
+    use_capture_thread: true
+    publish_fps: 30.0

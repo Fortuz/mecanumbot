@@ -7,6 +7,13 @@ ROS 2 package that captures frames from USB (UVC) or CSI/ribbon cameras on NVIDI
 - Executable: `camera_image_publisher_node`
 - Default topic: `/camera/image_raw`
 
+## Performance Notes
+
+- `use_capture_thread` (default: `true`): runs frame grabbing in a dedicated thread.
+- `publish_fps`: publish rate independent from camera read loop.
+- USB path uses OpenCV buffer size `1` when supported to reduce frame lag.
+- CSI pipeline uses `appsink max-buffers=1 drop=true sync=false` for low latency.
+
 ## Quick Start
 
 ```bash
@@ -34,4 +41,11 @@ ros2 launch mecanumbot_camera_stream camera_image_publisher.launch.py \
   width:=1280 \
   height:=720 \
   fps:=30
+```
+
+Higher throughput publish settings:
+
+```bash
+ros2 launch mecanumbot_camera_stream camera_image_publisher.launch.py \
+  publish_fps:=60.0
 ```
