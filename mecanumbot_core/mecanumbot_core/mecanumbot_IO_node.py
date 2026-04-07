@@ -83,7 +83,7 @@ class Mecanumbot_IO_Node(Node):
         self.max_pos = self.get_parameter('plausibility_params.max_pos').value
         self.max_float_abs = self.get_parameter('plausibility_params.max_float_abs').value
         self.neck_default = self.get_parameter('robot_params.accessory.neck_default').value
-        self.grabber_default = self.get_parameter('robot_params.accessory.grabber_default').value
+        #self.grabber_default = self.get_parameter('robot_params.accessory.grabber_default').value
 
 
         self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
@@ -112,7 +112,7 @@ class Mecanumbot_IO_Node(Node):
         
 
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
-                            'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
+                            'N_pos':self.neck_default,'GL_pos':3.36,'GR_pos':6.83}
         self.vel_subscription = self.create_subscription(Twist,
                                                          'cmd_vel', 
                                                          self.vel_cmd_callback, 
