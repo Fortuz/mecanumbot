@@ -58,14 +58,18 @@ class MecanumbotBatteryAlert(Node):
             self.get_logger().warn(f"{battery} battery low: {voltage:.2f} V")
             self.alert = True
 
-    def main(args=None):
-        rclpy.init(args=args)
-        mecanumbot_battery_alert = MecanumbotBatteryAlert()
-        executor = MultiThreadedExecutor(mecanumbot_battery_alert)
-        try:
-            executor.spin()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            mecanumbot_battery_alert.destroy_node()
-            rclpy.shutdown() 
+def main(args=None):
+    rclpy.init(args=args)
+    mecanumbot_battery_alert = MecanumbotBatteryAlert()
+    executor = MultiThreadedExecutor(mecanumbot_battery_alert)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        mecanumbot_battery_alert.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+ 
