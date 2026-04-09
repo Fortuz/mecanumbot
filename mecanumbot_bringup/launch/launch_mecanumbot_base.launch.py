@@ -53,7 +53,15 @@ def generate_launch_description():
             remappings=[('/mecanumbot/cmd_vel','/cmd_vel'),('/mecanumbot/cmd_accessory_pos','/cmd_accessory_pos') ],
             output='screen'
         ),
-
+        Node(
+            package='mecanumbot_core',
+            executable='mecanumbot_battery_alert',
+            name='mecanumbot_battery_alert',
+            namespace= namespace,
+            parameters=[yaml_file, {'use_sim_time': use_sim_time}],
+            remappings=[('/mecanumbot/cmd_vel','/cmd_vel'),('/mecanumbot/cmd_accessory_pos','/cmd_accessory_pos') ],
+            output='screen'
+        ),
         # mecanumbot_core Sensor Processing node
         Node(
             package='mecanumbot_core',

@@ -28,7 +28,8 @@ setup(
     entry_points={
         'console_scripts': [
           'mecanumbot_io_node = mecanumbot_core.mecanumbot_IO_node:main',
-          'mecanumbot_sensorproc_node = mecanumbot_core.mecanumbot_sensorproc_node:main',      
+          'mecanumbot_sensorproc_node = mecanumbot_core.mecanumbot_sensorproc_node:main',
+          'mecanumbot_battery_alert = mecanumbot_core.mecanumbot_battery_alert:main',      
         ],
     },
 )
