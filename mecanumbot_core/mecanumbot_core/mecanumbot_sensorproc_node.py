@@ -12,7 +12,8 @@ from geometry_msgs.msg import Twist
 from mecanumbot_msgs.msg import OpenCRState
 import math
 from builtin_interfaces.msg import Time
-from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
+from transforms3d.euler import quat2euler, euler2quat
+#from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
@@ -163,7 +164,7 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
                 # Update last_yaw_angle from IMU quaternion
-                e = euler_from_quaternion((self.cr_state.imu_orientation_x, 
+                e = quat2euler((self.cr_state.imu_orientation_x, 
                                            self.cr_state.imu_orientation_y, 
                                            self.cr_state.imu_orientation_z, 
                                            self.cr_state.imu_orientation_w))
@@ -171,7 +172,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             else:
                 new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
-                quaternion = quaternion_from_euler(0, 0, new_yaw) 
+                quaternion = euler2quat(0, 0, new_yaw)
                 self.last_yaw_angle = new_yaw
                 msg.pose.pose.orientation.x = quaternion[0]
                 msg.pose.pose.orientation.y = quaternion[1]
