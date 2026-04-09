@@ -16,8 +16,15 @@ from tf_transformations import quaternion_from_euler, euler_from_quaternion # Yo
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
+try:
+    import board
+    import busio
+    import adafruit_ina219
+except:
+    pass
 TICK_TO_RAD = 0.005061
 MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
+
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -32,7 +39,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
         ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
-        ('robot_params.battery.min_voltage',9.9), #minimum voltage of battery [V]
+        ('robot_params.battery.min_voltage',10.5), #minimum voltage of battery [V]
         ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
@@ -73,13 +80,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.odom = Odometry()
         self.imu = Imu()
         self.joint_state = JointState()
-        self.battery_state = BatteryState()
+        self.cr_battery_state = BatteryState()
+        self.orin_battery_state = BatteryState()
          # Publishers
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10,callback_group=self.callback_group)
         self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
         self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
-        self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10,callback_group=self.callback_group)
+        self.cr_battery_state_publisher = self.create_publisher(BatteryState, 'cr_battery_state', 10,callback_group=self.callback_group)
+        self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
         
         timer_period = 0.01  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
@@ -93,6 +102,13 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.last_yaw_angle = 0.0
         
+        try:
+            self.i2c = busio.I2C(board.SCL, board.SDA)
+            self.ina_sensor = adafruit_ina219.INA219(self.i2c)
+            self.get_logger().info("INA219 sensor initialized successfully.")
+        except Exception as e:
+            self.get_logger().info(f"INA219 sensor not found: {e}")
+
     def crstate_callback(self,data):
         self.cr_state = data
 
@@ -103,13 +119,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
-        self.set_battery_state()
+        self.set_cr_battery_state()
+        self.set_orin_battery_state()
 
          # Publish messages
         self.odom_publisher.publish(self.odom)
         self.imu_publisher.publish(self.imu)
         self.joint_state_publisher.publish(self.joint_state)
-        self.battery_state_publisher.publish(self.battery_state)
+        self.cr_battery_state_publisher.publish(self.cr_battery_state)
+        self.orin_battery_state_publisher.publish(self.orin_battery_state)
 
     def set_odom(self):
             
@@ -217,19 +235,54 @@ class Mecanumbot_Sensorproc_Node(Node):
         msg.effort   = [0.0] * 7
 
         self.joint_state = msg
-        
-
-    def set_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
     
-            msg = BatteryState()
-            msg.header.stamp = self.current_time.to_msg()
-            msg.voltage = self.cr_state.battery_voltage  # Volts
-            msg.design_capacity = 1.8
-            msg.capacity = 1.8
-            msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
-            msg.charge = msg.capacity * msg.percentage
+    def set_cr_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
 
-            self.battery_state = msg
+        msg = BatteryState()
+        msg.header.stamp = self.current_time.to_msg()
+        
+        msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        msg.charge = msg.capacity * msg.percentage
+
+        self.cr_battery_state = msg
+        
+    def set_orin_battery_state(self): #placeholder for orin battery state, currently set to 100%
+
+        msg = BatteryState()
+        msg = BatteryState()
+
+        # Timestamp
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "battery"
+
+        # Sensor readings
+        bus_voltage = self.sensor.bus_voltage       # volts
+        current_ma = self.sensor.current            # mA
+
+        # Fill ROS BatteryState fields
+        msg.voltage = float(bus_voltage)
+        msg.current = float(current_ma) / 1000.0    # convert mA -> A
+
+        # Optional values
+        msg.temperature = float("nan")
+        msg.charge = float("nan")
+        msg.capacity = float("nan")
+        msg.design_capacity = float("nan")
+
+        percentage = (bus_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        percentage = max(0.0, min(1.0, percentage))
+        msg.percentage = percentage
+
+        # Power supply status
+        msg.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
+        msg.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_GOOD
+        msg.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
+
+        msg.present = True
+
+        self.orin_battery_state = msg
+
+
 def main(args=None):
     rclpy.init(args=args)
 
