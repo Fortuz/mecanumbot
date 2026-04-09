@@ -257,8 +257,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         msg.header.frame_id = "battery"
 
         # Sensor readings
-        bus_voltage = self.sensor.bus_voltage       # volts
-        current_ma = self.sensor.current            # mA
+        bus_voltage = self.ina_sensor.bus_voltage       # volts
+        current_ma = self.ina_sensor.current            # mA
 
         # Fill ROS BatteryState fields
         msg.voltage = float(bus_voltage)
