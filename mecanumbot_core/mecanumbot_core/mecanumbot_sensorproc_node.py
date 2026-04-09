@@ -39,7 +39,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
         ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
-        ('robot_params.battery.min_voltage',10.5), #minimum voltage of battery [V]
+        ('robot_params.battery.min_voltage',9.6), #minimum voltage of battery [V]
         ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
