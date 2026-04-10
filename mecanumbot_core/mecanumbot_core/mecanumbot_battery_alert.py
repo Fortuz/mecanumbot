@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 from mecanumbot_msgs.srv  import GetLedStatus, SetLedStatus
+
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
@@ -26,14 +27,14 @@ class MecanumbotBatteryAlert(Node):
 
         self.cr_battery_subscription = self.create_subscription(
             BatteryState,
-            'opencr_state',
+            'cr_battery_state',
             lambda msg: self.batterystate_callback(msg, 'opencr'),
             10,
             callback_group=self.callback_group,
         )
         self.orin_battery_subscription = self.create_subscription(
             BatteryState,
-            'orin_state',
+            'orin_battery_state',
             lambda msg: self.batterystate_callback(msg, 'orin'),
             10,
             callback_group=self.callback_group,
