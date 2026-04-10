@@ -17,13 +17,15 @@ class MecanumbotBatteryAlert(Node):
         # Get battery threshold from parameter or use default
         self.declare_parameter('battery_threshold', 9.7)  # Default threshold in volts
         self.tick_index = 0
-        self.alert_num = {'opencr': 0, 'orin': 0}
+        
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
         self.srv_client = self.create_client(SetLedStatus,'set_led_status')
 
         self.battery_threshold = 9.7
+        self.alert = False
+        self.alert_num = {'opencr': 0, 'orin': 0}
 
         self.cr_battery_subscription = self.create_subscription(
             BatteryState,
