@@ -20,7 +20,7 @@ class MecanumbotBatteryAlert(Node):
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
-        self.srv_client = self.node.create_client(SetLedStatus,'/set_led_status')
+        self.srv_client = self.create_client(SetLedStatus,'set_led_status')
 
         self.battery_threshold = self.get_parameter('battery_threshold').get_parameter_value().double_value
 
