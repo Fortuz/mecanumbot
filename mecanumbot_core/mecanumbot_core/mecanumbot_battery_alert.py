@@ -17,7 +17,7 @@ class MecanumbotBatteryAlert(Node):
         # Get battery threshold from parameter or use default
         self.declare_parameter('battery_threshold', 9.7)  # Default threshold in volts
         self.tick_index = 0
-        self.alert = False
+        self.alert_num = {'opencr': 0, 'orin': 0}
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
@@ -68,9 +68,9 @@ class MecanumbotBatteryAlert(Node):
         voltage = msg.voltage
         if voltage < self.battery_threshold:
             self.get_logger().warn(f"{battery} battery low: {voltage:.2f} V")
-            self.alert = True
-        else:
-            self.alert = False
+            self.alert_num[battery] += 1
+            if self.alert_num[battery] > 5:
+                self.alert = True
 
 def main(args=None):
     rclpy.init(args=args)
