@@ -52,16 +52,16 @@ class MecanumbotBatteryAlert(Node):
             req.fl_mode, req.fr_mode, req.bl_mode, req.br_mode = 5, 5, 5, 5 #fast blink
             self.pending_future = self.srv_client.call_async(req)
 
-        cmd = AccessMotorCmd()
-        cmd.gl_pos = 5.12
-        cmd.gr_pos = 5.12
-        if self.tick_index%2 == 0:
-            cmd.n_pos = 8.9
-        else:
-            cmd.n_pos = 8.5
-        
-        self.publisher.publish(cmd)
-        self.tick_index += 1
+            cmd = AccessMotorCmd()
+            cmd.gl_pos = 5.12
+            cmd.gr_pos = 5.12
+            if self.tick_index%2 == 0:
+                cmd.n_pos = 8.9
+            else:
+                cmd.n_pos = 8.5
+            
+            self.publisher.publish(cmd)
+            self.tick_index += 1
 
     def batterystate_callback(self, msg, battery):
         voltage = msg.voltage
