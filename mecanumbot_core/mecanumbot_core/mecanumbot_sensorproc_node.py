@@ -242,6 +242,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         msg = BatteryState()
         msg.header.stamp = self.current_time.to_msg()
         
+        msg.voltage = self.cr_state.battery_voltage
         msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
         msg.charge = msg.capacity * msg.percentage
 
