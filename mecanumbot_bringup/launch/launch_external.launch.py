@@ -50,15 +50,23 @@ def choose_default_map(ssid):
 def generate_launch_description():
     
     rviz_config_dir = os.path.join(get_package_share_directory('mecanumbot_description'),'rviz','model.rviz')
-    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
     detected_ssid = get_wifi_ssid()
     map_name, map_file, keepout_file = choose_default_map(detected_ssid)
-    use_keepout_zones = "true" if keepout_file else "false"
+    
+    # Select Nav2 params based on keepout availability
+    keepout_enabled = bool(keepout_file)
+    if keepout_enabled:
+        nav2_params_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
+    else:
+        nav2_params_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2_no_keepout.yaml')
+    
+    use_keepout_zones = "true" if keepout_enabled else "false"
     yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
     return LaunchDescription([
         LogInfo(msg=f"[launch_external] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"),
         LogInfo(msg=f"[launch_external] Chosen map setting: {map_name} ({map_file})"),
         LogInfo(msg=f"[launch_external] Keepout mask: {keepout_file if keepout_file else 'none'}"),
+        LogInfo(msg=f"[launch_external] Nav2 params: {nav2_params_file}"),
         GroupAction([
 
             IncludeLaunchDescription(
@@ -72,7 +80,7 @@ def generate_launch_description():
                 launch_arguments={
                     "map": map_file,
                     "use_keepout_zones": use_keepout_zones,
-                    "params_file": param_file,
+                    "params_file": nav2_params_file,
                     "use_sim_time": "false",
                 }.items()
             ),
