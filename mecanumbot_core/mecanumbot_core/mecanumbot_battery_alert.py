@@ -24,8 +24,20 @@ class MecanumbotBatteryAlert(Node):
 
         self.battery_threshold = self.get_parameter('battery_threshold').get_parameter_value().double_value
 
-        self.cr_battery_subscription = self.create_subscription(BatteryState, 'opencr_state', self.batterystate_callback, 10,callback_group=self.callback_group, battery = 'opencr')
-        self.orin_battery_subscription = self.create_subscription(BatteryState, 'orin_state', self.batterystate_callback, 10,callback_group=self.callback_group, battery = 'orin')
+        self.cr_battery_subscription = self.create_subscription(
+            BatteryState,
+            'opencr_state',
+            lambda msg: self.batterystate_callback(msg, 'opencr'),
+            10,
+            callback_group=self.callback_group,
+        )
+        self.orin_battery_subscription = self.create_subscription(
+            BatteryState,
+            'orin_state',
+            lambda msg: self.batterystate_callback(msg, 'orin'),
+            10,
+            callback_group=self.callback_group,
+        )
    
         self.publisher = self.create_publisher(
             AccessMotorCmd,
@@ -48,7 +60,6 @@ class MecanumbotBatteryAlert(Node):
         else:
             cmd.n_pos = 8.5
         
-        cmd.n_pos = float(d["n_pos"])
         self.publisher.publish(cmd)
         self.tick_index += 1
 
@@ -61,7 +72,8 @@ class MecanumbotBatteryAlert(Node):
 def main(args=None):
     rclpy.init(args=args)
     mecanumbot_battery_alert = MecanumbotBatteryAlert()
-    executor = MultiThreadedExecutor(mecanumbot_battery_alert)
+    executor = MultiThreadedExecutor()
+    executor.add_node(mecanumbot_battery_alert)
     try:
         executor.spin()
     except KeyboardInterrupt:
