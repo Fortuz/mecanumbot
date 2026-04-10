@@ -87,6 +87,16 @@ def generate_launch_description():
             output='screen'
         ),
 
+        # LED control service node
+        Node(
+            package='mecanumbot_led',
+            executable='mecanumbot_led_service',
+            name='mecanumbot_led_service',
+            namespace= namespace,
+            parameters=[{'use_sim_time': use_sim_time}],
+            output='screen'
+        ),
+
         # State publisher
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(state_publisher_path),
