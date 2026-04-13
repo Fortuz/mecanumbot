@@ -45,7 +45,7 @@ def choose_default_map(ssid):
 def generate_launch_description():
     
     rviz_config_dir = os.path.join(get_package_share_directory('mecanumbot_description'),'rviz','model.rviz')
-    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2.yaml')
+    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2_no_keepout.yaml')
     detected_ssid = get_wifi_ssid()
     map_name, map_file = choose_default_map(detected_ssid)
     yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
@@ -75,8 +75,10 @@ def generate_launch_description():
             name='rviz2',
             arguments=['-d', rviz_config_dir],
             output='screen'),
-
-        Node(
+        
+    ])
+'''
+Node(
             namespace="mecanumbot",
             package="mecanumbot_sensorprocess_smart",
             executable="mecanumbot_lidar_detect_people",
@@ -85,6 +87,7 @@ def generate_launch_description():
             parameters=[yaml_file],
             remappings=[
                 ('map', '/map')  # <--- ADD THIS LINE
-            ]
+            
 )
     ])
+)'''

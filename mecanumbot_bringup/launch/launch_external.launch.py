@@ -109,7 +109,7 @@ def generate_launch_description():
                     'type': 0,
                     'filter_info_topic': '/keepout_costmap_filter_info',
                     'mask_topic': '/keepout_filter_mask',
-                    'base': 10.0,
+                    'base': 0.0,
                     'multiplier': 1.0,
                 },
             ],
@@ -132,8 +132,9 @@ def generate_launch_description():
             name='rviz2',
             arguments=['-d', rviz_config_dir],
             output='screen'),
-
-        Node(
+            
+    ])
+'''Node(
             namespace="mecanumbot",
             package="mecanumbot_sensorprocess_smart",
             executable="mecanumbot_lidar_detect_people",
@@ -143,5 +144,4 @@ def generate_launch_description():
             remappings=[
                 ('map', '/map')
             ]
-)
-    ])
+        )'''
