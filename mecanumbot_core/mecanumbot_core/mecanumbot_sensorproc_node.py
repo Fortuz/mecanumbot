@@ -251,11 +251,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_orin_battery_state(self): #placeholder for orin battery state, currently set to 100%
 
         msg = BatteryState()
-        msg = BatteryState()
 
         # Timestamp
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "battery"
+        msg.header.frame_id = "base_footprint"
 
         # Sensor readings
         bus_voltage = self.ina_sensor.bus_voltage       # volts

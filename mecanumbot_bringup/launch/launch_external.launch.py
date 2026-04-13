@@ -132,7 +132,7 @@ def generate_launch_description():
             name='rviz2',
             arguments=['-d', rviz_config_dir],
             output='screen'),
-
+            
         Node(
             namespace="mecanumbot",
             package="mecanumbot_sensorprocess_smart",
@@ -142,6 +142,16 @@ def generate_launch_description():
             parameters=[yaml_file],
             remappings=[
                 ('map', '/map')
-            ]
-)
+            ])
     ])
+'''Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_lidar_detect_people",
+            name="mecanumbot_lidar_detect_people", 
+            output="screen",
+            parameters=[yaml_file],
+            remappings=[
+                ('map', '/map')
+            ]
+        )'''
