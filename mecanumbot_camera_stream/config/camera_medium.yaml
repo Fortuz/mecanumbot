@@ -1,0 +1,24 @@
+# Medium bandwidth configuration for standard operations
+# Resolution: 640x480 @ 15fps
+# Use case: Standard navigation, object detection, typical robotics tasks
+
+camera_image_publisher_node:
+  ros__parameters:
+    camera_backend: auto
+    device: /dev/video0
+    topic_name: /camera/image_raw
+    frame_id: camera_optical_frame
+    encoding: bgr8
+
+    width: 640
+    height: 480
+    fps: 15.0
+
+    csi_sensor_id: 0
+    csi_flip_method: 0
+    csi_gstreamer_pipeline: ""
+
+    queue_size: 5
+    reopen_delay_sec: 2.0
+    use_capture_thread: true
+    publish_fps: 15.0

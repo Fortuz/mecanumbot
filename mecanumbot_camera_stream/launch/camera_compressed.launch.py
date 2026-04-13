@@ -6,29 +6,21 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    # Profile mapping: profile name -> config file
-    # Profiles: low_bandwidth, medium, high, compressed, compressed_hq, h264, h264_hq
-    
     default_params_file = PathJoinSubstitution([
         FindPackageShare('mecanumbot_camera_stream'),
         'config',
-        'camera_medium.yaml',
+        'camera_compressed.yaml',
     ])
 
     return LaunchDescription([
         DeclareLaunchArgument(
-            'profile',
-            default_value='medium',
-            description='Camera profile: low_bandwidth, medium, high (raw images)'
-        ),
-        DeclareLaunchArgument(
             'params_file',
             default_value=default_params_file,
-            description='Path to camera config file (overrides profile)'
+            description='Path to compressed camera config file'
         ),
         DeclareLaunchArgument(
             'camera_backend',
-            default_value='auto',
+            default_value='usb',
             description='Camera backend: auto, usb, or csi'
         ),
         DeclareLaunchArgument(
@@ -38,7 +30,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'topic_name',
-            default_value='/camera/image_raw',
+            default_value='/camera/image_raw/compressed',
             description='Output topic name'
         ),
         DeclareLaunchArgument(
@@ -56,10 +48,15 @@ def generate_launch_description():
             default_value='15.0',
             description='Frames per second'
         ),
+        DeclareLaunchArgument(
+            'jpeg_quality',
+            default_value='80',
+            description='JPEG quality (0-100, higher is better)'
+        ),
         Node(
             package='mecanumbot_camera_stream',
-            executable='camera_image_publisher_node',
-            name='camera_image_publisher_node',
+            executable='compressed_camera_publisher_node',
+            name='compressed_camera_publisher_node',
             output='screen',
             parameters=[
                 LaunchConfiguration('params_file'),
@@ -70,6 +67,7 @@ def generate_launch_description():
                     'width': LaunchConfiguration('width'),
                     'height': LaunchConfiguration('height'),
                     'fps': LaunchConfiguration('fps'),
+                    'jpeg_quality': LaunchConfiguration('jpeg_quality'),
                 },
             ],
         ),

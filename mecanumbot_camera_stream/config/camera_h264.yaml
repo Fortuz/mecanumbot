@@ -1,0 +1,21 @@
+# H.264 hardware-accelerated streaming configuration
+# Resolution: 640x480 @ 15fps with 2Mbps bitrate
+# Use case: Ultra-low bandwidth streaming, recording, multi-camera setups
+# Bandwidth: ~250KB/s (50-100x reduction vs raw)
+# Requires: Hardware encoder (NVENC/Jetson, VAAPI, OMX) or falls back to x264
+
+h264_camera_publisher_node:
+  ros__parameters:
+    device: /dev/video0
+    topic_name: /camera/image_raw/h264
+    frame_id: camera_optical_frame
+
+    width: 640
+    height: 480
+    fps: 15.0
+    bitrate: 2000000
+
+    hardware_encoder: auto
+    custom_pipeline: ""
+
+    queue_size: 5

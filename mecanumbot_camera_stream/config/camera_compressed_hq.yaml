@@ -1,0 +1,28 @@
+# High quality JPEG compressed streaming
+# Resolution: 1280x720 @ 15fps with 85% JPEG quality
+# Use case: High resolution remote viewing with compression
+# Bandwidth: ~1-2MB/s (10x reduction vs raw)
+
+compressed_camera_publisher_node:
+  ros__parameters:
+    camera_backend: auto
+    device: /dev/video0
+    topic_name: /camera/image_raw/compressed
+    frame_id: camera_optical_frame
+
+    width: 1280
+    height: 720
+    fps: 15.0
+
+    format: jpeg
+    jpeg_quality: 85
+    png_level: 3
+
+    csi_sensor_id: 0
+    csi_flip_method: 0
+    csi_gstreamer_pipeline: ""
+
+    queue_size: 5
+    reopen_delay_sec: 2.0
+    use_capture_thread: true
+    publish_fps: 15.0
