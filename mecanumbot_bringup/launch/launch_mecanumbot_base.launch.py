@@ -39,6 +39,12 @@ def generate_launch_description():
         'mecanumbot_state_publisher.launch.py'
     )
 
+    camera_path = os.path.join(
+        get_package_share_directory('mecanumbot_bringup'),
+        'launch',
+        'camera.launch.py'
+    )
+
     return LaunchDescription([
         declare_namespace,
         declare_sim_time,
@@ -106,6 +112,11 @@ def generate_launch_description():
             remappings=[
                 ('map', '/map')
             ]),
+
+        # Optimized compressed camera publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(camera_path)
+        ),
 
         # State publisher
         IncludeLaunchDescription(
