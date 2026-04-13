@@ -164,20 +164,21 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
                 # Update last_yaw_angle from IMU quaternion
-                e = quat2euler((self.cr_state.imu_orientation_x, 
-                                           self.cr_state.imu_orientation_y, 
-                                           self.cr_state.imu_orientation_z, 
-                                           self.cr_state.imu_orientation_w))
+                e = quat2euler((self.cr_state.imu_orientation_w, 
+                                self.cr_state.imu_orientation_x, 
+                                self.cr_state.imu_orientation_y, 
+                                self.cr_state.imu_orientation_z, ))
                 self.last_yaw_angle = e[2]  # Yaw angle
             else:
                 new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
                 quaternion = euler2quat(0, 0, new_yaw)
                 self.last_yaw_angle = new_yaw
-                msg.pose.pose.orientation.x = quaternion[0]
-                msg.pose.pose.orientation.y = quaternion[1]
-                msg.pose.pose.orientation.z = quaternion[2]
-                msg.pose.pose.orientation.w = quaternion[3]
+                # Map them correctly to the ROS message
+                msg.pose.pose.orientation.w = quaternion[0]
+                msg.pose.pose.orientation.x = quaternion[1]
+                msg.pose.pose.orientation.y = quaternion[2]
+                msg.pose.pose.orientation.z = quaternion[3]
                 # Orientation from odometry integration (not implemented)
 
             self.odom = msg

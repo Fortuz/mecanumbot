@@ -96,6 +96,16 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time}],
             output='screen'
         ),
+        Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_cam_detect_people",
+            name="mecanumbot_cam_detect_people", 
+            output="screen",
+            parameters=[yaml_file],
+            remappings=[
+                ('map', '/map')
+            ]),
 
         # State publisher
         IncludeLaunchDescription(
