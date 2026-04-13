@@ -174,10 +174,10 @@ class Mecanumbot_Sensorproc_Node(Node):
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
                 quaternion = euler2quat(0, 0, new_yaw)
                 self.last_yaw_angle = new_yaw
-                msg.pose.pose.orientation.x = quaternion[0]
-                msg.pose.pose.orientation.y = quaternion[1]
-                msg.pose.pose.orientation.z = quaternion[2]
-                msg.pose.pose.orientation.w = quaternion[3]
+                msg.pose.pose.orientation.w = quaternion[0]
+                msg.pose.pose.orientation.x = quaternion[1]
+                msg.pose.pose.orientation.y = quaternion[2]
+                msg.pose.pose.orientation.z = quaternion[3]
                 # Orientation from odometry integration (not implemented)
 
             self.odom = msg
