@@ -102,7 +102,19 @@ def generate_launch_description():
             parameters=[{'use_sim_time': use_sim_time}],
             output='screen'
         ),
-        Node(
+        
+
+        # State publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(state_publisher_path),
+            launch_arguments={
+                'use_sim_time': use_sim_time,
+                'namespace': namespace
+            }.items()
+        )
+    ])
+
+    '''Node(
             namespace="mecanumbot",
             package="mecanumbot_sensorprocess_smart",
             executable="mecanumbot_cam_detect_people",
@@ -116,14 +128,4 @@ def generate_launch_description():
         # Optimized compressed camera publisher
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(camera_path)
-        ),
-
-        # State publisher
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(state_publisher_path),
-            launch_arguments={
-                'use_sim_time': use_sim_time,
-                'namespace': namespace
-            }.items()
-        )
-    ])
+        ),'''
