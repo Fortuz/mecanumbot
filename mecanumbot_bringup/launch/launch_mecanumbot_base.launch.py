@@ -111,6 +111,21 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time,
                 'namespace': namespace
             }.items()
+        ),
+        Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_cam_detect_people",
+            name="mecanumbot_cam_detect_people", 
+            output="screen",
+            parameters=[yaml_file],
+            remappings=[
+                ('map', '/map')
+            ]),
+
+        # Optimized compressed camera publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(camera_path)
         )
     ])
 
