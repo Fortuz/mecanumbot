@@ -27,6 +27,8 @@ def crc8_ccitt(data: bytes) -> int:
             else:
                 crc = (crc << 1) & 0xFF
     return crc & 0xFF
+
+
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_IO_Node(Node):
 

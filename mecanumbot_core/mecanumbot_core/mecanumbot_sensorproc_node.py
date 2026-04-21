@@ -26,6 +26,23 @@ except:
 TICK_TO_RAD = 0.005061
 MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
 
+def get_device_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        return ""
+
+MODEL = get_device_model()
+
+if "raspberry pi" in MODEL:
+    print("Running on Raspberry Pi")
+elif "nvidia jetson" in MODEL:
+    print("Running on Jetson")
+else:
+    print("Unknown device:", MODEL)
+
+
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -89,7 +106,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
         self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
         self.cr_battery_state_publisher = self.create_publisher(BatteryState, 'cr_battery_state', 10,callback_group=self.callback_group)
-        self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
+        if MODEL and "nvidia jetson" in MODEL:
+            self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
         
         timer_period = 0.01  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)

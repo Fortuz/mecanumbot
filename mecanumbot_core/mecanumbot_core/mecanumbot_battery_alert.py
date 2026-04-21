@@ -8,6 +8,23 @@ from mecanumbot_msgs.srv  import GetLedStatus, SetLedStatus
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
+def get_device_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        return ""
+
+MODEL = get_device_model()
+
+if "raspberry pi" in MODEL:
+    print("Running on Raspberry Pi")
+elif "nvidia jetson" in MODEL:
+    print("Running on Jetson")
+else:
+    print("Unknown device:", MODEL)
+
+
 class MecanumbotBatteryAlert(Node):
     def __init__(self):
         super().__init__('mecanumbot_battery_alert')
@@ -34,13 +51,14 @@ class MecanumbotBatteryAlert(Node):
             10,
             callback_group=self.callback_group,
         )
-        self.orin_battery_subscription = self.create_subscription(
-            BatteryState,
-            'orin_battery_state',
-            lambda msg: self.batterystate_callback(msg, 'orin'),
-            10,
-            callback_group=self.callback_group,
-        )
+        if MODEL and "nvidia jetson" in MODEL:
+            self.orin_battery_subscription = self.create_subscription(
+                BatteryState,
+                'orin_battery_state',
+                lambda msg: self.batterystate_callback(msg, 'orin'),
+                10,
+                callback_group=self.callback_group,
+            )
    
         self.publisher = self.create_publisher(
             AccessMotorCmd,
