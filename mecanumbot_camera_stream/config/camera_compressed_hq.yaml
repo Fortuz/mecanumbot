@@ -12,7 +12,7 @@ compressed_camera_publisher_node:
 
     width: 1280
     height: 720
-    fps: 15.0
+    fps: 30.0
 
     format: jpeg
     jpeg_quality: 85

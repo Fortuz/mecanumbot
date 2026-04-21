@@ -98,18 +98,19 @@ class CompressedCameraPublisherNode(Node):
             f'quality={self.jpeg_quality if self.format_string == "jpeg" else self.png_level}'
         )
 
-    def _build_csi_pipeline(self) -> str:
-        if self.csi_gstreamer_pipeline.strip():
-            return self.csi_gstreamer_pipeline
+        def _build_csi_pipeline(self) -> str:
+            if self.csi_gstreamer_pipeline.strip():
+                return self.csi_gstreamer_pipeline
 
-        return (
-            'nvarguscamerasrc sensor-id=' + str(self.csi_sensor_id) + ' ! '
-            'video/x-raw(memory:NVMM), width=' + str(self.width) + ', height=' + str(self.height) +
-            ', framerate=' + str(int(self.fps)) + '/1 ! '
-            'nvvidconv flip-method=' + str(self.csi_flip_method) + ' ! '
-            'video/x-raw, width=' + str(self.width) + ', height=' + str(self.height) + ', format=BGRx ! '
-            'videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false'
-        )
+            # Optimized for JetPack 6 / Orin
+            return (
+                f'nvarguscamerasrc sensor-id={self.csi_sensor_id} ! '
+                f'video/x-raw(memory:NVMM), width={self.width}, height={self.height}, '
+                f'framerate={int(self.fps)}/1 ! '
+                f'nvvidconv flip-method={self.csi_flip_method} ! '
+                f'video/x-raw, format=BGRx ! '
+                f'videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false'
+            )
 
     def _open_capture(self) -> Tuple[Optional[cv2.VideoCapture], str]:
         if self.camera_backend == 'usb':
