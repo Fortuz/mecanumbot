@@ -139,14 +139,17 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_imu()
         self.set_joint_state()
         self.set_cr_battery_state()
-        self.set_orin_battery_state()
+        if MODEL and "nvidia jetson" in MODEL:
+            self.set_orin_battery_state()
 
          # Publish messages
         self.odom_publisher.publish(self.odom)
         self.imu_publisher.publish(self.imu)
         self.joint_state_publisher.publish(self.joint_state)
         self.cr_battery_state_publisher.publish(self.cr_battery_state)
-        self.orin_battery_state_publisher.publish(self.orin_battery_state)
+        if MODEL and "nvidia jetson" in MODEL:
+           
+            self.orin_battery_state_publisher.publish(self.orin_battery_state)
 
     def set_odom(self):
             
