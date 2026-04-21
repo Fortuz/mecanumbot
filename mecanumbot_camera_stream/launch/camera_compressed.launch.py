@@ -20,7 +20,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'camera_backend',
-            default_value='usb',
+            default_value='csi',
             description='Camera backend: auto, usb, or csi'
         ),
         DeclareLaunchArgument(

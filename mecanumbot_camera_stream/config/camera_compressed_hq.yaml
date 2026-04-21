@@ -5,7 +5,7 @@
 
 compressed_camera_publisher_node:
   ros__parameters:
-    camera_backend: auto
+    camera_backend: csi
     device: /dev/video0
     topic_name: /camera/image_raw/compressed
     frame_id: camera_optical_frame
