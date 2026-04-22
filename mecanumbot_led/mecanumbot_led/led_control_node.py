@@ -115,13 +115,12 @@ class LedServiceNode(Node):
             return response 
 
         except Exception as e:
-            e = "Serial error: {e}"
             self.get_logger().error(e)
-            response.success = False
-            response.message = e
+            (response.fl_mode, response.fl_color,
+            response.fr_mode, response.fr_color,
+            response.br_mode, response.br_color,
+            response.bl_mode, response.bl_color) = (404,404,404,404,404,404,404,404)
             return response
-
-
 def main(args=None):
     rclpy.init(args=args)
     node = LedServiceNode()
