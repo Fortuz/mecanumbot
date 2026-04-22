@@ -86,7 +86,7 @@ def generate_launch_description():
             name='ld08_driver_node',
             namespace= namespace,
             parameters=[
-                {'port': '/dev/ttyUSB0'},
+                {'port': '/dev/ld08_lidar'},
                 {'frame_id': [namespace, '/base_scan']},
                 {'use_sim_time': use_sim_time}
             ],

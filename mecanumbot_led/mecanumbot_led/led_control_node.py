@@ -115,7 +115,7 @@ class LedServiceNode(Node):
             return response 
 
         except Exception as e:
-            self.get_logger().error(e)
+            self.get_logger().error(f'Error occurred: {e}')
             (response.fl_mode, response.fl_color,
             response.fr_mode, response.fr_color,
             response.br_mode, response.br_color,
