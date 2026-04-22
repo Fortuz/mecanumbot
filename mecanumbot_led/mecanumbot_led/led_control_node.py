@@ -79,48 +79,60 @@ class LedServiceNode(Node):
         return response
 
 
-    def get_led_status_callback(self,request, response):
+    def get_led_status_callback(self, request, response):
+        import time # Ensure this is imported at the top of your file
+        
         try:
             self.serial_port.write(bytes([REQUEST_BYTE]))
+            self.serial_port.flush() # Ensure the byte is actually sent out
+            
+            # Tiny sleep to allow Arduino to reply before checking in_waiting
+            # Alternatively, rely on a blocking ser.read() instead of in_waiting
+            time.sleep(0.02) 
+
             # Read fixed length response
             data = read_feedback(self.serial_port)
-            if data is None or len(data) != 8:
+            
+            if data is None:
+                e = "Incomplete packet: Received None (No data or bad checksum)"
+                self.get_logger().error(e)
+                # Use -1 instead of 404 to stay within the [-128, 127] int8 bounds
+                (response.fl_mode, response.fl_color,
+                response.fr_mode, response.fr_color,
+                response.br_mode, response.br_color,
+                response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
+                return response
+                
+            elif len(data) != 8:
                 e = f"Incomplete packet: {len(data)} bytes"
                 self.get_logger().error(e)
                 (response.fl_mode, response.fl_color,
                 response.fr_mode, response.fr_color,
                 response.br_mode, response.br_color,
-                response.bl_mode, response.bl_color) = (404,404,404,404,404,404,404,404)
+                response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
                 return response
 
-
-            fl_m  = data[0]
-            fl_c  = data[1]
-            fr_m  = data[2]
-            fr_c  = data[3]
-            bl_m  = data[4]
-            bl_c  = data[5]
-            br_m  = data[6]
-            br_c  = data[7]
-
             # Assign to ROS response
-            response.fl_mode  = fl_m
-            response.fl_color = fl_c
-            response.fr_mode  = fr_m
-            response.fr_color = fr_c
-            response.bl_mode  = bl_m
-            response.bl_color = bl_c
-            response.br_mode  = br_m
-            response.br_color = br_c
+            response.fl_mode  = data[0]
+            response.fl_color = data[1]
+            response.fr_mode  = data[2]
+            response.fr_color = data[3]
+            response.bl_mode  = data[4]
+            response.bl_color = data[5]
+            response.br_mode  = data[6]
+            response.br_color = data[7]
+            
             return response 
 
         except Exception as e:
             self.get_logger().error(f'Error occurred: {e}')
+            # Use -1 instead of 404 here as well
             (response.fl_mode, response.fl_color,
             response.fr_mode, response.fr_color,
             response.br_mode, response.br_color,
-            response.bl_mode, response.bl_color) = (404,404,404,404,404,404,404,404)
+            response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
             return response
+        
 def main(args=None):
     rclpy.init(args=args)
     node = LedServiceNode()
