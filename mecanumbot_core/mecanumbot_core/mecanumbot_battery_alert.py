@@ -91,6 +91,13 @@ class MecanumbotBatteryAlert(Node):
             self.alert_num[battery] += 1
             if self.alert_num[battery] > 5:
                 self.alert = True
+        if self.alert:
+            if voltage > self.battery_threshold:
+                self.alert = False
+                req = SetLedStatus.Request()
+                req.fl_color,req.fr_color, req.bl_color, req.br_color = 3,3,3,3#red
+                req.fl_mode, req.fr_mode, req.bl_mode, req.br_mode = 5, 5, 5, 5 #fast blink
+                self.pending_future = self.srv_client.call_async(req)
 
 def main(args=None):
     rclpy.init(args=args)
