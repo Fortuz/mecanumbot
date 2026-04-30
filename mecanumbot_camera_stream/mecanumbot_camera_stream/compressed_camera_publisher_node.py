@@ -107,7 +107,6 @@ class CompressedCameraPublisherNode(Node):
         return (
             f'libcamerasrc ! '
             f'video/x-raw, width={self.width}, height={self.height}, '
-            f'framerate={int(self.fps)}/1 ! '
             f'videoconvert ! video/x-raw, format=BGR ! '
             f'appsink max-buffers=1 drop=true sync=false'
         )
