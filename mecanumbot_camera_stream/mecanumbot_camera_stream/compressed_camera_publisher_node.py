@@ -102,7 +102,17 @@ class CompressedCameraPublisherNode(Node):
         if self.csi_gstreamer_pipeline.strip():
             return self.csi_gstreamer_pipeline
 
-        # Optimized for JetPack 6 / Orin
+
+        # Optimized for Raspberry Pi 5 (libcamera)
+        return (
+            f'libcamerasrc ! '
+            f'video/x-raw, width={self.width}, height={self.height}, '
+            f'framerate={int(self.fps)}/1 ! '
+            f'videoconvert ! video/x-raw, format=BGR ! '
+            f'appsink max-buffers=1 drop=true sync=false'
+        )
+
+        '''# Optimized for JetPack 6 / Orin
         return (
             f'nvarguscamerasrc sensor-id={self.csi_sensor_id} ! '
             f'video/x-raw(memory:NVMM), width={self.width}, height={self.height}, '
@@ -110,7 +120,7 @@ class CompressedCameraPublisherNode(Node):
             f'nvvidconv flip-method={self.csi_flip_method} ! '
             f'video/x-raw, format=BGRx ! '
             f'videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false'
-        )
+        )'''
 
     def _open_capture(self) -> Tuple[Optional[cv2.VideoCapture], str]:
         if self.camera_backend == 'usb':
