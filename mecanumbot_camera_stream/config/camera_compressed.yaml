@@ -10,8 +10,10 @@ compressed_camera_publisher_node:
     topic_name: /camera/image_raw/compressed
     frame_id: camera_optical_frame
 
-    width: 640
-    height: 480
+    #width: 640
+    #height: 480
+    width: 1536
+    height: 864
     fps: 30.0
 
     format: jpeg
