@@ -30,6 +30,7 @@ setup(
             'camera_image_publisher_node = mecanumbot_camera_stream.camera_image_publisher_node:main',
             'compressed_camera_publisher_node = mecanumbot_camera_stream.compressed_camera_publisher_node:main',
             'h264_camera_publisher_node = mecanumbot_camera_stream.h264_camera_publisher_node:main',
+            'raspi_camnode = mecanumbot_camera_stream.raspi_camnode:main',
         ],
     },
 )
