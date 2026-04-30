@@ -37,7 +37,7 @@ class Mecanumbot_IO_Node(Node):
         self.callback_group = ReentrantCallbackGroup()
         self.cmd_lock = threading.RLock()
 
-        default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
+        default_device = 'COM3' if os.name == 'nt' else '/dev/opencr'
         self.declare_parameters(
         namespace=namespace,
         parameters=[
