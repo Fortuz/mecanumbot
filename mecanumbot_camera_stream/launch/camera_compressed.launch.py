@@ -60,15 +60,7 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 LaunchConfiguration('params_file'),
-                {
-                    'camera_backend': LaunchConfiguration('camera_backend'),
-                    'device': LaunchConfiguration('device'),
-                    'topic_name': LaunchConfiguration('topic_name'),
-                    'width': LaunchConfiguration('width'),
-                    'height': LaunchConfiguration('height'),
-                    'fps': LaunchConfiguration('fps'),
-                    'jpeg_quality': LaunchConfiguration('jpeg_quality'),
-                },
+                
             ],
         ),
     ])

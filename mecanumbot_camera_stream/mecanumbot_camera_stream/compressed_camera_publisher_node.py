@@ -104,11 +104,7 @@ class CompressedCameraPublisherNode(Node):
 
 
         # Optimized for Raspberry Pi 5 (libcamera)
-        return (
-            f'libcamerasrc ! '
-            f'video/x-raw, width={self.width}, height={self.height}, '
-            f'videoconvert ! video/x-raw, format=BGR ! '
-            f'appsink max-buffers=1 drop=true sync=false'
+        return ( f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, format=RGBx ! videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false"
         )
 
         '''# Optimized for JetPack 6 / Orin
