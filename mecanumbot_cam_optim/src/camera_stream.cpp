@@ -36,8 +36,9 @@ public:
         // Try opening with Pi 5 libcamera pipeline first
         std::string pipeline = "libcamerasrc ! video/x-raw, width=" + std::to_string(width_) +
                                ", height=" + std::to_string(height_) +
+                               ", framerate=" + std::to_string(fps_) + "/1" + 
                                ", format=RGBx ! videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false";
-
+                               
         cap_.open(pipeline, cv::CAP_GSTREAMER);
         
         // Fallback to standard USB/V4L2 if libcamera fails
