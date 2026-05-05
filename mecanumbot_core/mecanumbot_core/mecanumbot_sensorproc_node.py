@@ -109,7 +109,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         if MODEL and "nvidia jetson" in MODEL:
             self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
         
-        timer_period = 0.01  # seconds
+        timer_period = 0.02  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
         
         self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10,callback_group=self.callback_group)
