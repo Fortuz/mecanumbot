@@ -15,9 +15,9 @@ class CompressedCameraPublisherNode : public rclcpp::Node {
 public:
     CompressedCameraPublisherNode() : Node("compressed_camera_publisher_node"), is_running_(true) {
         // Declare Parameters
-        this->declare_parameter("width", 640);
-        this->declare_parameter("height", 480);
-        this->declare_parameter("fps", 15);
+        this->declare_parameter("width", 1536);
+        this->declare_parameter("height", 864);
+        this->declare_parameter("fps", 30);
         this->declare_parameter("jpeg_quality", 80);
         this->declare_parameter("frame_id", "camera_optical_frame");
         this->declare_parameter("topic_name", "/camera/image_raw/compressed");
@@ -36,7 +36,7 @@ public:
         // Try opening with Pi 5 libcamera pipeline first
         std::string pipeline = "libcamerasrc ! video/x-raw, width=" + std::to_string(width_) +
                                ", height=" + std::to_string(height_) +
-                               " ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true sync=false";
+                               ", format=RGBx ! videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false";
 
         cap_.open(pipeline, cv::CAP_GSTREAMER);
         
