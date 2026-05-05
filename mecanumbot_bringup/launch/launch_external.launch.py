@@ -142,6 +142,13 @@ def generate_launch_description():
             remappings=[
                 ('map', '/map')
             ]
+        ),
+        Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_detect_tennis",
+            name="mecanumbot_detect_tennis", 
+            output="screen"
         )
             
     ])
