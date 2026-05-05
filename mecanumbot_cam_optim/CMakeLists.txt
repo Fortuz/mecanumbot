@@ -12,11 +12,12 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(CURL REQUIRED)
 
 add_executable(camera_stream_node src/camera_stream.cpp)
 target_include_directories(camera_stream_node PUBLIC ${OpenCV_INCLUDE_DIRS})
 ament_target_dependencies(camera_stream_node rclcpp sensor_msgs cv_bridge image_transport)
-target_link_libraries(camera_stream_node ${OpenCV_LIBRARIES})
+target_link_libraries(camera_stream_node ${OpenCV_LIBRARIES} ${CURL_LIBRARIES})
 
 install(TARGETS
   camera_stream_node
