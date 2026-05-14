@@ -28,7 +28,14 @@ setup(
     entry_points={
         'console_scripts': [
           'mecanumbot_io_node = mecanumbot_core.mecanumbot_IO_node:main',
-          'mecanumbot_sensorproc_node = mecanumbot_core.mecanumbot_sensorproc_node:main',      
+          'mecanumbot_sensorproc_node = mecanumbot_core.mecanumbot_sensorproc_node:main',
+          'mecanumbot_sim_io_node = mecanumbot_core.mecanumbot_sim_io_node:main',
+          'mecanumbot_sim_oracle_subject_node = mecanumbot_core.mecanumbot_sim_oracle_subject_node:main',
+          'mecanumbot_sim_behavior_evaluator_node = mecanumbot_core.mecanumbot_sim_behavior_evaluator_node:main',
+          'mecanumbot_sim_detection_evaluator_node = mecanumbot_core.mecanumbot_sim_detection_evaluator_node:main',
+          'mecanumbot_sim_visualization_node = mecanumbot_core.mecanumbot_sim_visualization_node:main',
+          'mecanumbot_sim_detector_debug_node = mecanumbot_core.mecanumbot_sim_detector_debug_node:main',
+          'mecanumbot_sim_nav_shim_node = mecanumbot_core.mecanumbot_sim_nav_shim_node:main',
         ],
     },
 )

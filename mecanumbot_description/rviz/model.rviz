@@ -262,7 +262,59 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /mecanumbot/dets
+        Value: /mecanumbot/dr_spaam/dets
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Sim Actors + Labels
+      Namespaces:
+        sim_actor_labels: true
+        sim_actor_velocity: true
+        sim_actors: true
+        sim_world: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /sim/actor_markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Sim Detection Labels
+      Namespaces:
+        sim_detection_labels: true
+        sim_tracked_subject: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /sim/detection_markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Sim Detector Debug
+      Namespaces:
+        sim_detector_debug: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /sim/detector_debug_markers
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Sim Evaluation Status
+      Namespaces:
+        sim_evaluation_status: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /sim/evaluation_markers
       Value: true
     - Alpha: 1
       Axes Length: 1

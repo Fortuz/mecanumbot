@@ -1,0 +1,33 @@
+scenario:
+  name: behavior_wall_false_positive
+  actors:
+    - id: 1
+      name: wall_panel_subject_decoy
+      kind: wall
+      body_name: sim_wall_panel_0
+      is_subject: false
+      visible_to_lidar: true
+      pose:
+        x: 1.05
+        y: 0.0
+        z: 0.0
+        yaw: 1.5707963267948966
+    - id: 2
+      name: subject_human
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 1.65
+        y: 0.85
+        z: 0.0
+        yaw: 3.141592653589793
+      motion:
+        mode: patrol
+        speed: 0.18
+        loop: true
+        start_delay: 0.0
+        waypoints:
+          - {x: 1.65, y: 0.85, z: 0.0}
+          - {x: 1.65, y: 1.30, z: 0.0}

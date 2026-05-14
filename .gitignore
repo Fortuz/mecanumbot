@@ -99,3 +99,6 @@ log/
 install/
 # vscode artifacts
 .vscode/
+
+# Claude Code
+CLAUDE.md

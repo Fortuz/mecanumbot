@@ -1,0 +1,25 @@
+scenario:
+  name: behavior_subject_stop
+  actors:
+    - id: 1
+      name: subject_human
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 0.50
+        y: 0.0
+        z: 0.0
+        yaw: 3.141592653589793
+    - id: 2
+      name: side_wall_panel
+      kind: wall
+      body_name: sim_wall_panel_0
+      is_subject: false
+      visible_to_lidar: true
+      pose:
+        x: 1.20
+        y: -0.60
+        z: 0.0
+        yaw: 1.5707963267948966

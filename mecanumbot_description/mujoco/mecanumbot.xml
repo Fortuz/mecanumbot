@@ -1,0 +1,140 @@
+<mujoco model="mecanumbot">
+
+  <compiler angle="radian"/>
+
+  <option timestep="0.002" cone="elliptic" impratio="10"/>
+
+  <asset>
+    <material name="dark" rgba="0.3 0.3 0.3 1"/>
+    <material name="light_blue" rgba="0.1 0.1 0.5 1"/>
+    <material name="green" rgba="0.0 0.8 0.0 1"/>
+    <material name="orange" rgba="1.0 0.4235 0.0392 1"/>
+    <material name="red" rgba="0.8 0.0 0.0 1"/>
+    <material name="axis_x" rgba="0.9 0.2 0.2 1"/>
+    <material name="axis_y" rgba="0.2 0.8 0.2 1"/>
+    <texture name="ground_checker" type="2d" builtin="checker" rgb1="0.82 0.84 0.86" rgb2="0.68 0.70 0.72" width="512" height="512"/>
+    <material name="ground" texture="ground_checker" texrepeat="10 10" reflectance="0.05"/>
+
+  </asset>
+
+  <default>
+    <default class="visual">
+      <geom contype="0" conaffinity="0" density="0" group="2"/>
+    </default>
+
+    <default class="wheel">
+      <joint axis="0 0 1" limited="false" damping="0.2" frictionloss="0.05" armature="0.01"/>
+      <velocity ctrllimited="true" ctrlrange="-30 30" kv="4.0"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light name="sun" pos="0 0 4" dir="0 0 -1" directional="true" diffuse="0.95 0.95 0.95" specular="0.25 0.25 0.25" ambient="0.35 0.35 0.35"/>
+    <light name="fill" pos="2 -2 2.5" diffuse="0.6 0.6 0.6" specular="0.1 0.1 0.1"/>
+    <geom name="floor" type="plane" size="5 5 0.1" pos="0 0 0" material="ground" friction="1.0 0.05 0.05"/>
+    <geom name="x_axis_ref" type="box" pos="0.75 0 0.01" size="0.75 0.015 0.01" material="axis_x" contype="0" conaffinity="0"/>
+    <geom name="y_axis_ref" type="box" pos="0 0.75 0.01" size="0.015 0.75 0.01" material="axis_y" contype="0" conaffinity="0"/>
+    <geom name="wall_north" type="box" pos="0 2.0 0.25" size="2.2 0.05 0.25" material="dark"/>
+    <geom name="wall_south" type="box" pos="0 -2.0 0.25" size="2.2 0.05 0.25" material="dark"/>
+    <geom name="wall_east" type="box" pos="2.0 0 0.25" size="0.05 2.2 0.25" material="dark"/>
+    <geom name="wall_west" type="box" pos="-2.0 0 0.25" size="0.05 2.2 0.25" material="dark"/>
+    <geom name="box_obstacle_a" type="box" pos="0.9 0.4 0.15" size="0.18 0.18 0.15" material="green"/>
+    <geom name="box_obstacle_b" type="box" pos="-0.7 -0.8 0.2" size="0.12 0.25 0.2" material="orange"/>
+
+    <body name="sim_human_0" mocap="true" pos="25 25 0">
+      <geom name="sim_human_0_torso" type="capsule" fromto="0 0 0.45 0 0 1.15" size="0.16" material="orange"/>
+      <geom name="sim_human_0_leg_left" type="capsule" fromto="0 0.11 0.05 0 0.11 0.55" size="0.06" material="green"/>
+      <geom name="sim_human_0_leg_right" type="capsule" fromto="0 -0.11 0.05 0 -0.11 0.55" size="0.06" material="green"/>
+    </body>
+
+    <body name="sim_wall_panel_0" mocap="true" pos="26 25 0">
+      <geom name="sim_wall_panel_0_geom" type="box" pos="0 0 0.6" size="0.55 0.05 0.6" material="dark"/>
+    </body>
+
+    <body name="sim_human_1" mocap="true" pos="27 25 0">
+      <geom name="sim_human_1_torso" type="capsule" fromto="0 0 0.45 0 0 1.15" size="0.16" material="orange"/>
+      <geom name="sim_human_1_leg_left" type="capsule" fromto="0 0.11 0.05 0 0.11 0.55" size="0.06" material="green"/>
+      <geom name="sim_human_1_leg_right" type="capsule" fromto="0 -0.11 0.05 0 -0.11 0.55" size="0.06" material="green"/>
+    </body>
+
+    <body name="sim_wall_panel_1" mocap="true" pos="28 25 0">
+      <geom name="sim_wall_panel_1_geom" type="box" pos="0 0 0.6" size="0.55 0.05 0.6" material="dark"/>
+    </body>
+
+    <body name="base_link" pos="0 0 0.06">
+      <inertial pos="0 0 0.06" mass="3.0" diaginertia="0.04 0.04 0.04"/>
+      <joint name="base_free" type="free"/>
+
+      <geom type="box" pos="0 0 0.055" size="0.16 0.13 0.03" material="dark" friction="1.0 0.05 0.05"/>
+      <geom type="box" pos="0.09 0 0.12" size="0.055 0.11 0.04" material="dark" class="visual"/>
+
+      <body name="wheel_frontleft" pos="0.064 0.1522 0.02345" quat="0.707 0.707 0 0">
+        <inertial pos="0 0 0" mass="0.15" diaginertia="0.0002 0.0002 0.0002"/>
+        <joint name="wheel_frontleft_joint" class="wheel"/>
+        <geom type="cylinder" size="0.034 0.018" material="light_blue" friction="1.2 0.05 0.05"/>
+      </body>
+
+      <body name="wheel_backleft" pos="-0.064 0.1522 0.02345" quat="0.707 0.707 0 0">
+        <inertial pos="0 0 0" mass="0.15" diaginertia="0.0002 0.0002 0.0002"/>
+        <joint name="wheel_backleft_joint" class="wheel"/>
+        <geom type="cylinder" size="0.034 0.018" material="light_blue" friction="1.2 0.05 0.05"/>
+      </body>
+
+      <body name="wheel_frontright" pos="0.064 -0.1522 0.02345" quat="0.707 -0.707 0 0">
+        <inertial pos="0 0 0" mass="0.15" diaginertia="0.0002 0.0002 0.0002"/>
+        <joint name="wheel_frontright_joint" class="wheel"/>
+        <geom type="cylinder" size="0.034 0.018" material="light_blue" friction="1.2 0.05 0.05"/>
+      </body>
+
+      <body name="wheel_backright" pos="-0.064 -0.1522 0.02345" quat="0.707 -0.707 0 0">
+        <inertial pos="0 0 0" mass="0.15" diaginertia="0.0002 0.0002 0.0002"/>
+        <joint name="wheel_backright_joint" class="wheel"/>
+        <geom type="cylinder" size="0.034 0.018" material="light_blue" friction="1.2 0.05 0.05"/>
+      </body>
+
+      <body name="grabber_right" pos="0.174 -0.070 0.024">
+        <inertial pos="0 0 0" mass="0.05" diaginertia="0.0001 0.0001 0.0001"/>
+        <joint name="grabber_right_joint" range="-1.57 1.57" limited="true" damping="0.2"/>
+        <geom type="capsule" fromto="0 0 0 0.10 0 0" size="0.012" material="green" class="visual"/>
+      </body>
+
+      <body name="grabber_left" pos="0.174 0.070 0.024">
+        <inertial pos="0 0 0" mass="0.05" diaginertia="0.0001 0.0001 0.0001"/>
+        <joint name="grabber_left_joint" range="-1.57 1.57" limited="true" damping="0.2"/>
+        <geom type="capsule" fromto="0 0 0 0.10 0 0" size="0.012" material="green" class="visual"/>
+      </body>
+
+      <body name="head" pos="0.1063 0 0.1679" quat="0.707 0.707 0 0">
+        <inertial pos="0 0 0" mass="0.08" diaginertia="0.0002 0.0002 0.0002"/>
+        <joint name="head_joint" range="-1.57 1.57" limited="true" damping="0.2"/>
+        <geom type="box" size="0.02 0.03 0.02" material="orange" class="visual"/>
+
+        <body name="camera" pos="0.022 0.038 0">
+          <geom type="box" size="0.0075 0.015 0.0135" material="red" class="visual"/>
+        </body>
+      </body>
+
+      <body name="base_scan" pos="0 0 0.122">
+        <geom type="cylinder" size="0.055 0.015" material="dark" class="visual"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="bl" joint="wheel_backleft_joint"/>
+    <velocity name="br" joint="wheel_backright_joint"/>
+    <velocity name="fl" joint="wheel_frontleft_joint"/>
+    <velocity name="fr" joint="wheel_frontright_joint"/>
+    <position name="grabber_left" joint="grabber_left_joint"/>
+    <position name="grabber_right" joint="grabber_right_joint"/>
+    <position name="head" joint="head_joint"/>
+  </actuator>
+
+  <contact>
+    <exclude body1="base_link" body2="wheel_frontleft"/>
+    <exclude body1="base_link" body2="wheel_frontright"/>
+    <exclude body1="base_link" body2="wheel_backleft"/>
+    <exclude body1="base_link" body2="wheel_backright"/>
+  </contact>
+
+</mujoco>

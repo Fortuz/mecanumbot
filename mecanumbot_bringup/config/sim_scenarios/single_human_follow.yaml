@@ -1,0 +1,14 @@
+scenario:
+  name: single_human_follow
+  actors:
+    - id: 1
+      name: subject_human
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 1.05
+        y: 0.0
+        z: 0.0
+        yaw: 3.141592653589793

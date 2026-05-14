@@ -1,6 +1,7 @@
 import os 
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time as RosTime
 
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
@@ -11,7 +12,6 @@ from sensor_msgs.msg import Imu, JointState, BatteryState
 from geometry_msgs.msg import Twist
 from mecanumbot_msgs.msg import OpenCRState
 import math
-from builtin_interfaces.msg import Time
 from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -37,7 +37,9 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
         ('odom_params.from_imu', False),
-        ('imu_params.frame_id', 'imu_link')
+        ('imu_params.frame_id', 'imu_link'),
+        ('use_state_stamp_for_dt', False),
+        ('require_state_stamp', False)
          ])
         
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -49,6 +51,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
         self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
         self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
+        self.use_state_stamp_for_dt = bool(self.get_parameter('use_state_stamp_for_dt').value)
+        self.require_state_stamp = bool(self.get_parameter('require_state_stamp').value)
 
         if self.namespace != '' and self.namespace is not None:
 
@@ -89,7 +93,9 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.current_time = self.get_clock().now()
         self.last_time = self.get_clock().now()
-        self.dt = (self.current_time.nanoseconds - self.last_time.nanoseconds) * 1e-9 #[s]
+        self.dt = 0.0 #[s]
+        self.last_state_stamp_ns = None
+        self.last_stamp_source = None
 
         self.last_yaw_angle = 0.0
         
@@ -97,19 +103,51 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.cr_state = data
 
     def timer_callback(self):
+        if not rclpy.ok():
+            return
+
+        stamp = self.cr_state.header.stamp
+        if self.use_state_stamp_for_dt and (stamp.sec != 0 or stamp.nanosec != 0):
+            raw_time = RosTime.from_msg(stamp)
+            stamp_source = 'state'
+        else:
+            if self.use_state_stamp_for_dt and self.require_state_stamp:
+                return
+            raw_time = self.get_clock().now()
+            stamp_source = 'clock'
+
+        raw_stamp_ns = raw_time.nanoseconds
+        if self.last_stamp_source is not None and self.last_stamp_source != stamp_source:
+            self.last_state_stamp_ns = None
+
+        if self.last_state_stamp_ns is None:
+            current_stamp_ns = raw_stamp_ns
+            self.dt = 0.0
+        else:
+            # Clamp to a monotonic timeline so downstream TF and joint-state
+            # consumers do not see time go backwards during callback jitter.
+            current_stamp_ns = max(raw_stamp_ns, self.last_state_stamp_ns)
+            self.dt = max((current_stamp_ns - self.last_state_stamp_ns) * 1e-9, 0.0)
+
         self.last_time = self.current_time
-        self.current_time = self.get_clock().now()
-        self.dt = (self.current_time.nanoseconds - self.last_time.nanoseconds) * 1e-9 #[s]
+        self.current_time = RosTime(nanoseconds=current_stamp_ns)
+        self.last_state_stamp_ns = current_stamp_ns
+        self.last_stamp_source = stamp_source
+
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
         self.set_battery_state()
 
          # Publish messages
-        self.odom_publisher.publish(self.odom)
-        self.imu_publisher.publish(self.imu)
-        self.joint_state_publisher.publish(self.joint_state)
-        self.battery_state_publisher.publish(self.battery_state)
+        try:
+            self.odom_publisher.publish(self.odom)
+            self.imu_publisher.publish(self.imu)
+            self.joint_state_publisher.publish(self.joint_state)
+            self.battery_state_publisher.publish(self.battery_state)
+        except Exception:
+            if rclpy.ok():
+                raise
 
     def set_odom(self):
             
@@ -171,7 +209,11 @@ class Mecanumbot_Sensorproc_Node(Node):
             t.transform.translation.y = msg.pose.pose.position.y
             t.transform.translation.z = 0.0
             t.transform.rotation = msg.pose.pose.orientation
-            self.tf_broadcaster.sendTransform(t)
+            try:
+                self.tf_broadcaster.sendTransform(t)
+            except Exception:
+                if rclpy.ok():
+                    raise
             
     def set_imu(self):
             
@@ -241,6 +283,11 @@ def main(args=None):
         executor.spin()
     except KeyboardInterrupt:
         pass
+    finally:
+        executor.shutdown()
+        sensorproc_node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
         
 if __name__ == '__main__':
     main()

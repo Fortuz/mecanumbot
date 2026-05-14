@@ -1,0 +1,52 @@
+scenario:
+  name: behavior_wrong_human_crossing
+  actors:
+    - id: 1
+      name: subject_human
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 1.55
+        y: -0.90
+        z: 0.0
+        yaw: 1.5707963267948966
+      motion:
+        mode: patrol
+        speed: 0.20
+        loop: true
+        start_delay: 0.0
+        waypoints:
+          - {x: 1.55, y: -0.90, z: 0.0}
+          - {x: 1.55, y: 0.90, z: 0.0}
+    - id: 2
+      name: crossing_distractor_human
+      kind: human
+      body_name: sim_human_1
+      is_subject: false
+      visible_to_lidar: true
+      pose:
+        x: 0.80
+        y: 0.90
+        z: 0.0
+        yaw: -1.5707963267948966
+      motion:
+        mode: patrol
+        speed: 0.25
+        loop: true
+        start_delay: 0.5
+        waypoints:
+          - {x: 0.80, y: 0.90, z: 0.0}
+          - {x: 0.80, y: -0.90, z: 0.0}
+    - id: 3
+      name: close_wall_panel
+      kind: wall
+      body_name: sim_wall_panel_0
+      is_subject: false
+      visible_to_lidar: true
+      pose:
+        x: 1.55
+        y: 1.20
+        z: 0.0
+        yaw: 0.0

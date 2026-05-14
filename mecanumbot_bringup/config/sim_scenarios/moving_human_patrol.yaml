@@ -1,0 +1,22 @@
+scenario:
+  name: moving_human_patrol
+  actors:
+    - id: 1
+      name: subject_human
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 1.25
+        y: -0.75
+        z: 0.0
+        yaw: 1.5707963267948966
+      motion:
+        mode: patrol
+        speed: 0.35
+        loop: true
+        start_delay: 0.0
+        waypoints:
+          - {x: 1.25, y: -0.75, z: 0.0}
+          - {x: 1.25, y: 0.75, z: 0.0}
