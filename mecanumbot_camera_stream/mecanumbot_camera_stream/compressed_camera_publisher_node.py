@@ -12,6 +12,23 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 
 
+def get_device_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        return ""
+
+MODEL = get_device_model()
+
+if "raspberry pi" in MODEL:
+    print("Running on Raspberry Pi")
+elif "nvidia jetson" in MODEL:
+    print("Running on Jetson")
+else:
+    print("Unknown device:", MODEL)
+
+
 class CompressedCameraPublisherNode(Node):
     def __init__(self) -> None:
         super().__init__('compressed_camera_publisher_node')
@@ -104,18 +121,19 @@ class CompressedCameraPublisherNode(Node):
 
 
         # Optimized for Raspberry Pi 5 (libcamera)
-        return ( f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, format=RGBx ! videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false"
-        )
-
-        '''# Optimized for JetPack 6 / Orin
-        return (
-            f'nvarguscamerasrc sensor-id={self.csi_sensor_id} ! '
-            f'video/x-raw(memory:NVMM), width={self.width}, height={self.height}, '
-            f'framerate={int(self.fps)}/1 ! '
-            f'nvvidconv flip-method={self.csi_flip_method} ! '
-            f'video/x-raw, format=BGRx ! '
-            f'videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false'
-        )'''
+        if "raspberry pi" in MODEL:
+             return ( f"libcamerasrc ! video/x-raw, width={self.width}, height={self.height}, format=RGBx ! videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false"
+            )
+        if "nvidia jetson" in MODEL:
+        # Optimized for JetPack 6 / Orin
+            return (
+                f'nvarguscamerasrc sensor-id={self.csi_sensor_id} ! '
+                f'video/x-raw(memory:NVMM), width={self.width}, height={self.height}, '
+                f'framerate={int(self.fps)}/1 ! '
+                f'nvvidconv flip-method={self.csi_flip_method} ! '
+                f'video/x-raw, format=BGRx ! '
+                f'videoconvert ! video/x-raw, format=BGR ! appsink max-buffers=1 drop=true sync=false'
+            )
 
     def _open_capture(self) -> Tuple[Optional[cv2.VideoCapture], str]:
         if self.camera_backend == 'usb':
