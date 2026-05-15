@@ -182,7 +182,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.odom_publisher.publish(self.odom)
             self.imu_publisher.publish(self.imu)
             self.joint_state_publisher.publish(self.joint_state)
-            self.battery_state_publisher.publish(self.battery_state)
+            self.cr_battery_state_publisher.publish(self.cr_battery_state)
             if MODEL and "nvidia jetson" in MODEL:
                 self.orin_battery_state_publisher.publish(self.orin_battery_state)
         except Exception:
