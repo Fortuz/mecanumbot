@@ -16,9 +16,7 @@
   <exec_depend>rviz2</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
   <exec_depend>mecanumbot_core</exec_depend>
-  <exec_depend>mecanumbot_leading_behaviour</exec_depend>
-  <exec_depend>mecanumbot_sensorprocess_smart</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>mecanumbot_camera_stream</exec_depend>
 
 
   <export>

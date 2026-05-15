@@ -12,12 +12,38 @@ from sensor_msgs.msg import Imu, JointState, BatteryState
 from geometry_msgs.msg import Twist
 from mecanumbot_msgs.msg import OpenCRState
 import math
-from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
+from builtin_interfaces.msg import Time
+from transforms3d.euler import quat2euler, euler2quat
+#from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
+try:
+    import board
+    import busio
+    import adafruit_ina219
+except:
+    pass
 TICK_TO_RAD = 0.005061
 MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
+
+def get_device_model():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return f.read().strip().lower()
+    except FileNotFoundError:
+        return ""
+
+MODEL = get_device_model()
+
+if "raspberry pi" in MODEL:
+    print("Running on Raspberry Pi")
+elif "nvidia jetson" in MODEL:
+    print("Running on Jetson")
+else:
+    print("Unknown device:", MODEL)
+
+
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
@@ -32,7 +58,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('robot_params.wheel.radius', 0.0325), # radius [m]
         ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
         ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
-        ('robot_params.battery.min_voltage',9.9), #minimum voltage of battery [V]
+        ('robot_params.battery.min_voltage',9.6), #minimum voltage of battery [V]
         ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
         ('odom_params.frame_id', 'odom'),
         ('odom_params.child_frame_id', 'base_footprint'),
@@ -77,15 +103,18 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.odom = Odometry()
         self.imu = Imu()
         self.joint_state = JointState()
-        self.battery_state = BatteryState()
+        self.cr_battery_state = BatteryState()
+        self.orin_battery_state = BatteryState()
          # Publishers
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10,callback_group=self.callback_group)
         self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
         self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
-        self.battery_state_publisher = self.create_publisher(BatteryState, 'battery_state', 10,callback_group=self.callback_group)
+        self.cr_battery_state_publisher = self.create_publisher(BatteryState, 'cr_battery_state', 10,callback_group=self.callback_group)
+        if MODEL and "nvidia jetson" in MODEL:
+            self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
         
-        timer_period = 0.01  # seconds
+        timer_period = 0.02  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
         
         self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10,callback_group=self.callback_group)
@@ -99,6 +128,13 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.last_yaw_angle = 0.0
         
+        try:
+            self.i2c = busio.I2C(board.SCL, board.SDA)
+            self.ina_sensor = adafruit_ina219.INA219(self.i2c)
+            self.get_logger().info("INA219 sensor initialized successfully.")
+        except Exception as e:
+            self.get_logger().info(f"INA219 sensor not found: {e}")
+
     def crstate_callback(self,data):
         self.cr_state = data
 
@@ -137,7 +173,9 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_odom()
         self.set_imu()
         self.set_joint_state()
-        self.set_battery_state()
+        self.set_cr_battery_state()
+        if MODEL and "nvidia jetson" in MODEL:
+            self.set_orin_battery_state()
 
          # Publish messages
         try:
@@ -145,6 +183,8 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.imu_publisher.publish(self.imu)
             self.joint_state_publisher.publish(self.joint_state)
             self.battery_state_publisher.publish(self.battery_state)
+            if MODEL and "nvidia jetson" in MODEL:
+                self.orin_battery_state_publisher.publish(self.orin_battery_state)
         except Exception:
             if rclpy.ok():
                 raise
@@ -183,20 +223,20 @@ class Mecanumbot_Sensorproc_Node(Node):
                 msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
                 msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
                 # Update last_yaw_angle from IMU quaternion
-                e = euler_from_quaternion((self.cr_state.imu_orientation_x, 
-                                           self.cr_state.imu_orientation_y, 
-                                           self.cr_state.imu_orientation_z, 
-                                           self.cr_state.imu_orientation_w))
+                e = quat2euler((self.cr_state.imu_orientation_w, 
+                                self.cr_state.imu_orientation_x, 
+                                self.cr_state.imu_orientation_y, 
+                                self.cr_state.imu_orientation_z, ))
                 self.last_yaw_angle = e[2]  # Yaw angle
             else:
                 new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
                 # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
-                quaternion = quaternion_from_euler(0, 0, new_yaw) 
+                quaternion = euler2quat(0, 0, new_yaw)
                 self.last_yaw_angle = new_yaw
-                msg.pose.pose.orientation.x = quaternion[0]
-                msg.pose.pose.orientation.y = quaternion[1]
-                msg.pose.pose.orientation.z = quaternion[2]
-                msg.pose.pose.orientation.w = quaternion[3]
+                msg.pose.pose.orientation.w = quaternion[0]
+                msg.pose.pose.orientation.x = quaternion[1]
+                msg.pose.pose.orientation.y = quaternion[2]
+                msg.pose.pose.orientation.z = quaternion[3]
                 # Orientation from odometry integration (not implemented)
 
             self.odom = msg
@@ -259,19 +299,54 @@ class Mecanumbot_Sensorproc_Node(Node):
         msg.effort   = [0.0] * 7
 
         self.joint_state = msg
-        
-
-    def set_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
     
-            msg = BatteryState()
-            msg.header.stamp = self.current_time.to_msg()
-            msg.voltage = self.cr_state.battery_voltage  # Volts
-            msg.design_capacity = 1.8
-            msg.capacity = 1.8
-            msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
-            msg.charge = msg.capacity * msg.percentage
+    def set_cr_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
 
-            self.battery_state = msg
+        msg = BatteryState()
+        msg.header.stamp = self.current_time.to_msg()
+        
+        msg.voltage = self.cr_state.battery_voltage
+        msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        msg.charge = msg.capacity * msg.percentage
+
+        self.cr_battery_state = msg
+        
+    def set_orin_battery_state(self): #placeholder for orin battery state, currently set to 100%
+
+        msg = BatteryState()
+
+        # Timestamp
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "base_footprint"
+
+        # Sensor readings
+        bus_voltage = self.ina_sensor.bus_voltage       # volts
+        current_ma = self.ina_sensor.current            # mA
+
+        # Fill ROS BatteryState fields
+        msg.voltage = float(bus_voltage)
+        msg.current = float(current_ma) / 1000.0    # convert mA -> A
+
+        # Optional values
+        msg.temperature = float("nan")
+        msg.charge = float("nan")
+        msg.capacity = float("nan")
+        msg.design_capacity = float("nan")
+
+        percentage = (bus_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        percentage = max(0.0, min(1.0, percentage))
+        msg.percentage = percentage
+
+        # Power supply status
+        msg.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
+        msg.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_GOOD
+        msg.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
+
+        msg.present = True
+
+        self.orin_battery_state = msg
+
+
 def main(args=None):
     rclpy.init(args=args)
 

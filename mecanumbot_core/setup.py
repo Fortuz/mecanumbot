@@ -36,6 +36,6 @@ setup(
           'mecanumbot_sim_visualization_node = mecanumbot_core.mecanumbot_sim_visualization_node:main',
           'mecanumbot_sim_detector_debug_node = mecanumbot_core.mecanumbot_sim_detector_debug_node:main',
           'mecanumbot_sim_nav_shim_node = mecanumbot_core.mecanumbot_sim_nav_shim_node:main',
-        ],
+          'mecanumbot_battery_alert = mecanumbot_core.mecanumbot_battery_alert:main',              ],
     },
 )

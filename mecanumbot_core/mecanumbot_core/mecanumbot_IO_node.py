@@ -14,7 +14,7 @@ import threading
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
-import wiringpi
+#import wiringpi
 import time
 ############################################### HELPER FUNCTIONS ################################################
 def crc8_ccitt(data: bytes) -> int:
@@ -27,6 +27,8 @@ def crc8_ccitt(data: bytes) -> int:
             else:
                 crc = (crc << 1) & 0xFF
     return crc & 0xFF
+
+
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_IO_Node(Node):
 
@@ -35,7 +37,7 @@ class Mecanumbot_IO_Node(Node):
         self.callback_group = ReentrantCallbackGroup()
         self.cmd_lock = threading.RLock()
 
-        default_device = 'COM3' if os.name == 'nt' else '/dev/ttyACM0'
+        default_device = 'COM3' if os.name == 'nt' else '/dev/opencr'
         self.declare_parameters(
         namespace=namespace,
         parameters=[
@@ -83,7 +85,7 @@ class Mecanumbot_IO_Node(Node):
         self.max_pos = self.get_parameter('plausibility_params.max_pos').value
         self.max_float_abs = self.get_parameter('plausibility_params.max_float_abs').value
         self.neck_default = self.get_parameter('robot_params.accessory.neck_default').value
-        self.grabber_default = self.get_parameter('robot_params.accessory.grabber_default').value
+        #self.grabber_default = self.get_parameter('robot_params.accessory.grabber_default').value
 
 
         self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
@@ -112,7 +114,7 @@ class Mecanumbot_IO_Node(Node):
         
 
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
-                            'N_pos':self.neck_default,'GL_pos':self.grabber_default,'GR_pos':self.grabber_default}
+                            'N_pos':self.neck_default,'GL_pos':683,'GR_pos':336}
         self.vel_subscription = self.create_subscription(Twist,
                                                          'cmd_vel', 
                                                          self.vel_cmd_callback, 
@@ -125,8 +127,8 @@ class Mecanumbot_IO_Node(Node):
                                                          callback_group=self.callback_group)
         
         self.GPIO_pin = 27
-        wiringpi.pinMode(self.GPIO_pin,1)    
-        wiringpi.digitalWrite(self.GPIO_pin,0)   
+        #wiringpi.pinMode(self.GPIO_pin,1)    
+        #wiringpi.digitalWrite(self.GPIO_pin,0)   
         self.vel_subscription  # prevent unused variable warning
         self.pos_subscription  # prevent unused variable warning
 
@@ -223,7 +225,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.imu_orientation_z = floats[13]
 
     def vel_cmd_callback(self, msg):
-        wiringpi.digitalWrite(self.GPIO_pin,1)
+        #wiringpi.digitalWrite(self.GPIO_pin,1)
         # Standard mecanum kinematics
         Vx = msg.linear.x
         Vy = msg.linear.y
@@ -243,7 +245,7 @@ class Mecanumbot_IO_Node(Node):
             self.update_motor_cmds_out()
 
     def access_motor_cmd_callback(self, msg):
-        wiringpi.digitalWrite(self.GPIO_pin,1)
+        #wiringpi.digitalWrite(self.GPIO_pin,1)
         with self.cmd_lock:
             self.cmd_outputs['N_pos'] = msg.n_pos * 100
             self.cmd_outputs['GL_pos'] = msg.gl_pos * 100
@@ -268,7 +270,7 @@ class Mecanumbot_IO_Node(Node):
                     self.ser.write(message_bytes)
                     self.ser.flush()
                     time.sleep(0.1)
-                    wiringpi.digitalWrite(self.GPIO_pin,0)
+                    #wiringpi.digitalWrite(self.GPIO_pin,0)
             except serial.SerialException as e:
                 self.get_logger().error(f"Serial write failed: {e}")
 
@@ -350,7 +352,7 @@ class Mecanumbot_IO_Node(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    wiringpi.wiringPiSetupGpio()
+    #wiringpi.wiringPiSetupGpio()
     io_node = Mecanumbot_IO_Node()
 
     executor = MultiThreadedExecutor()

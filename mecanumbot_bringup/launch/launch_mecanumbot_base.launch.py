@@ -39,6 +39,12 @@ def generate_launch_description():
         'mecanumbot_state_publisher.launch.py'
     )
 
+    camera_path = os.path.join(
+        get_package_share_directory('mecanumbot_bringup'),
+        'launch',
+        'camera.launch.py'
+    )
+
     return LaunchDescription([
         declare_namespace,
         declare_sim_time,
@@ -53,7 +59,15 @@ def generate_launch_description():
             remappings=[('/mecanumbot/cmd_vel','/cmd_vel'),('/mecanumbot/cmd_accessory_pos','/cmd_accessory_pos') ],
             output='screen'
         ),
-
+        Node(
+            package='mecanumbot_core',
+            executable='mecanumbot_battery_alert',
+            name='mecanumbot_battery_alert',
+            namespace= namespace,
+            parameters=[yaml_file, {'use_sim_time': use_sim_time}],
+            remappings=[('/mecanumbot/cmd_vel','/cmd_vel'),('/mecanumbot/cmd_accessory_pos','/cmd_accessory_pos') ],
+            output='screen'
+        ),
         # mecanumbot_core Sensor Processing node
         Node(
             package='mecanumbot_core',
@@ -72,12 +86,23 @@ def generate_launch_description():
             name='ld08_driver_node',
             namespace= namespace,
             parameters=[
-                {'port': '/dev/ttyUSB0'},
+                {'port': '/dev/ld08_lidar'},
                 {'frame_id': [namespace, '/base_scan']},
                 {'use_sim_time': use_sim_time}
             ],
             output='screen'
         ),
+
+        # LED control service node
+        Node(
+            package='mecanumbot_led',
+            executable='mecanumbot_led_service',
+            name='mecanumbot_led_service',
+            namespace= namespace,
+            parameters=[{'use_sim_time': use_sim_time}],
+            output='screen'
+        ),
+        
 
         # State publisher
         IncludeLaunchDescription(
@@ -88,3 +113,19 @@ def generate_launch_description():
             }.items()
         )
     ])
+
+    '''Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_cam_detect_people",
+            name="mecanumbot_cam_detect_people", 
+            output="screen",
+            parameters=[yaml_file],
+            remappings=[
+                ('map', '/map')
+            ]),
+
+        # Optimized compressed camera publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(camera_path)
+        ),'''
