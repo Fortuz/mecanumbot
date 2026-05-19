@@ -125,6 +125,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.last_stamp_source = None
 
         self.last_yaw_angle = 0.0
+        self.wrote_error_once = False
         
         if MODEL and "nvidia jetson" in MODEL:
             try:
@@ -177,7 +178,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             if hasattr(self, 'ina_sensor'):
                 self.set_orin_battery_state()
             else:
-                self.get_logger().info("INA219 sensor not available, skipping orin_battery_state update.")
+                if not self.wrote_error_once:
+                    self.get_logger().info("INA219 sensor not available, skipping orin_battery_state update.")
+                    self.wrote_error_once = True
 
          # Publish messages
         try:
