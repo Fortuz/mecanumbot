@@ -18,12 +18,6 @@ from transforms3d.euler import quat2euler, euler2quat
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
-try:
-    import board
-    import busio
-    import adafruit_ina219
-except:
-    pass
 TICK_TO_RAD = 0.005061
 MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
 
@@ -43,6 +37,10 @@ elif "nvidia jetson" in MODEL:
 else:
     print("Unknown device:", MODEL)
 
+if MODEL and "nvidia jetson" in MODEL:
+    import board
+    import busio
+    import adafruit_ina219
 
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
@@ -128,12 +126,13 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.last_yaw_angle = 0.0
         
-        try:
-            self.i2c = busio.I2C(board.SCL, board.SDA)
-            self.ina_sensor = adafruit_ina219.INA219(self.i2c)
-            self.get_logger().info("INA219 sensor initialized successfully.")
-        except Exception as e:
-            self.get_logger().info(f"INA219 sensor not found: {e}")
+        if MODEL and "nvidia jetson" in MODEL:
+            try:
+                self.i2c = busio.I2C(board.SCL, board.SDA)
+                self.ina_sensor = adafruit_ina219.INA219(self.i2c)
+                self.get_logger().info("INA219 sensor initialized successfully.")
+            except Exception as e:
+                self.get_logger().info(f"INA219 sensor not found: {e}")
 
     def crstate_callback(self,data):
         self.cr_state = data
@@ -175,7 +174,10 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_joint_state()
         self.set_cr_battery_state()
         if MODEL and "nvidia jetson" in MODEL:
-            self.set_orin_battery_state()
+            if hasattr(self, 'ina_sensor'):
+                self.set_orin_battery_state()
+            else:
+                self.get_logger().info("INA219 sensor not available, skipping orin_battery_state update.")
 
          # Publish messages
         try:
@@ -184,7 +186,8 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.joint_state_publisher.publish(self.joint_state)
             self.cr_battery_state_publisher.publish(self.cr_battery_state)
             if MODEL and "nvidia jetson" in MODEL:
-                self.orin_battery_state_publisher.publish(self.orin_battery_state)
+                if hasattr(self, 'ina_sensor'):
+                    self.orin_battery_state_publisher.publish(self.orin_battery_state)
         except Exception:
             if rclpy.ok():
                 raise
