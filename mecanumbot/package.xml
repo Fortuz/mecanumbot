@@ -15,6 +15,8 @@
   <exec_depend>mecanumbot_core</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
   <exec_depend>mecanumbot_led</exec_depend>
+  <exec_depend>mecanumbot_audio</exec_depend>
+  <exec_depend>mecanumbot_audio_msgs</exec_depend>
   <exec_depend>mecanumbot_msgs</exec_depend>
 
 

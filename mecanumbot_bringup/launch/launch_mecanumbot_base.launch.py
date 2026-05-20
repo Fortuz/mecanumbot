@@ -45,6 +45,12 @@ def generate_launch_description():
         'camera.launch.py'
     )
 
+    compressed_camera_path = os.path.join(
+        get_package_share_directory('mecanumbot_camera_stream'),
+        'launch',
+        'camera_compressed.launch.py'
+    )
+
     return LaunchDescription([
         declare_namespace,
         declare_sim_time,
@@ -110,6 +116,15 @@ def generate_launch_description():
             launch_arguments={
                 'use_sim_time': use_sim_time,
                 'namespace': namespace
+            }.items()
+        ),
+
+        # USB compressed camera publisher
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(compressed_camera_path),
+            launch_arguments={
+                'camera_backend': 'usb',
+                'device': '/dev/video0'
             }.items()
         )
     ])
