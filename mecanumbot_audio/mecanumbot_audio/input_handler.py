@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import array
 import re
 import subprocess
 import threading
 import time
+import sys
 from typing import List, Optional, Tuple
 
 import rclpy
@@ -128,8 +130,15 @@ class AudioInputHandler(Node):
                     if not raw_bytes:
                         break
 
+                    pcm_samples = array.array('h')
+                    pcm_samples.frombytes(raw_bytes)
+                    if sys.byteorder != 'little':
+                        pcm_samples.byteswap()
+
+                    audio_samples = array.array('f', (sample / 32768.0 for sample in pcm_samples))
+
                     message = AudioData()
-                    message.data = raw_bytes
+                    message.data = audio_samples
                     self.publisher.publish(message)
             finally:
                 self._stop_process(process)
@@ -163,7 +172,8 @@ def main(args: Optional[list[str]] = None) -> None:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':
