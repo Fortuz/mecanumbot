@@ -105,8 +105,8 @@ def generate_launch_description():
         ),
         Node(
             package='mecanumbot_camera_stream',
-            executable='compressed_camera_node',
-            name='compressed_camera_node',
+            executable='compressed_camera_publisher_node',
+            name='compressed_camera_publisher_node',
             namespace= namespace,
             parameters=[{'use_sim_time': use_sim_time,'camera_backend': 'usb', 'device': '/dev/video0'}],
             output='screen'
