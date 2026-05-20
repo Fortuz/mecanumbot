@@ -21,7 +21,7 @@ class AudioInputHandler(Node):
         super().__init__('audio_input_handler')
 
         self.declare_parameter('device', 'auto')
-        self.declare_parameter('topic_name', '/audio/input')
+        self.declare_parameter('topic_name', 'audio_input')
         self.declare_parameter('sample_rate', 16000)
         self.declare_parameter('channels', 1)
         self.declare_parameter('chunk_size', 1024)
