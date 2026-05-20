@@ -130,7 +130,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         if MODEL and "nvidia jetson" in MODEL:
             try:
                 self.i2c = busio.I2C(board.SCL, board.SDA)
-                self.ina_sensor = adafruit_ina219.INA219(self.i2c)
+                #self.ina_sensor = adafruit_ina219.INA219(self.i2c)
+                self.ina_sensor = adafruit_ina219.INA219(self.i2c, addr=0x41)
                 self.get_logger().info("INA219 sensor initialized successfully.")
             except Exception as e:
                 self.get_logger().info(f"INA219 sensor not found: {e}")
