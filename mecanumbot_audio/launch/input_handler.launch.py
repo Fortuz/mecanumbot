@@ -13,7 +13,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'topic_name',
-            default_value='/audio/input',
+            default_value='audio_input',
             description='Output audio topic',
         ),
         DeclareLaunchArgument(
