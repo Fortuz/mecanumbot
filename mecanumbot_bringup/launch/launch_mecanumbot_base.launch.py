@@ -45,6 +45,12 @@ def generate_launch_description():
         'camera.launch.py'
     )
 
+    audio_path = os.path.join(
+        get_package_share_directory('mecanumbot_audio'),
+        'launch',
+        'input_handler.launch.py'
+    )
+
 
     return LaunchDescription([
         declare_namespace,
@@ -110,6 +116,11 @@ def generate_launch_description():
             namespace= namespace,
             parameters=[{'use_sim_time': use_sim_time,'camera_backend': 'usb', 'device': '/dev/video0'}],
             output='screen'
+        ),
+
+        # Audio input handler
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(audio_path),
         ),
 
         # State publisher
