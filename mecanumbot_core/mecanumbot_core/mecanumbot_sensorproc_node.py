@@ -364,7 +364,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.orin_battery_state = msg
     
     def set_object_state(self):
-        self.dms_buffer.append(self.cr_state.dmc)
+        self.dms_buffer.append(self.cr_state.dms)
         self.dms_buffer.pop(0)
         thresholds = [dms>self.has_object_threshold for dms in self.dms_buffer]
         if sum(thresholds)>len(self.dms_buffer)/2:
