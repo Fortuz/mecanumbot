@@ -155,7 +155,7 @@ class Mecanumbot_IO_Node(Node):
     # A payload is plausible if it fits within certain ranges for wheel speeds, positions, and float values
     def plausible_payload(self, vals):
         shorts = vals[:27]
-        floats = vals[27:40]
+        floats = vals[27:42]
         # wheel velocities check
         for v in shorts[:4]:
             if abs(v) > self.max_wheel_speed:
@@ -180,7 +180,7 @@ class Mecanumbot_IO_Node(Node):
                 return
             vals = self.vals
         shorts = vals[:27]
-        floats = vals[27:40]
+        floats = vals[27:42]
         self.opencr_state.header.stamp = self.get_clock().now().to_msg()
         self.opencr_state.cmd_vel_bl = shorts[0]
         self.opencr_state.cmd_vel_br = shorts[1]
