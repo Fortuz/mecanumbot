@@ -179,8 +179,8 @@ class Mecanumbot_IO_Node(Node):
                 self.get_logger().warn("No valid data received yet.")
                 return
             vals = self.vals
-        shorts = vals[:28]
-        floats = vals[28:]
+        shorts = vals[:27]
+        floats = vals[27:40]
         self.opencr_state.header.stamp = self.get_clock().now().to_msg()
         self.opencr_state.cmd_vel_bl = shorts[0]
         self.opencr_state.cmd_vel_br = shorts[1]
