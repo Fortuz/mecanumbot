@@ -52,7 +52,7 @@ class Mecanumbot_IO_Node(Node):
         ('robot_params.accessory.neck_default', 850),
         ('robot_params.accessory.grabber_default', 512),
         # Packet parameters
-        ('packet_params.payload_fmt', '<28h14f'),
+        ('packet_params.payload_fmt', '<27h15f'),
         ('packet_params.seq_size', 1),
         ('packet_params.crc_size', 1),
         ('packet_params.magic', '55AA'),  # list because YAML can't store bytes
@@ -154,8 +154,8 @@ class Mecanumbot_IO_Node(Node):
     # Returns True if the payload is plausible, False otherwise
     # A payload is plausible if it fits within certain ranges for wheel speeds, positions, and float values
     def plausible_payload(self, vals):
-        shorts = vals[:28]
-        floats = vals[28:39]
+        shorts = vals[:27]
+        floats = vals[27:40]
         # wheel velocities check
         for v in shorts[:4]:
             if abs(v) > self.max_wheel_speed:
@@ -209,21 +209,21 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.err_br = shorts[24]
         self.opencr_state.err_fl = shorts[25]
         self.opencr_state.err_fr = shorts[26]
-        self.opencr_state.dmc = shorts[27]
-        self.opencr_state.battery_voltage = floats[0]
-        self.opencr_state.imu_angular_vel_x = floats[1]
-        self.opencr_state.imu_angular_vel_y = floats[2]
-        self.opencr_state.imu_angular_vel_z = floats[3]
-        self.opencr_state.imu_linear_acc_x = floats[4]
-        self.opencr_state.imu_linear_acc_y = floats[5]
-        self.opencr_state.imu_linear_acc_z = floats[6]
-        self.opencr_state.imu_magnetic_x = floats[7]
-        self.opencr_state.imu_magnetic_y = floats[8]
-        self.opencr_state.imu_magnetic_z = floats[9]
-        self.opencr_state.imu_orientation_w = floats[10]
-        self.opencr_state.imu_orientation_x = floats[11]
-        self.opencr_state.imu_orientation_y = floats[12]
-        self.opencr_state.imu_orientation_z = floats[13]
+        self.opencr_state.dms = floats[0]
+        self.opencr_state.battery_voltage = floats[1]
+        self.opencr_state.imu_angular_vel_x = floats[2]
+        self.opencr_state.imu_angular_vel_y = floats[3]
+        self.opencr_state.imu_angular_vel_z = floats[4]
+        self.opencr_state.imu_linear_acc_x = floats[5]
+        self.opencr_state.imu_linear_acc_y = floats[6]
+        self.opencr_state.imu_linear_acc_z = floats[7]
+        self.opencr_state.imu_magnetic_x = floats[8]
+        self.opencr_state.imu_magnetic_y = floats[9]
+        self.opencr_state.imu_magnetic_z = floats[10]
+        self.opencr_state.imu_orientation_w = floats[11]
+        self.opencr_state.imu_orientation_x = floats[12]
+        self.opencr_state.imu_orientation_y = floats[13]
+        self.opencr_state.imu_orientation_z = floats[14]
 
     def vel_cmd_callback(self, msg):
         #wiringpi.digitalWrite(self.GPIO_pin,1)
