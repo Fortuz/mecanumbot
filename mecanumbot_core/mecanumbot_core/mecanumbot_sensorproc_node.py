@@ -6,7 +6,7 @@ from rclpy.time import Time as RosTime
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 
-from std_msgs.msg import String
+from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, JointState, BatteryState
 from geometry_msgs.msg import Twist
@@ -63,11 +63,12 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('odom_params.from_imu', False),
         ('imu_params.frame_id', 'imu_link'),
         ('use_state_stamp_for_dt', False),
-        ('require_state_stamp', False)
+        ('require_state_stamp', False),
+        ('has_object_threshold', 650)
          ])
         
         self.tf_broadcaster = TransformBroadcaster(self)
-        resolved_namespace = self.get_namespace().strip('/')
+        resolved_namespace = self.get_namespace().strip('/'),
         self.namespace = resolved_namespace
 
          # Odom parameters
@@ -77,7 +78,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
         self.use_state_stamp_for_dt = bool(self.get_parameter('use_state_stamp_for_dt').value)
         self.require_state_stamp = bool(self.get_parameter('require_state_stamp').value)
-
+        
         if self.namespace != '' and self.namespace is not None:
 
             self.odom_frame_id = self.namespace + '/' + self.odom_frame_id
@@ -95,6 +96,9 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
         self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2 # 
+
+        self.has_object_threshold = self.get_parameter('has_object_threshold').value
+
          # Initialize messages
 
         self.cr_state = OpenCRState()
@@ -103,12 +107,17 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.joint_state = JointState()
         self.cr_battery_state = BatteryState()
         self.orin_battery_state = BatteryState()
+
+        self.dms_buffer = [0] * 11
+        self.has_object = False
          # Publishers
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10,callback_group=self.callback_group)
         self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
         self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
         self.cr_battery_state_publisher = self.create_publisher(BatteryState, 'cr_battery_state', 10,callback_group=self.callback_group)
+        self.object_state_publisher = self.create_publisher(Bool, 'has_object', 10,callback_group=self.callback_group)
+        
         if MODEL and "nvidia jetson" in MODEL:
             self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
         
@@ -174,6 +183,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_imu()
         self.set_joint_state()
         self.set_cr_battery_state()
+        self.set_object_state()
         if MODEL and "nvidia jetson" in MODEL:
             if hasattr(self, 'ina_sensor'):
                 self.set_orin_battery_state()
@@ -188,6 +198,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.imu_publisher.publish(self.imu)
             self.joint_state_publisher.publish(self.joint_state)
             self.cr_battery_state_publisher.publish(self.cr_battery_state)
+            self.object_state_publisher.publish(Bool(data=self.has_object))
             if MODEL and "nvidia jetson" in MODEL:
                 if hasattr(self, 'ina_sensor'):
                     self.orin_battery_state_publisher.publish(self.orin_battery_state)
@@ -351,6 +362,15 @@ class Mecanumbot_Sensorproc_Node(Node):
         msg.present = True
 
         self.orin_battery_state = msg
+    
+    def set_object_state(self):
+        self.dms_buffer.append(self.cr_state.dmc)
+        self.dms_buffer.pop(0)
+        thresholds = [dms>self.has_object_threshold for dms in self.dms_buffer]
+        if sum(thresholds)>len(self.dms_buffer)/2:
+            self.has_object = True
+        else:
+            self.has_object = False
 
 
 def main(args=None):
