@@ -64,7 +64,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ('imu_params.frame_id', 'imu_link'),
         ('use_state_stamp_for_dt', False),
         ('require_state_stamp', False),
-        ('has_object_threshold', 650)
+        ('has_object_threshold',250.0)
          ])
         
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -366,11 +366,10 @@ class Mecanumbot_Sensorproc_Node(Node):
     def set_object_state(self):
         self.dms_buffer.append(self.cr_state.dms)
         self.dms_buffer.pop(0)
-        thresholds = [dms>self.has_object_threshold for dms in self.dms_buffer]
-        if sum(thresholds)>len(self.dms_buffer)/2:
-            self.has_object = True
-        else:
-            self.has_object = False
+        self.has_object = (
+            sum(dms > self.has_object_threshold or dms == -1.0 for dms in self.dms_buffer)
+            > len(self.dms_buffer) / 2
+        )
 
 
 def main(args=None):
