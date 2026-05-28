@@ -50,6 +50,66 @@ $ echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp " >> ~/.bashrc
 $ echo "alias start_robot='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py'" >> ~/.bashrc
 $ echo "alias start_robot_with_led='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py & ros2 run mecanumbot_led mecanumbot_led_service & wait'" >> ~/.bashrc
 $ source ~/.bashrc
+
+```
+
+### Autostart on boot
+
+Create a startup script:
+
+```bash
+$ nano ~/start_ros.sh
+```
+
+```bash
+#!/bin/bash
+
+source /opt/ros/humble/setup.bash
+source /home/ubuntu/mecanumbot_ws/install/setup.bash
+
+export ROS_DOMAIN_ID=19
+ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py
+```
+
+Make it executable:
+
+```bash
+$ chmod +x ~/start_ros.sh
+```
+
+Create a systemd service:
+
+```bash
+$ sudo nano /etc/systemd/system/ros2.service
+```
+
+```ini
+[Unit]
+Description=ROS2 Bringup
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/bin/bash /home/ubuntu/start_ros.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Reload systemd and enable the service:
+
+```bash
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable ros2.service
+```
+
+Check the service logs:
+
+```bash
+$ journalctl -u ros2.service -f
 ```
 
 ## Bringup

@@ -6,7 +6,7 @@ amcl:
     alpha3: 0.2 # noise in trans from trans 
     alpha4: 0.2 # noise in trans from rot
     alpha5: 0.2 # translation noise
-    base_frame_id: "/mecanumbot/base_link"
+    base_frame_id: "mecanumbot/base_link"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -20,7 +20,7 @@ amcl:
     max_beams: 60
     max_particles: 2000 
     min_particles: 800 
-    odom_frame_id: "/mecanumbot/odom"
+    odom_frame_id: "mecanumbot/odom"
     pf_err: 0.05
     pf_z: 0.99
     recovery_alpha_fast: 0.0
@@ -376,17 +376,22 @@ docking_server:
       v_linear_min: 0.15
       v_linear_max: 0.15
 
-lifecycle_manager:
+lifecycle_manager_localization:
   ros__parameters:
     autostart: true
     node_names:
       - map_server
       - amcl
+
+lifecycle_manager_navigation:
+  ros__parameters:
+    autostart: true
+    node_names:
       - controller_server
+      - smoother_server
       - planner_server
       - behavior_server
       - bt_navigator
-      - smoother_server
       - velocity_smoother
       - global_costmap
       - local_costmap
