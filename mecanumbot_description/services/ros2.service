@@ -1,0 +1,15 @@
+[Unit]
+Description=ROS2 Bringup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStartPre=/bin/sleep 1 
+ExecStart=/bin/bash /home/ubuntu/mecanumbot_ws/src/mecanumbot/mecanumbot_description/services/autostart.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
