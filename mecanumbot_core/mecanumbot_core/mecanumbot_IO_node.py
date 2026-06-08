@@ -98,6 +98,7 @@ class Mecanumbot_IO_Node(Node):
         self.get_logger().info(f"Plausibility: max_speed={self.max_wheel_speed}, pos_range=[{self.min_pos},{self.max_pos}], max_float={self.max_float_abs}")
 
         self.rx_lock = threading.Lock() 
+        self._stop_event = threading.Event()
         self.init_serial()
         self.init_reader_thread()
 
@@ -139,6 +140,28 @@ class Mecanumbot_IO_Node(Node):
         except serial.SerialException as e:
             self.get_logger().error(f"Error opening serial port: {e}")
             self.ser = None
+    
+    def close_serial(self):
+        self.get_logger().info("Initiating safe shutdown sequence...")
+        
+        # 1. Stop the motors to prevent a runaway robot
+        with self.cmd_lock:
+            self.cmd_outputs['BL_vel'] = 0
+            self.cmd_outputs['BR_vel'] = 0
+            self.cmd_outputs['FL_vel'] = 0
+            self.cmd_outputs['FR_vel'] = 0
+            self.update_motor_cmds_out()
+            
+        # 2. Signal the reader thread to stop and wait for it
+        self._stop_event.set()
+        if hasattr(self, 'reader') and self.reader is not None:
+            self.reader.join(timeout=1.0)
+            
+        # 3. Safely close the serial port
+        if self.ser is not None and self.ser.is_open:
+            self.ser.close()
+            
+        self.get_logger().info("Serial port closed safely.")
 
     def init_reader_thread(self):
         self.reader = threading.Thread(target=self.read_thread_fn, daemon=True)
@@ -290,7 +313,7 @@ class Mecanumbot_IO_Node(Node):
             self.get_logger().error("Serial not initialized; reader thread exiting.")
             return
 
-        while rclpy.ok():
+        while rclpy.ok() and not self._stop_event.is_set(): 
             try:
                 chunk = self.ser.read(self.ser.in_waiting or 1)
                 if chunk:

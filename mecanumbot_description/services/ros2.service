@@ -1,3 +1,5 @@
+Ini, TOML
+
 [Unit]
 Description=ROS2 Bringup
 Wants=network-online.target
@@ -6,8 +8,14 @@ After=network-online.target
 [Service]
 Type=simple
 User=ubuntu
+Environment="PYTHONUNBUFFERED=1"
+
 ExecStartPre=/bin/sleep 1 
 ExecStart=/bin/bash /home/ubuntu/mecanumbot_ws/src/mecanumbot/mecanumbot_description/services/autostart.sh
+KillSignal=SIGINT
+
+TimeoutStopSec=10
+
 Restart=on-failure
 RestartSec=5
 
