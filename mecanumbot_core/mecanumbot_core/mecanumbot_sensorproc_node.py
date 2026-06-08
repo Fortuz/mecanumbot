@@ -104,6 +104,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.cr_state = OpenCRState()
         self.odom = Odometry()
         self.imu = Imu()
+        self.transform = TransformStamped()
         self.joint_state = JointState()
         self.cr_battery_state = BatteryState()
         self.orin_battery_state = BatteryState()
@@ -208,95 +209,87 @@ class Mecanumbot_Sensorproc_Node(Node):
 
     def set_odom(self):
             
-            msg = Odometry()
-            msg.header.stamp = self.current_time.to_msg()
-            msg.header.frame_id = self.odom_frame_id
-            msg.child_frame_id = self.odom_child_frame_id
+        self.odom.header.stamp = self.current_time.to_msg()
+        self.odom.header.frame_id = self.odom_frame_id
+        self.odom.child_frame_id = self.odom_child_frame_id
 
-            Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-            Vy_tick = (self.cr_state.vel_bl - self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-            Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
+        Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
+        Vy_tick = (self.cr_state.vel_bl - self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
+        Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
 
-            msg.twist.twist.linear.x = Vx_tick * self.scale  # m/s
-            msg.twist.twist.linear.y = Vy_tick * self.scale # m/s
-            msg.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
-            #self.get_logger().info(f'Wheel ticks: BL: {self.cr_state.vel_bl}, BR: {self.cr_state.vel_br}, FL: {self.cr_state.vel_fl}, FR: {self.cr_state.vel_fr}')
-            #self.get_logger().info(f'Wheel tick Velocities: Vx_tick: {Vx_tick}, Vy_tick: {Vy_tick}, Wz_tick: {Wz_tick}, scale: {self.scale}, wheel_dist_scale: {self.wheel_dist_scale}')
-            #self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
-        
-            dx =  msg.twist.twist.linear.x * self.dt
-            dy =  msg.twist.twist.linear.y * self.dt
-            dtheta = msg.twist.twist.angular.z * self.dt
+        self.odom.twist.twist.linear.x = Vx_tick * self.scale  # m/s
+        self.odom.twist.twist.linear.y = Vy_tick * self.scale # m/s
+        self.odom.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
+        #self.get_logger().info(f'Wheel ticks: BL: {self.cr_state.vel_bl}, BR: {self.cr_state.vel_br}, FL: {self.cr_state.vel_fl}, FR: {self.cr_state.vel_fr}')
+        #self.get_logger().info(f'Wheel tick Velocities: Vx_tick: {Vx_tick}, Vy_tick: {Vy_tick}, Wz_tick: {Wz_tick}, scale: {self.scale}, wheel_dist_scale: {self.wheel_dist_scale}')
+        #self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
+    
+        dx =  self.odom.twist.twist.linear.x * self.dt
+        dy =  self.odom.twist.twist.linear.y * self.dt
+        dtheta = self.odom.twist.twist.angular.z * self.dt
 
-            msg.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
-            msg.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
-            msg.pose.pose.position.z = 0.0
-            #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
-            #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
-            if self.odom_from_imu: #TODO
-                # Orientation from IMU
-                msg.pose.pose.orientation.x = self.cr_state.imu_orientation_x
-                msg.pose.pose.orientation.y = self.cr_state.imu_orientation_y
-                msg.pose.pose.orientation.z = self.cr_state.imu_orientation_z
-                msg.pose.pose.orientation.w = self.cr_state.imu_orientation_w
-                # Update last_yaw_angle from IMU quaternion
-                e = quat2euler((self.cr_state.imu_orientation_w, 
-                                self.cr_state.imu_orientation_x, 
-                                self.cr_state.imu_orientation_y, 
-                                self.cr_state.imu_orientation_z, ))
-                self.last_yaw_angle = e[2]  # Yaw angle
-            else:
-                new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
-                # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
-                quaternion = euler2quat(0, 0, new_yaw)
-                self.last_yaw_angle = new_yaw
-                msg.pose.pose.orientation.w = quaternion[0]
-                msg.pose.pose.orientation.x = quaternion[1]
-                msg.pose.pose.orientation.y = quaternion[2]
-                msg.pose.pose.orientation.z = quaternion[3]
-                # Orientation from odometry integration (not implemented)
+        self.odom.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
+        self.odom.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
+        self.odom.pose.pose.position.z = 0.0
+        #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
+        #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
+        if self.odom_from_imu: #TODO
+            # Orientation from IMU
+            self.odom.pose.pose.orientation.x = self.cr_state.imu_orientation_x
+            self.odom.pose.pose.orientation.y = self.cr_state.imu_orientation_y
+            self.odom.pose.pose.orientation.z = self.cr_state.imu_orientation_z
+            self.odom.pose.pose.orientation.w = self.cr_state.imu_orientation_w
+            # Update last_yaw_angle from IMU quaternion
+            e = quat2euler((self.cr_state.imu_orientation_w, 
+                            self.cr_state.imu_orientation_x, 
+                            self.cr_state.imu_orientation_y, 
+                            self.cr_state.imu_orientation_z, ))
+            self.last_yaw_angle = e[2]  # Yaw angle
+        else:
+            new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
+            # Convert roll=0, pitch=0, yaw=new_yaw to a normalized quaternion
+            quaternion = euler2quat(0, 0, new_yaw)
+            self.last_yaw_angle = new_yaw
+            self.odom.pose.pose.orientation.w = quaternion[0]
+            self.odom.pose.pose.orientation.x = quaternion[1]
+            self.odom.pose.pose.orientation.y = quaternion[2]
+            self.odom.pose.pose.orientation.z = quaternion[3]
+            # Orientation from odometry integration (not implemented)
 
-            self.odom = msg
-
-            t = TransformStamped()
-            t.header.stamp = self.current_time.to_msg()
-            t.header.frame_id = self.odom_frame_id
-            t.child_frame_id = self.odom_child_frame_id
-            t.transform.translation.x = msg.pose.pose.position.x
-            t.transform.translation.y = msg.pose.pose.position.y
-            t.transform.translation.z = 0.0
-            t.transform.rotation = msg.pose.pose.orientation
+            self.transform.header.stamp = self.current_time.to_msg()
+            self.transform.header.frame_id = self.odom_frame_id
+            self.transform.child_frame_id = self.odom_child_frame_id
+            self.transform.transform.translation.x = self.odom.pose.pose.position.x
+            self.transform.transform.translation.y = self.odom.pose.pose.position.y
+            self.transform.transform.translation.z = 0.0
+            self.transform.transform.rotation = self.odom.pose.pose.orientation
             try:
-                self.tf_broadcaster.sendTransform(t)
+                self.tf_broadcaster.sendTransform(self.transform)
             except Exception:
                 if rclpy.ok():
                     raise
             
     def set_imu(self):
-            
-            msg = Imu()
-            msg.header.stamp = self.current_time.to_msg()
-            msg.header.frame_id = self.imu_frame_id
+                
+        self.imu.header.stamp = self.current_time.to_msg()
+        self.imu.header.frame_id = self.imu_frame_id
 
-            # Fill IMU data from OpenCRState
-            msg.orientation.x = self.cr_state.imu_orientation_x
-            msg.orientation.y = self.cr_state.imu_orientation_y
-            msg.orientation.z = self.cr_state.imu_orientation_z
-            msg.orientation.w = self.cr_state.imu_orientation_w
-            msg.angular_velocity.x = self.cr_state.imu_angular_vel_x
-            msg.angular_velocity.y = self.cr_state.imu_angular_vel_y
-            msg.angular_velocity.z = self.cr_state.imu_angular_vel_z
-            msg.linear_acceleration.x = self.cr_state.imu_linear_acc_x
-            msg.linear_acceleration.y = self.cr_state.imu_linear_acc_y
-            msg.linear_acceleration.z = self.cr_state.imu_linear_acc_z
-
-            self.imu = msg
+        # Fill IMU data from OpenCRState
+        self.imu.orientation.x = self.cr_state.imu_orientation_x
+        self.imu.orientation.y = self.cr_state.imu_orientation_y
+        self.imu.orientation.z = self.cr_state.imu_orientation_z
+        self.imu.orientation.w = self.cr_state.imu_orientation_w
+        self.imu.angular_velocity.x = self.cr_state.imu_angular_vel_x
+        self.imu.angular_velocity.y = self.cr_state.imu_angular_vel_y
+        self.imu.angular_velocity.z = self.cr_state.imu_angular_vel_z
+        self.imu.linear_acceleration.x = self.cr_state.imu_linear_acc_x
+        self.imu.linear_acceleration.y = self.cr_state.imu_linear_acc_y
+        self.imu.linear_acceleration.z = self.cr_state.imu_linear_acc_z
 
     def set_joint_state(self):
 
-        msg = JointState()
-        msg.header.stamp = self.current_time.to_msg()
-        msg.name = [
+        self.joint_state.header.stamp = self.current_time.to_msg()
+        self.joint_state.name = [
             f'{self.namespace}/wheel_backleft_joint', 
             f'{self.namespace}/wheel_backright_joint', 
             f'{self.namespace}/wheel_frontleft_joint', 
@@ -311,57 +304,48 @@ class Mecanumbot_Sensorproc_Node(Node):
             MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
         ]
 
-        msg.position = [0.0,0.0,0.0,0.0, *access_posis]
-        msg.velocity = [0.0] * 7
-        msg.effort   = [0.0] * 7
+        self.joint_state.position = [0.0,0.0,0.0,0.0, *access_posis]
+        self.joint_state.velocity = [0.0] * 7
+        self.joint_state.effort   = [0.0] * 7
 
-        self.joint_state = msg
-    
     def set_cr_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
 
-        msg = BatteryState()
-        msg.header.stamp = self.current_time.to_msg()
+        self.cr_battery_state.header.stamp = self.current_time.to_msg()
         
-        msg.voltage = self.cr_state.battery_voltage
-        msg.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
-        msg.charge = msg.capacity * msg.percentage
-
-        self.cr_battery_state = msg
+        self.cr_battery_state.voltage = self.cr_state.battery_voltage
+        self.cr_battery_state.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        self.cr_battery_state.charge = self.cr_battery_state.capacity * self.cr_battery_state.percentage
         
     def set_orin_battery_state(self): #placeholder for orin battery state, currently set to 100%
 
-        msg = BatteryState()
-
         # Timestamp
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "base_footprint"
+        self.orin_battery_state.header.stamp = self.get_clock().now().to_msg()
+        self.orin_battery_state.header.frame_id = "base_footprint"
 
         # Sensor readings
         bus_voltage = self.ina_sensor.bus_voltage       # volts
         current_ma = self.ina_sensor.current            # mA
 
         # Fill ROS BatteryState fields
-        msg.voltage = float(bus_voltage)
-        msg.current = float(current_ma) / 1000.0    # convert mA -> A
+        self.orin_battery_state.voltage = float(bus_voltage)
+        self.orin_battery_state.current = float(current_ma) / 1000.0    # convert mA -> A
 
         # Optional values
-        msg.temperature = float("nan")
-        msg.charge = float("nan")
-        msg.capacity = float("nan")
-        msg.design_capacity = float("nan")
+        self.orin_battery_state.temperature = float("nan")
+        self.orin_battery_state.charge = float("nan")
+        self.orin_battery_state.capacity = float("nan")
+        self.orin_battery_state.design_capacity = float("nan")
 
         percentage = (bus_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
         percentage = max(0.0, min(1.0, percentage))
-        msg.percentage = percentage
+        self.orin_battery_state.percentage = percentage
 
         # Power supply status
-        msg.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
-        msg.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_GOOD
-        msg.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
+        self.orin_battery_state.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
+        self.orin_battery_state.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_GOOD
+        self.orin_battery_state.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
 
-        msg.present = True
-
-        self.orin_battery_state = msg
+        self.orin_battery_state.present = True
     
     def set_object_state(self):
         self.dms_buffer.append(self.cr_state.dms)
