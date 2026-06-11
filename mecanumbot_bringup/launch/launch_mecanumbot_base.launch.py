@@ -253,13 +253,6 @@ def generate_launch_description():
                     ('map', '/map')
                 ]
             ),
-            Node(
-                namespace=namespace,
-                package="mecanumbot_sensorprocess_smart",
-                executable="mecanumbot_detect_tennis",
-                name="mecanumbot_detect_tennis",
-                output="screen"
-            )
         ])
     else:
         
@@ -278,6 +271,17 @@ def generate_launch_description():
                         "autostart": "true",
                     }.items()
                 ),
+                Node(
+                namespace=namespace,
+                package="mecanumbot_sensorprocess_smart",
+                executable="mecanumbot_lidar_detect_people",
+                name="mecanumbot_lidar_detect_people",
+                output="screen",
+                parameters=[lidar_detect_yaml],
+                remappings=[
+                    ('map', '/map')
+                ]
+            ),
             ]),
             LogInfo(msg="LaunchActions Extended"),
         ])
