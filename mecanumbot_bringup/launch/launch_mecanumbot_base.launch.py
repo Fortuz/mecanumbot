@@ -274,6 +274,17 @@ def generate_launch_description():
                 ),
             ]),
             LogInfo(msg="LaunchActions Extended"),
+            Node(
+                namespace=namespace,
+                package="mecanumbot_sensorprocess_smart",
+                executable="mecanumbot_lidar_detect_people",
+                name="mecanumbot_lidar_detect_people",
+                output="screen",
+                parameters=[lidar_detect_yaml],
+                remappings=[
+                    ('map', '/map')
+                ]
+            ),
         ])
 
     return LaunchDescription(launch_actions)
