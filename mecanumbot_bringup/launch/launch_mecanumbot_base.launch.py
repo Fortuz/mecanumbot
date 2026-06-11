@@ -260,6 +260,7 @@ def generate_launch_description():
             )
         ])
     else:
+        
         launch_actions.extend([
             GroupAction([
                 IncludeLaunchDescription(
@@ -273,6 +274,7 @@ def generate_launch_description():
                     }.items()
                 ),
             ]),
+        LogInfo(msg=f"LaunchActions Extended"),
         ])
 
     return LaunchDescription(launch_actions)
