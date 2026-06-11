@@ -198,7 +198,7 @@ def generate_launch_description():
                 "map": map_file,
                 "params_file": nav2_params_file,
                 "use_sim_time": use_sim_time,
-                "namespace": namespace,          # <-- ADD THIS: Passes the mecanumbot namespace
+                "namespace": "",          # <-- ADD THIS: Passes the mecanumbot namespace
                 "use_namespace": "true",         # <-- ADD THIS: Forces Nav2 to use it
                 "autostart": "true",             # <-- ADD THIS: Ensures the lifecycle manager starts
             }.items()
@@ -253,13 +253,6 @@ def generate_launch_description():
                     ('map', '/map')
                 ]
             ),
-            Node(
-                namespace=namespace,
-                package="mecanumbot_sensorprocess_smart",
-                executable="mecanumbot_detect_tennis",
-                name="mecanumbot_detect_tennis",
-                output="screen"
-            )
         ])
     else:
         
