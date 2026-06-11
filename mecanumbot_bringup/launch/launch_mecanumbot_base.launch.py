@@ -265,21 +265,21 @@ def generate_launch_description():
         
         launch_actions.extend([
             GroupAction([
+                
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
-            ),
-            launch_arguments={
-                "map": map_file,
-                "params_file": nav2_params_file,
-                "use_sim_time": use_sim_time,
-                "namespace": namespace,          # <-- ADD THIS: Passes the mecanumbot namespace
-                "use_namespace": "true",         # <-- ADD THIS: Forces Nav2 to use it
-                "autostart": "true",             # <-- ADD THIS: Ensures the lifecycle manager starts
-            }.items()
+                        os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
+                    ),
+                    launch_arguments={
+                        "map": map_file,
+                        "params_file": nav2_params_file,
+                        "use_sim_time": use_sim_time,
+                        "use_namespace": "true",
+                        "autostart": "true",
+                    }.items()
                 ),
             ]),
-        LogInfo(msg=f"LaunchActions Extended"),
+            LogInfo(msg="LaunchActions Extended"),
         ])
 
     return LaunchDescription(launch_actions)
