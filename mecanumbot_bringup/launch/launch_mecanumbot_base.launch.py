@@ -274,7 +274,8 @@ def generate_launch_description():
                         "map": map_file,
                         "params_file": nav2_params_file,
                         "use_sim_time": use_sim_time,
-                        "use_namespace": "false",
+                        "namespace": "",          # <-- ADD THIS: Passes the mecanumbot namespace
+                        "use_namespace": "true",
                         "autostart": "true",
                     }.items()
                 ),
