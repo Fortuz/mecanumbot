@@ -192,14 +192,16 @@ def generate_launch_description():
             GroupAction([
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
-                        os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
-                    ),
-                    launch_arguments={
-                        "map": map_file,
-                        "use_keepout_zones": "true",
-                        "params_file": nav2_params_file,
-                        "use_sim_time": use_sim_time,
-                    }.items()
+                os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
+            ),
+            launch_arguments={
+                "map": map_file,
+                "params_file": nav2_params_file,
+                "use_sim_time": use_sim_time,
+                "namespace": namespace,          # <-- ADD THIS: Passes the mecanumbot namespace
+                "use_namespace": "true",         # <-- ADD THIS: Forces Nav2 to use it
+                "autostart": "true",             # <-- ADD THIS: Ensures the lifecycle manager starts
+            }.items()
                 ),
             ]),
             Node(
@@ -265,13 +267,16 @@ def generate_launch_description():
             GroupAction([
                 IncludeLaunchDescription(
                     PythonLaunchDescriptionSource(
-                        os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
-                    ),
-                    launch_arguments={
-                        "map": map_file,
-                        "params_file": nav2_params_file,
-                        "use_sim_time": use_sim_time,
-                    }.items()
+                os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'bringup_launch.py')
+            ),
+            launch_arguments={
+                "map": map_file,
+                "params_file": nav2_params_file,
+                "use_sim_time": use_sim_time,
+                "namespace": namespace,          # <-- ADD THIS: Passes the mecanumbot namespace
+                "use_namespace": "true",         # <-- ADD THIS: Forces Nav2 to use it
+                "autostart": "true",             # <-- ADD THIS: Ensures the lifecycle manager starts
+            }.items()
                 ),
             ]),
         LogInfo(msg=f"LaunchActions Extended"),
