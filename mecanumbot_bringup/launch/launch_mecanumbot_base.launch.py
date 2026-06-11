@@ -266,7 +266,7 @@ def generate_launch_description():
                         "map": map_file,
                         "params_file": nav2_params_file,
                         "use_sim_time": use_sim_time,
-                        "use_namespace": "false",
+                        "use_namespace": "false",  # Forces Nav2 to the root namespace
                         "autostart": "true",
                     }.items()
                 ),
