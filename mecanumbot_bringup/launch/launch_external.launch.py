@@ -121,12 +121,6 @@ def generate_launch_description():
                 ],
             ),
             Node(
-                package='rviz2',
-                executable='rviz2',
-                name='rviz2',
-                arguments=['-d', rviz_config_dir],
-                output='screen'),
-            Node(
                 namespace="mecanumbot",
                 package="mecanumbot_sensorprocess_smart",
                 executable="mecanumbot_lidar_detect_people",
@@ -163,12 +157,5 @@ def generate_launch_description():
                     }.items()
                 ),
             ]),
-            Node(
-                package='rviz2',
-                executable='rviz2',
-                name='rviz2',
-                arguments=['-d', rviz_config_dir],
-                output='screen'),
         ])
-
     return LaunchDescription(launch_actions)
