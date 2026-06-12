@@ -26,6 +26,8 @@ setup(
         'console_scripts': [
             'wheel_monitor = mecanumbot_monitor.wheel_monitor:main',
             'accessory_monitor = mecanumbot_monitor.accessory_monitor:main',
+            'playback_stepper = mecanumbot_monitor.playback_stepper:main',
+            'metric_logger = mecanumbot_monitor.metric_logger:main',
         ],
     },
 )
