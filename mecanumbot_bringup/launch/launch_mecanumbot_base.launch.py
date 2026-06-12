@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
 mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
+yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
 
 def get_wifi_ssid():
     # Prefer nmcli if available
@@ -243,14 +244,15 @@ def generate_launch_description():
                 ],
             ),
             Node(
-                namespace=namespace,
+                namespace="mecanumbot",
                 package="mecanumbot_sensorprocess_smart",
                 executable="mecanumbot_lidar_detect_people",
                 name="mecanumbot_lidar_detect_people",
                 output="screen",
-                parameters=[lidar_detect_yaml],
+                parameters=[yaml_file],
                 remappings=[
-                    ('map', '/map')
+                    ('map', '/map'),
+                    ('keepout_filter_mask', '/keepout_filter_mask')
                 ]
             ),
         ])
@@ -275,16 +277,17 @@ def generate_launch_description():
             ]),
             LogInfo(msg="LaunchActions Extended"),
             Node(
-                namespace=namespace,
+                namespace="mecanumbot",
                 package="mecanumbot_sensorprocess_smart",
                 executable="mecanumbot_lidar_detect_people",
                 name="mecanumbot_lidar_detect_people",
                 output="screen",
-                parameters=[lidar_detect_yaml],
+                parameters=[yaml_file],
                 remappings=[
-                    ('map', '/map')
+                    ('map', '/map'),
+                    ('keepout_filter_mask', '/keepout_filter_mask')
                 ]
-            ),
+            )
         ])
 
     return LaunchDescription(launch_actions)
