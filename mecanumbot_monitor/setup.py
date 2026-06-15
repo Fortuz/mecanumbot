@@ -1,3 +1,4 @@
+from glob import glob
 from setuptools import find_packages, setup
 
 package_name = 'mecanumbot_monitor'
@@ -10,6 +11,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,8 +28,10 @@ setup(
         'console_scripts': [
             'wheel_monitor = mecanumbot_monitor.wheel_monitor:main',
             'accessory_monitor = mecanumbot_monitor.accessory_monitor:main',
-            'playback_stepper = mecanumbot_monitor.playback_stepper:main',
-            'metric_logger = mecanumbot_monitor.metric_logger:main',
+            'rosbag_stepper = mecanumbot_monitor.rosbag_stepper:main',
+            'playback_stepper = mecanumbot_monitor.rosbag_stepper:main',
+            'metric_eval = mecanumbot_monitor.metric_eval:main',
+            'metric_logger = mecanumbot_monitor.metric_eval:main',
         ],
     },
 )

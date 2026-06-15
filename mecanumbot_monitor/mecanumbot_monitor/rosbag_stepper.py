@@ -7,7 +7,7 @@ from rosbag2_interfaces.srv import Pause, Resume
 
 class PlaybackStepper(Node):
     def __init__(self, duration=5.0):
-        super().__init__('playback_stepper')
+        super().__init__('rosbag_stepper')
         
         # Set how many seconds you want each chunk to play
         self.duration = duration 
@@ -26,10 +26,12 @@ class PlaybackStepper(Node):
         self.input_thread.start()
 
     def control_loop(self):
+        self.get_logger().info(f"Entered control loop")
         while rclpy.ok():
+            self.get_logger().info(f"\nReady to play the next {self.duration} seconds of the bag.")
             try:
                 input(f"\n---> Press [ENTER] to play the next {self.duration} seconds...")
-                
+                self.pause_client.call_async(Pause.Request())
                 # Command rosbag to Resume
                 self.resume_client.call_async(Resume.Request())
                 self.get_logger().info(f"Playing for {self.duration}s...")
