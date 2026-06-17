@@ -186,16 +186,17 @@ def generate_launch_description():
         ),
 
         # Onboard people detection nodes
-        Node(
-            namespace=namespace,
-            package='mecanumbot_sensorprocess_smart',
-            executable='mecanumbot_onboard_lidar_detect_people',
-            output='screen',
-            parameters=[lidar_detect_yaml],
-            remappings=[
-                ('keepout_filter_mask', '/keepout_filter_mask')
-            ]
-        ),
+         Node(
+                namespace=namespace,
+                package="mecanumbot_sensorprocess_smart",
+                executable="mecanumbot_lidar_detect_people",
+                name="mecanumbot_lidar_detect_people",
+                output="screen",
+                parameters=[lidar_detect_yaml],
+                remappings=[
+                    ('map', '/map')
+                ]
+            ),
         Node(
             namespace=namespace,
             package='mecanumbot_sensorprocess_smart',
