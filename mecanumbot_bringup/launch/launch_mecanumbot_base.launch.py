@@ -9,7 +9,6 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
 mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
-yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
 
 def get_wifi_ssid():
     # Prefer nmcli if available
@@ -185,6 +184,26 @@ def generate_launch_description():
                 'namespace': namespace
             }.items()
         ),
+
+        # Onboard people detection nodes
+        Node(
+            namespace=namespace,
+            package='mecanumbot_sensorprocess_smart',
+            executable='mecanumbot_onboard_lidar_detect_people',
+            output='screen',
+            parameters=[lidar_detect_yaml],
+            remappings=[
+                ('keepout_filter_mask', '/keepout_filter_mask')
+            ]
+        ),
+        Node(
+            namespace=namespace,
+            package='mecanumbot_sensorprocess_smart',
+            executable='mecanumbot_onboard_cam_detect_people',
+            name='mecanumbot_onboard_cam_detect_people',
+            output='screen',
+            parameters=[{'from_topic': False}]
+        ),
     ]
 
     # --- Conditional Navigation & Vision Nodes ---
@@ -243,18 +262,6 @@ def generate_launch_description():
                     {'node_names': ['keepout_filter_mask_server', 'keepout_costmap_filter_info_server']},
                 ],
             ),
-            Node(
-                namespace="mecanumbot",
-                package="mecanumbot_sensorprocess_smart",
-                executable="mecanumbot_lidar_detect_people",
-                name="mecanumbot_lidar_detect_people",
-                output="screen",
-                parameters=[yaml_file],
-                remappings=[
-                    ('map', '/map'),
-                    ('keepout_filter_mask', '/keepout_filter_mask')
-                ]
-            ),
         ])
     else:
         
@@ -276,18 +283,6 @@ def generate_launch_description():
                 ),
             ]),
             LogInfo(msg="LaunchActions Extended"),
-            Node(
-                namespace="mecanumbot",
-                package="mecanumbot_sensorprocess_smart",
-                executable="mecanumbot_lidar_detect_people",
-                name="mecanumbot_lidar_detect_people",
-                output="screen",
-                parameters=[yaml_file],
-                remappings=[
-                    ('map', '/map'),
-                    ('keepout_filter_mask', '/keepout_filter_mask')
-                ]
-            )
         ])
 
     return LaunchDescription(launch_actions)
