@@ -225,7 +225,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.acc_br = shorts[17]
         self.opencr_state.acc_fl = shorts[18]
         self.opencr_state.acc_fr = shorts[19]
-        self.opencr_state.pos_n = shorts[20]
+        #self.opencr_state.pos_n = shorts[20]
         self.opencr_state.pos_gl = shorts[21]
         self.opencr_state.pos_gr = shorts[22]
         self.opencr_state.err_bl = shorts[23]
@@ -274,6 +274,7 @@ class Mecanumbot_IO_Node(Node):
             self.cmd_outputs['N_pos'] = msg.n_pos * 100
             self.cmd_outputs['GL_pos'] = msg.gl_pos * 100
             self.cmd_outputs['GR_pos'] = msg.gr_pos * 100
+            self.opencr_state.pos_n = self.cmd_outputs['N_pos'] # temporary fix 
             self.update_motor_cmds_out()
 
     def update_motor_cmds_out(self):
