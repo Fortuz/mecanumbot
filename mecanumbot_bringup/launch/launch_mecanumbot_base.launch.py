@@ -200,6 +200,14 @@ def generate_launch_description():
         Node(
             namespace=namespace,
             package='mecanumbot_sensorprocess_smart',
+            executable='mecanumbot_locate_detections',
+            name='mecanumbot_locate_detections',
+            output='screen',
+            parameters=[lidar_detect_yaml],
+        ),
+        Node(
+            namespace=namespace,
+            package='mecanumbot_sensorprocess_smart',
             executable='mecanumbot_onboard_cam_detect_people',
             name='mecanumbot_onboard_cam_detect_people',
             output='screen',
