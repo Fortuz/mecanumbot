@@ -299,7 +299,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             f'{self.namespace}/grabber_right_joint']
 
         access_posis = [
-            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_n * TICK_TO_RAD,
+            MIDPOINT_COMPENSATE_CONSTANT + self.cr_state.pos_n * TICK_TO_RAD,
             MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
             MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
         ]
