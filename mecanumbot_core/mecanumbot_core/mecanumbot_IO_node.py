@@ -226,6 +226,7 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.acc_fl = shorts[18]
         self.opencr_state.acc_fr = shorts[19]
         #self.opencr_state.pos_n = shorts[20]
+        self.get_logger().info(f"Received neck position from OpenCR: {shorts[20]}")
         self.opencr_state.pos_n = int(self.cmd_outputs['N_pos'])  # Use the commanded neck position instead of the received value
         self.opencr_state.pos_gl = shorts[21]
         self.opencr_state.pos_gr = shorts[22]
