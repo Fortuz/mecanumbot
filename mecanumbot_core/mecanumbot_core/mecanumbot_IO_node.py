@@ -111,7 +111,6 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state = OpenCRState()
 
         self.i = 0
-        self.update_motor_cmds_out()
         self.rx_buffer = bytearray()
         
 
