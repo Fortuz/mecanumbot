@@ -19,7 +19,8 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 
 TICK_TO_RAD = 0.005061
-MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
+GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
+NECK_MIDPOINT_COMPENSATE_CONSTANT = 2.78355 #0 deg diff in rads
 
 def get_device_model():
     try:
@@ -299,9 +300,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             f'{self.namespace}/grabber_right_joint']
 
         access_posis = [
-            MIDPOINT_COMPENSATE_CONSTANT + self.cr_state.pos_n * TICK_TO_RAD,
-            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
-            MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
+            NECK_MIDPOINT_COMPENSATE_CONSTANT + self.cr_state.pos_n * TICK_TO_RAD,
+            GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
+            GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
         ]
 
         self.joint_state.position = [0.0,0.0,0.0,0.0, *access_posis]
