@@ -6,7 +6,7 @@ import threading
 from rosbag2_interfaces.srv import Pause, Resume
 
 class PlaybackStepper(Node):
-    def __init__(self, duration=5.0):
+    def __init__(self, duration=3.0):
         super().__init__('rosbag_stepper')
         
         # Set how many seconds you want each chunk to play
@@ -51,7 +51,7 @@ def main(args=None):
     rclpy.init(args=args)
     
     # Initialize the stepper (Change to 10.0 if you prefer longer gaps)
-    node = PlaybackStepper(duration=5.0) 
+    node = PlaybackStepper(duration=3.0) 
     
     try:
         rclpy.spin(node)

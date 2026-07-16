@@ -115,7 +115,7 @@ class Mecanumbot_IO_Node(Node):
         
 
         self.cmd_outputs = {'BL_vel':0,'BR_vel':0,'FL_vel':0,'FR_vel':0,
-                            'N_pos':850,'GL_pos':683,'GR_pos':336}
+                            'N_pos':550,'GL_pos':683,'GR_pos':336}
         self.vel_subscription = self.create_subscription(Twist,
                                                          'cmd_vel', 
                                                          self.vel_cmd_callback, 
