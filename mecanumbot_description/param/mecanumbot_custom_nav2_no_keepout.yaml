@@ -106,8 +106,8 @@ controller_server:
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5 
       angular_disengage_threshold: 0.3925
-      rotate_to_heading_angular_vel: 1.0
-      max_angular_accel: 0.8
+      rotate_to_heading_angular_vel: 0.7
+      max_angular_accel: 0.5
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: true
       closed_loop: true # true - vel estim from odom, false - vel estim from last cmd 
@@ -118,7 +118,7 @@ controller_server:
       min_vel_y: -0.22
       max_vel_x: 0.22
       max_vel_y: 0.22
-      max_vel_theta: 2.00
+      max_vel_theta: 1.0
       min_speed_xy: 0.0
       max_speed_xy: 0.22
       min_speed_theta: 0.0
@@ -299,10 +299,10 @@ velocity_smoother:
     smoothing_frequency: 5.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.5, 1.0]
-    min_velocity: [-0.5, -0.5, -1.0]
-    max_accel: [2.0, 2.0, 2.0]
-    max_decel: [-2.0, -2.0, -2.0]
+    max_velocity: [0.5, 0.5, 0.7]
+    min_velocity: [-0.5, -0.5, -0.7]
+    max_accel: [2.0, 2.0, 1.0]
+    max_decel: [-2.0, -2.0, -1.0]
     odom_topic: "/mecanumbot/odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]

@@ -20,7 +20,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 TICK_TO_RAD = 0.005061
 GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
-NECK_MIDPOINT_COMPENSATE_CONSTANT = 2.78355 #0 deg diff in rads
+NECK_MIDPOINT_COMPENSATE_CONSTANT = 2.805 #160 deg diff in rads
 
 def get_device_model():
     try:
