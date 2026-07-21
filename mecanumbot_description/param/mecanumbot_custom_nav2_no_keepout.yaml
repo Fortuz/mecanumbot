@@ -114,13 +114,13 @@ controller_server:
       
       # DWB parameters
       debug_trajectory_details: false # publish debug info to the terminal
-      min_vel_x: -0.22
-      min_vel_y: -0.22
-      max_vel_x: 0.22
-      max_vel_y: 0.22
+      min_vel_x: -0.24
+      min_vel_y: -0.24
+      max_vel_x: 0.24
+      max_vel_y: 0.24
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.22
+      max_speed_xy: 0.24
       min_speed_theta: 0.0
       acc_lim_x: 2.0
       acc_lim_y: 2.0
