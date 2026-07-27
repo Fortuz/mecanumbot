@@ -49,18 +49,21 @@ def generate_launch_description():
             ]
         ),
 
-        # RVIZ2
+        # ──────────────────────────────────────────────
         Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
+            package='cartographer_ros',
+            executable='cartographer_occupancy_grid_node',
+            name='cartographer_occupancy_grid_node',
+            namespace='mecanumbot',
             output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'resolution': 0.05,
+                'publish_period_sec': 1.0
+            }],
             remappings=[
-                ('scan', '/mecanumbot/scan'),
-                ('imu', '/mecanumbot/imu'),
-                ('odom', '/mecanumbot/odom'),
-                # NOTE: Global tf and tf_static NOT remapped
-            ],
-            arguments=['-d', rviz_config]
-        )
+                ('submap_list', '/mecanumbot/submap_list'),
+                ('map', '/map')  # Forces map topic to global /map for RViz
+            ]
+        ),
     ])
