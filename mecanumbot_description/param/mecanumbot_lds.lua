@@ -10,9 +10,9 @@ options = {
   map_frame = "map",
   
   -- 1. FRAME FIX: Track base_link instead of an unused IMU link
-  tracking_frame = "base_link",
-  published_frame = "odom",
-  odom_frame = "odom",
+  tracking_frame = "mecanumbot/base_link",
+  published_frame = "mecanumbot/odom",
+  odom_frame = "mecanumbot/odom",
   
   provide_odom_frame = false,
   publish_frame_projected_to_2d = true,
