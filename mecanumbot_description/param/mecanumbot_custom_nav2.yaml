@@ -181,7 +181,7 @@ local_costmap:
         filter_info_topic: "/keepout_costmap_filter_info"
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 12.0
+        cost_scaling_factor: 10.0
         inflation_radius: 0.15
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
