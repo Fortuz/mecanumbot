@@ -1,6 +1,8 @@
 # mecanumbot_led
 
-ROS 2 LED control service node for the robot LED controller (Arduino Nano over serial).
+ROS 2 LED control service node for the robot LED controller (an Arduino Nano microcontroller, not to be confused with the Jetson Orin Nano the node itself runs on).
+
+The node runs on the robot's Jetson Orin Nano and talks to the Arduino over USB serial at `/dev/arduino_nano`. That symlink is created by `mecanumbot_description/udev/90_mecanumbot_nano.rules`, which must be installed before the node can open the port.
 
 ## Node: `mecanumbot_led_service_node`
 

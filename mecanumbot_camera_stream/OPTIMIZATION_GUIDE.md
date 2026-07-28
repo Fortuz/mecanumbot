@@ -2,6 +2,8 @@
 
 This package provides optimized camera streaming for the Mecanumbot with multiple configurations for different bandwidth and quality requirements.
 
+The onboard computer is an **NVIDIA Jetson Orin Nano**, so H.264 encoding is done by the NVENC hardware encoder and CSI capture goes through `nvarguscamerasrc`. The CPU usage figures below assume that hardware path.
+
 ## 📊 Bandwidth Comparison
 
 | Configuration | Resolution | FPS | Format | Bandwidth | CPU Usage | Use Case |
@@ -154,21 +156,29 @@ ros2 launch mecanumbot_camera_stream camera_image_publisher.launch.py \
 - Requires: OpenCV
 
 ### H.264 Hardware Encoding
-- ✅ **Jetson (Orin, Xavier, Nano)**: Uses NVENC hardware encoder (very efficient)
-- ✅ **Intel CPUs with iGPU**: Uses VAAPI hardware encoder
-- ✅ **Raspberry Pi**: Uses OMX hardware encoder
+The encoder is auto-detected at startup, in this order:
+
+- ✅ **Jetson Orin Nano (the robot)**: NVENC via `nvv4l2h264enc` — very efficient, this is the path used on the robot
+- ✅ **Intel CPUs with iGPU** (dev machines): VAAPI via `vaapih264enc`
+- ✅ **Raspberry Pi** (legacy, no longer used on the robot): OMX via `omxh264enc`
 - ⚠️ **Fallback**: x264 software encoder (high CPU usage)
 
-Check if hardware encoder is available:
+Check that the hardware encoder is available on the Jetson:
 ```bash
-# For NVENC (Jetson)
+# NVENC — this is what the robot should be using
 gst-inspect-1.0 nvv4l2h264enc
 
-# For VAAPI (Intel)
-gst-inspect-1.0 vaapih264enc
+# If it is missing, the GStreamer NVIDIA plugins are not installed:
+sudo apt install nvidia-l4t-gstreamer
 
-# For OMX (Raspberry Pi)
-gst-inspect-1.0 omxh264enc
+# Fallbacks on non-Jetson machines
+gst-inspect-1.0 vaapih264enc   # Intel iGPU
+gst-inspect-1.0 omxh264enc     # Raspberry Pi
+```
+
+Force the encoder instead of auto-detecting it:
+```bash
+ros2 launch mecanumbot_camera_stream camera_h264.launch.py hardware_encoder:=nvenc
 ```
 
 ## 🔍 Viewing Compressed Images

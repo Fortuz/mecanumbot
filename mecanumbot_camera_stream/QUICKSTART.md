@@ -1,5 +1,7 @@
 # Quick Start Guide - Optimized Camera Streaming
 
+Run these on the robot's NVIDIA Jetson Orin Nano.
+
 ## 🎯 **RECOMMENDED: Use JPEG Compressed**
 
 This gives you **50x less bandwidth** with great quality!
@@ -115,6 +117,9 @@ ros2 run rqt_image_view rqt_image_view /camera/image_raw
 ```bash
 ls -l /dev/video*
 # Try different device: device:=/dev/video1
+
+# CSI/ribbon camera on the Jetson - check that Argus sees the sensor
+gst-launch-1.0 nvarguscamerasrc num-buffers=1 ! fakesink
 ```
 
 **H.264 not working?**
@@ -122,8 +127,12 @@ ls -l /dev/video*
 # Check GStreamer
 gst-inspect-1.0 | grep h264enc
 
+# On the Jetson the NVENC element should be present
+gst-inspect-1.0 nvv4l2h264enc
+
 # Install if missing
 sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-good
+sudo apt install nvidia-l4t-gstreamer   # Jetson NVENC/Argus elements
 ```
 
 **Compressed images not showing?**

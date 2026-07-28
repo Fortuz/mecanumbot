@@ -1,6 +1,15 @@
 # mecanumbot_camera_stream
 
-ROS 2 package that captures frames from USB (UVC) or CSI/ribbon cameras on NVIDIA Orin Nano and publishes `sensor_msgs/msg/Image`.
+ROS 2 package that captures frames from USB (UVC) or CSI/ribbon cameras on the robot's NVIDIA Jetson Orin Nano and publishes `sensor_msgs/msg/Image`.
+
+## Platform
+
+The nodes detect the board from `/proc/device-tree/model` and pick the matching capture path:
+
+- **Jetson Orin Nano (the robot):** CSI capture goes through `nvarguscamerasrc` + `nvvidconv` (JetPack 6 / Argus), and H.264 encoding uses the NVENC element `nvv4l2h264enc`.
+- Other boards fall back to their own pipelines (`libcamera` on Raspberry Pi, plain V4L2 elsewhere). These paths are kept for development machines and are not exercised on the robot.
+
+USB (UVC) capture is plain OpenCV/V4L2 and is identical on every platform.
 
 ## Node
 

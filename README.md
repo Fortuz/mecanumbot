@@ -1,4 +1,4 @@
-# Mecanumbot Project - Onboard PI codes
+# Mecanumbot Project - Onboard Jetson codes
 
 The Mecanumbot projects goal is to build a Turtlebot3 friend with mecanum wheel drive and fit into the Turtlebot3 family.`<br>`
 This repository contains the Mecanumbot related packages. The repository made by using the original Turtlebot3 packeges.
@@ -7,7 +7,7 @@ This repository contains the Mecanumbot related packages. The repository made by
 
 [mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project `<br>`
 [mecanumbot_remote](https://github.com/Fortuz/mecanumbot_remote) - Contains ROS2 packages for used on an external computer connected to the robot `<br>`
-[mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the Raspberry Pi on the robot `<br>`
+[mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the NVIDIA Jetson Orin Nano on the robot `<br>`
 [mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors. Can be found on the robot locally in the ~/Sandbox folder `<br>`
 
 Original sources: `<br>`
@@ -20,6 +20,42 @@ As a main source of information, documentation, codes and more the original [Tur
 
 The project is made with Ubuntu 22.04 and ROS2 Humble. `<br>`
 
+## Onboard computer
+
+The whole onboard stack runs on an **NVIDIA Jetson Orin Nano** (JetPack 6, Ubuntu 22.04, ROS2 Humble). Earlier revisions of the robot used a Raspberry Pi; the packages in this repository are now developed and tested on the Orin Nano.
+
+What the platform change means in practice:
+
+| Area                | On the Jetson Orin Nano                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| OS / ROS            | JetPack 6 (Ubuntu 22.04) + ROS2 Humble, `aarch64`.                                                                                                           |
+| CSI camera          | `mecanumbot_camera_stream` uses the `nvarguscamerasrc` GStreamer pipeline instead of the Pi `libcamera` path. See `mecanumbot_camera_stream/README.md`.       |
+| H.264 encoding      | Hardware NVENC (`nvv4l2h264enc`) is auto-detected, instead of the Pi `omxh264enc`. See `mecanumbot_camera_stream/OPTIMIZATION_GUIDE.md`.                     |
+| Onboard power rail  | `mecanumbot_sensorproc_node` reads an INA219 over I2C and publishes `orin_battery_state`. This publisher only exists when the device tree reports a Jetson. |
+| GPIO                | The `wiringpi` debug toggle from the Pi build is disabled; `wiringpi` is not installed and is not a dependency.                                               |
+| Serial devices      | OpenCR, LD08 lidar and the LED Arduino Nano are still USB serial and are addressed through the udev rules in `mecanumbot_description/udev/`.                  |
+
+Nodes detect the board at runtime by reading `/proc/device-tree/model`, so the same source tree still starts up on a non-Jetson machine — the Jetson-only publishers are simply skipped.
+
+### Jetson specific setup
+
+```
+$ sudo usermod -aG dialout,i2c $USER   # serial + INA219 access, re-login afterwards
+$ sudo nvpmodel -q                     # list available power modes
+$ sudo nvpmodel -m 0                   # highest power mode (mode numbers differ per Orin Nano variant)
+$ sudo jetson_clocks                   # lock clocks to max for consistent latency
+$ pip install adafruit-blinka adafruit-circuitpython-ina219
+```
+
+`adafruit-blinka` provides the `board` and `busio` modules that `mecanumbot_sensorproc_node` imports on the Jetson.
+
+Check that the board is what the nodes expect:
+
+```
+$ cat /proc/device-tree/model     # -> NVIDIA Jetson Orin Nano ...
+$ sudo i2cdetect -y -r 7          # INA219 should show up (bus number can differ)
+```
+
 <p align="center">
   <img src="https://github.com/Fortuz/mecanumbot/blob/main/docs/images/mecanumbot.jpg" width="600" alt="Mecanumbot">
 </p>
@@ -30,6 +66,8 @@ The project is made with Ubuntu 22.04 and ROS2 Humble. `<br>`
 
 ## Install
 
+Run this on the Jetson Orin Nano (the `ubuntu` user and the `192.168.1.240` address below are the ones flashed on the current robot — adjust if yours differ).
+
 ```
 $ ssh ubuntu@192.168.1.240
 $ mkdir -p ~/mecanumbot_ws/src && cd ~/mecanumbot_ws/src
@@ -37,7 +75,7 @@ $ git clone https://github.com/Fortuz/mecanumbot.git
 $ cd ~/mecanumbot_ws/
 $ echo 'source /opt/ros/humble/setup.bash' >> ~/.bashrc
 $ source ~/.bashrc
-$ colcon build --symlink-install --parallel-workers 1
+$ colcon build --symlink-install --parallel-workers 2
 $ echo 'source ~/mecanumbot_ws/install/setup.bash' >> ~/.bashrc
 $ source ~/.bashrc
 $ echo 'export OPENCR_PORT=/dev/ttyACM0' >> ~/.bashrc
@@ -53,51 +91,25 @@ $ source ~/.bashrc
 
 ```
 
+The Orin Nano has enough RAM to build with more than one worker, but a full workspace build can still exhaust memory. If `colcon` gets OOM-killed, drop back to `--parallel-workers 1` or add swap.
+
+Also install the udev rules so `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano` exist:
+
+```
+$ sudo cp ~/mecanumbot_ws/src/mecanumbot/mecanumbot_description/udev/*.rules /etc/udev/rules.d/
+$ sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
 ### Autostart on boot
 
-Create a startup script:
+The startup script and the systemd unit are kept in the repository under `mecanumbot_description/services/`, so they do not have to be written by hand:
 
 ```bash
-$ nano ~/start_ros.sh
+$ chmod +x ~/mecanumbot_ws/src/mecanumbot/mecanumbot_description/services/autostart.sh
+$ sudo cp ~/mecanumbot_ws/src/mecanumbot/mecanumbot_description/services/ros2.service /etc/systemd/system/ros2.service
 ```
 
-```bash
-#!/bin/bash
-
-source /opt/ros/humble/setup.bash
-source /home/ubuntu/mecanumbot_ws/install/setup.bash
-
-export ROS_DOMAIN_ID=19
-ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py
-```
-
-Make it executable:
-
-```bash
-$ chmod +x ~/start_ros.sh
-```
-
-Create a systemd service:
-
-```bash
-$ sudo nano /etc/systemd/system/ros2.service
-```
-
-```ini
-[Unit]
-Description=ROS2 Bringup
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-ExecStart=/bin/bash /home/ubuntu/start_ros.sh
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
+Both files reference the `ubuntu` user and `/home/ubuntu/mecanumbot_ws`. If the Jetson was flashed with a different username, edit the `User=` line in `ros2.service` and the source paths in `autostart.sh` before installing.
 
 Reload systemd and enable the service:
 
