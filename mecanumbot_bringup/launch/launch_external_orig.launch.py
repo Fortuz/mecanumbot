@@ -6,9 +6,31 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import PushRosNamespace, SetRemap
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 import subprocess
 
 mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
+
+
+def with_mecanumbot_behavior_trees(nav2_params_file):
+    """Swap bt_navigator onto the mecanumbot behaviour trees.
+
+    Mirrors the helper in launch_mecanumbot_base.launch.py. RewrittenYaml only
+    replaces keys that already exist, so both BT params are declared in the YAML
+    with the nav2 stock trees as fallback values.
+    """
+    bt_dir = os.path.join(mecanumbot_description_pkg_share, 'behavior_trees')
+    return RewrittenYaml(
+        source_file=nav2_params_file,
+        root_key='',
+        param_rewrites={
+            'default_nav_to_pose_bt_xml':
+                os.path.join(bt_dir, 'mecanumbot_nav_to_pose.xml'),
+            'default_nav_through_poses_bt_xml':
+                os.path.join(bt_dir, 'mecanumbot_nav_through_poses.xml'),
+        },
+        convert_types=True,
+    )
 
 def get_wifi_ssid():
     # Prefer nmcli if available
@@ -45,7 +67,8 @@ def choose_default_map(ssid):
 def generate_launch_description():
     
     rviz_config_dir = os.path.join(get_package_share_directory('mecanumbot_description'),'rviz','model.rviz')
-    param_file = os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2_no_keepout.yaml')
+    param_file = with_mecanumbot_behavior_trees(
+        os.path.join(mecanumbot_description_pkg_share, 'param', 'mecanumbot_custom_nav2_no_keepout.yaml'))
     detected_ssid = get_wifi_ssid()
     map_name, map_file = choose_default_map(detected_ssid)
     yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')

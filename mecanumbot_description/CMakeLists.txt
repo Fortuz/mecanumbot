@@ -22,7 +22,7 @@ find_package(urdf REQUIRED)
 # Install
 ################################################################################
 install(
-  DIRECTORY meshes rviz param maps urdf udev mujoco
+  DIRECTORY meshes rviz param maps urdf udev mujoco behavior_trees
   DESTINATION share/${PROJECT_NAME}
 )
 

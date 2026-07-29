@@ -7,8 +7,32 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Grou
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 
 mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
+
+
+def with_mecanumbot_behavior_trees(nav2_params_file):
+    """Point bt_navigator at our behaviour trees instead of the nav2 stock ones.
+
+    The stock recovery round-robin spins 1.57 rad, waits 5 s and reverses 0.30 m
+    at 0.05 m/s, which is roughly half a minute of very odd-looking behaviour in
+    the middle of a leading trial. RewrittenYaml only replaces keys that already
+    exist, so both params are present in the YAML with the nav2 defaults as
+    fallback values.
+    """
+    bt_dir = os.path.join(mecanumbot_description_pkg_share, 'behavior_trees')
+    return RewrittenYaml(
+        source_file=nav2_params_file,
+        root_key='',
+        param_rewrites={
+            'default_nav_to_pose_bt_xml':
+                os.path.join(bt_dir, 'mecanumbot_nav_to_pose.xml'),
+            'default_nav_through_poses_bt_xml':
+                os.path.join(bt_dir, 'mecanumbot_nav_through_poses.xml'),
+        },
+        convert_types=True,
+    )
 
 def get_wifi_ssid():
     # Prefer nmcli if available
@@ -104,6 +128,7 @@ def generate_launch_description():
     # --- Network & Profile Logic ---
     detected_ssid = get_wifi_ssid()
     map_name, map_file, keepout_file, nav2_params_file, _ = choose_launch_profile(detected_ssid)
+    nav2_params = with_mecanumbot_behavior_trees(nav2_params_file)
 
     # --- Build Launch Actions ---
     launch_actions = [
@@ -225,7 +250,7 @@ def generate_launch_description():
             ),
             launch_arguments={
                 "map": map_file,
-                "params_file": nav2_params_file,
+                "params_file": nav2_params,
                 "use_sim_time": use_sim_time,
                 "namespace": "",          # <-- ADD THIS: Passes the mecanumbot namespace
                 "use_namespace": "true",         # <-- ADD THIS: Forces Nav2 to use it
@@ -283,7 +308,7 @@ def generate_launch_description():
                     ),
                     launch_arguments={
                         "map": map_file,
-                        "params_file": nav2_params_file,
+                        "params_file": nav2_params,
                         "use_sim_time": use_sim_time,
                         "namespace": "",          # <-- ADD THIS: Passes the mecanumbot namespace
                         "use_namespace": "true",

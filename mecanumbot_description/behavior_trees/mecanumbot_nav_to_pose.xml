@@ -1,0 +1,58 @@
+<!--
+  Mecanumbot navigation tree for the HRI leading study.
+
+  Differences from nav2's navigate_to_pose_w_replanning_and_recovery.xml:
+
+  * Replans at 2 Hz instead of 1 Hz, so a displaced occluder that the lidar has
+    just marked is routed around within half a second instead of a second.
+  * The recovery round-robin drops <Spin spin_dist="1.57"/>. A 90 deg pirouette
+    in the middle of a leading trial reads as a malfunction to a naive subject
+    and destroys the "follow me" cue. The base is omnidirectional, so it never
+    needs to rotate in order to move out of a pinch.
+  * <Wait wait_duration="5"/> becomes 1 s and <BackUp backup_dist="0.30"
+    backup_speed="0.05"/> (6 s of reversing into whoever is following) becomes
+    0.20 m at 0.10 m/s (2 s). Worst-case recovery is now a few seconds rather
+    than ~30 s.
+  * Costmap recoveries use ClearCostmapExceptRegion rather than
+    ClearEntireCostmap. ClearEntireCostmap wipes the real, just-sensed occluder
+    that caused the failure, so the robot drives straight back into it and the
+    cycle repeats. ExceptRegion keeps the near field and only drops stale marks
+    further out.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="2.0">
+          <RecoveryNode number_of_retries="2" name="ComputePathToPose">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            <ClearCostmapExceptRegion name="ClearGlobalCostmap-Context"
+                                      service_name="global_costmap/clear_except_global_costmap"
+                                      reset_distance="2.0"/>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="2" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ClearCostmapExceptRegion name="ClearLocalCostmap-Context"
+                                    service_name="local_costmap/clear_except_local_costmap"
+                                    reset_distance="1.0"/>
+        </RecoveryNode>
+      </PipelineSequence>
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="RecoveryActions">
+          <Sequence name="ClearingActions">
+            <ClearCostmapExceptRegion name="ClearLocalCostmap-Subtree"
+                                      service_name="local_costmap/clear_except_local_costmap"
+                                      reset_distance="0.8"/>
+            <ClearCostmapExceptRegion name="ClearGlobalCostmap-Subtree"
+                                      service_name="global_costmap/clear_except_global_costmap"
+                                      reset_distance="2.0"/>
+          </Sequence>
+          <Wait wait_duration="1"/>
+          <BackUp backup_dist="0.20" backup_speed="0.10"/>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

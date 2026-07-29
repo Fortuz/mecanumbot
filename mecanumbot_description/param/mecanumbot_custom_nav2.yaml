@@ -10,7 +10,11 @@ amcl:
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
-    do_beamskip: false
+    # The plastic occluders are rarely placed exactly where they were mapped, so a
+    # large fraction of beams disagree with the map on every update. Beam skipping
+    # ignores beams that disagree for most particles instead of letting them crush
+    # the whole particle set, which is what this option exists for.
+    do_beamskip: true
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
@@ -33,9 +37,12 @@ amcl:
     transform_tolerance: 0.5 
     update_min_a: 0.1 
     update_min_d: 0.2
-    z_hit: 0.8  
+    z_hit: 0.75
     z_max: 0.05
-    z_rand: 0.05
+    # z_rand is the "this beam hit something the map does not know about" mass.
+    # At 0.05 a displaced occluder drives particle weights to ~0 and the pose
+    # jitters; 0.15 keeps the filter stable when reality and map disagree.
+    z_rand: 0.15
     z_short: 0.05
     scan_topic: /mecanumbot/scan
 
@@ -67,6 +74,13 @@ bt_navigator:
     navigate_through_poses:
       plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"
 
+    # Overwritten at launch time (RewrittenYaml in launch_mecanumbot_base.launch.py)
+    # with the installed mecanumbot_description/behavior_trees/*.xml. The values
+    # below are the nav2 stock trees so that launching without that rewrite still
+    # produces a working bt_navigator.
+    default_nav_to_pose_bt_xml: "/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
+    default_nav_through_poses_bt_xml: "/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
+
     error_code_names:
       - compute_path_error_code
       - follow_path_error_code
@@ -74,22 +88,33 @@ bt_navigator:
 controller_server:
   ros__parameters:
     odom_topic: /mecanumbot/odom
-    controller_frequency: 3.0
+    # 3 Hz gave DWB one control cycle to react to an occluder that the lidar had
+    # just marked. The DWB sampling below is cut to keep the CPU cost lower than
+    # it was at 3 Hz despite the doubled rate.
+    controller_frequency: 6.0
     costmap_update_timeout: 0.20
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
+    # Seconds DWB may fail to find a valid trajectory before the action aborts.
+    # At 0.3 s / 3 Hz this was a single cycle, so one bad scan near a thin
+    # occluder threw the whole goal into the recovery subtree.
+    failure_tolerance: 2.0
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
 
     # Progress checker parameters
+    # SimpleProgressChecker counts translation only, so the RotationShim rotating
+    # in place, or the robot easing past an occluder, counted as "no progress".
+    # With 0.2 m required inside 2.0 s that fired constantly and every firing cost
+    # a full recovery cycle. PoseProgressChecker also accepts rotation as progress.
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.2
-      movement_time_allowance: 2.0
+      plugin: "nav2_controller::PoseProgressChecker"
+      required_movement_radius: 0.10
+      required_movement_angle: 0.4
+      movement_time_allowance: 10.0
 
     general_goal_checker:
       stateful: True
@@ -128,25 +153,37 @@ controller_server:
       decel_lim_x: -2.0
       decel_lim_y: -2.0
       decel_lim_theta: -2.0
-      vx_samples: 20
-      vy_samples: 10
-      vtheta_samples: 20
-      sim_time: 3.0
+      # Odd sample counts so that zero velocity is always in the set. Fewer
+      # samples over a shorter horizon with a coarser angular step costs roughly
+      # a quarter of the old per-cycle work, which is what pays for 6 Hz.
+      vx_samples: 13
+      vy_samples: 9
+      vtheta_samples: 13
+      sim_time: 2.0
       linear_granularity: 0.05
-      angular_granularity: 0.025
+      angular_granularity: 0.05
       transform_tolerance: 0.5
       xy_goal_tolerance: 0.30
       trans_stopped_velocity: 0.05 # below this, the velocity is considered being stopped 
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["RotateToGoal","Oscillation", "ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "Twirling","PreferForward"]
-      ObstacleFootprint.scale: 10.0
+      # Critic scales multiply raw scores of very different magnitude:
+      # ObstacleFootprint returns a costmap cost (0..252) while PathDist/GoalDist
+      # return distances in cells (0..~60). At 10.0 vs 1.0 the obstacle critic was
+      # ~500x the nav2 default weight, so with a 0.66 m inflation radius every
+      # trajectory that passed anywhere near a thin occluder scored as
+      # catastrophic and DWB regularly returned nothing at all. Lowering the scale
+      # does not make the robot unsafe: ObstacleFootprint still hard-invalidates
+      # any trajectory that actually puts the footprint in collision, regardless
+      # of scale. It only stops "near an obstacle" from outweighing the path.
+      ObstacleFootprint.scale: 1.0
       PathAlign.scale: 8.0
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 6.0
       GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 1.0
-      GoalDist.scale: 3.0
+      PathDist.scale: 24.0
+      GoalDist.scale: 20.0
       # penalisation of unnecessary turns
       Twirling.scale: 1.0
       # penalisation of oscillation behaviour (going back and forth or turning left to right slightly to match goal)
@@ -162,7 +199,8 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
+      # Must stay >= controller_frequency or DWB scores stale cells.
+      update_frequency: 8.0
       publish_frequency: 2.0
       global_frame: mecanumbot/odom
       robot_base_frame: mecanumbot/base_link
@@ -173,12 +211,22 @@ local_costmap:
       footprint: "[[0.2875,  0.08],[0.2875, -0.08],[0.05,   -0.153],[-0.1405, -0.153],[-0.1405,  0.153],[0.05,    0.153]]"
       footprint_padding: 0.01
       #robot_radius: 0.26 #either-or with footprint, footprint is more accurate
-      plugins: ["voxel_layer", "inflation_layer"]
+      plugins: ["voxel_layer", "denoise_layer", "inflation_layer"]
       filters: ["keepout_filter"]
       keepout_filter:
         plugin: "nav2_costmap_2d::KeepoutFilter"
         enabled: True
         filter_info_topic: "/keepout_costmap_filter_info"
+      # Thin plastic is a poor lidar target: partly IR-transparent and specular at
+      # grazing incidence, so it returns sparse, flickering single cells that make
+      # the robot stutter. This drops isolated lethal cells while leaving the
+      # contiguous arc of a genuine panel untouched. Must sit after the obstacle
+      # source and before inflation.
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: True
+        minimal_group_size: 2
+        group_connectivity_type: 8
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 5.0
@@ -211,8 +259,9 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
-      publish_frequency: 1.0
+      # The BT replans at 2 Hz; the map it plans on has to be at least that fresh.
+      update_frequency: 2.0
+      publish_frequency: 2.0
       global_frame: map
       robot_base_frame: mecanumbot/base_link
       footprint: "[[0.2875,  0.08],[0.2875, -0.08],[0.05,   -0.153],[-0.1405, -0.153],[-0.1405,  0.153],[0.05,    0.153]]"
@@ -220,7 +269,7 @@ global_costmap:
       #robot_radius: 0.26 #either-or with footprint, footprint is more accurate
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       filters: ["keepout_filter"]
       keepout_filter:
         plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -236,13 +285,25 @@ global_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 3.0
+          # This is the single biggest "seamlessness" lever. At 2.5 m the global
+          # planner only learned about a displaced occluder once the robot was
+          # almost touching it, so the plan was always a late, reactive swerve.
+          # The arena is ~10 x 9 m and the LD08 reaches 12 m, so let the planner
+          # see the occluders where they actually are and route around them from
+          # the start. The long raytrace also clears cells an occluder has been
+          # moved away from, which the static layer alone can never do.
+          raytrace_max_range: 10.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
+          obstacle_max_range: 8.0
           obstacle_min_range: 0.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: True
+        minimal_group_size: 2
+        group_connectivity_type: 8
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 5.0 # steeper decay keeps usable corridor width in narrow passages
@@ -256,7 +317,11 @@ planner_server:
     costmap_update_timeout: 1.0
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.2
+      # How far from the requested goal NavFn may terminate the path. A study
+      # waypoint that ends up inside the inflation of a displaced occluder is an
+      # outright planning failure at 0.2 m; 0.3 m lets the plan succeed and the
+      # goal checker validates against the path end, so nothing else changes.
+      tolerance: 0.3
       use_astar: true
       allow_unknown: true
 
@@ -309,7 +374,9 @@ waypoint_follower:
 
 velocity_smoother:
   ros__parameters:
-    smoothing_frequency: 5.0
+    # Output rate to the base. 5 Hz was visible as stepping in the motion, which
+    # matters when a person is reading the robot's intent from how it moves.
+    smoothing_frequency: 10.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
     max_velocity: [0.5, 0.5, 0.7]
@@ -322,6 +389,12 @@ velocity_smoother:
     velocity_timeout: 1.0
 
 
+# NOTE: this block is currently inert. nav2_bringup's navigation_launch.py (Humble
+# 1.1.20) does not start a collision_monitor node, and its lifecycle_nodes list
+# does not contain one. The cmd_vel chain is
+#   controller_server -> /cmd_vel_nav -> velocity_smoother -> /cmd_vel -> base,
+# with no monitor in it. Tuning anything here has no effect until a
+# collision_monitor node is actually launched.
 collision_monitor:
   ros__parameters:
     base_frame_id: "mecanumbot/base_footprint"

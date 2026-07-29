@@ -4,4 +4,7 @@ resolution: 0.05
 origin: [-7.59, -1.59, 0]
 negate: 0
 occupied_thresh: 0.65
-free_thresh: 0.25
+# 0.25 classified the grey-205 unexplored region as free space, so everything
+# outside the mapped room was published as known-free. 0.196 is the ROS
+# convention that puts 205 back into "unknown".
+free_thresh: 0.196

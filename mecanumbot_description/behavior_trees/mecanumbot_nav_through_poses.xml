@@ -1,0 +1,46 @@
+<!--
+  navigate_through_poses counterpart of mecanumbot_nav_to_pose.xml. Same
+  rationale: 2 Hz replanning, no Spin, short Wait/BackUp, and costmap
+  recoveries that preserve the near field instead of erasing the obstacle
+  that caused the failure.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="2.0">
+          <RecoveryNode number_of_retries="2" name="ComputePathThroughPoses">
+            <ReactiveSequence name="ComputePathThroughPoses">
+              <RemovePassedGoals input_goals="{goals}" output_goals="{goals}" radius="0.6"/>
+              <ComputePathThroughPoses goals="{goals}" path="{path}" planner_id="GridBased"/>
+            </ReactiveSequence>
+            <ClearCostmapExceptRegion name="ClearGlobalCostmap-Context"
+                                      service_name="global_costmap/clear_except_global_costmap"
+                                      reset_distance="2.0"/>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="2" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+          <ClearCostmapExceptRegion name="ClearLocalCostmap-Context"
+                                    service_name="local_costmap/clear_except_local_costmap"
+                                    reset_distance="1.0"/>
+        </RecoveryNode>
+      </PipelineSequence>
+      <ReactiveFallback name="RecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="RecoveryActions">
+          <Sequence name="ClearingActions">
+            <ClearCostmapExceptRegion name="ClearLocalCostmap-Subtree"
+                                      service_name="local_costmap/clear_except_local_costmap"
+                                      reset_distance="0.8"/>
+            <ClearCostmapExceptRegion name="ClearGlobalCostmap-Subtree"
+                                      service_name="global_costmap/clear_except_global_costmap"
+                                      reset_distance="2.0"/>
+          </Sequence>
+          <Wait wait_duration="1"/>
+          <BackUp backup_dist="0.20" backup_speed="0.10"/>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>
