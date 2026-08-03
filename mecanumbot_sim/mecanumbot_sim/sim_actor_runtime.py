@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 
-from mecanumbot_core.sim_scenarios import SimActorConfig
+from mecanumbot_sim.sim_scenarios import SimActorConfig
 
 
 @dataclass
@@ -35,7 +35,7 @@ class SimActorRuntime:
         self.state.vz = 0.0
         self.state.wz = 0.0
 
-        if self.config.motion_mode != 'patrol':
+        if self.config.motion_mode != "patrol":
             return
         if self._elapsed < self.config.motion_start_delay:
             return
@@ -44,7 +44,9 @@ class SimActorRuntime:
         if self.config.motion_speed <= 0.0:
             return
 
-        target_x, target_y, target_z = self.config.motion_waypoints[self._current_waypoint_index]
+        target_x, target_y, target_z = self.config.motion_waypoints[
+            self._current_waypoint_index
+        ]
         dx = target_x - self.state.x
         dy = target_y - self.state.y
         dz = target_z - self.state.z
@@ -59,7 +61,9 @@ class SimActorRuntime:
         new_x = self.state.x + dx * scale
         new_y = self.state.y + dy * scale
         new_z = self.state.z + dz * scale
-        new_yaw = math.atan2(dy, dx) if abs(dx) > 1e-6 or abs(dy) > 1e-6 else self.state.yaw
+        new_yaw = (
+            math.atan2(dy, dx) if abs(dx) > 1e-6 or abs(dy) > 1e-6 else self.state.yaw
+        )
 
         self.state.vx = (new_x - self.state.x) / dt if dt > 0.0 else 0.0
         self.state.vy = (new_y - self.state.y) / dt if dt > 0.0 else 0.0

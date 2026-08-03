@@ -1,31 +1,34 @@
 import os
-import glob
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction, LogInfo
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-import subprocess
+
 
 def generate_launch_description():
-    yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
-    actions = [Node(
-                namespace="mecanumbot",
-                package="mecanumbot_sensorprocess_smart",
-                executable="mecanumbot_lidar_detect_people",
-                name="mecanumbot_lidar_detect_people",
-                output="screen",
-                parameters=[yaml_file],
-                remappings=[
-                    ('map', '/map'),
-                    ('keepout_filter_mask', '/keepout_filter_mask')
-                ]
-            ),]
-    return LaunchDescription(
-        
-                        actions     
-                             )    
-'''mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
+    yaml_file = os.path.join(
+        get_package_share_directory("mecanumbot_sensorprocess_smart"),
+        "param",
+        "lidar_peopledetect_config.yaml",
+    )
+    actions = [
+        Node(
+            namespace="mecanumbot",
+            package="mecanumbot_sensorprocess_smart",
+            executable="mecanumbot_lidar_detect_people",
+            name="mecanumbot_lidar_detect_people",
+            output="screen",
+            parameters=[yaml_file],
+            remappings=[
+                ("map", "/map"),
+                ("keepout_filter_mask", "/keepout_filter_mask"),
+            ],
+        ),
+    ]
+    return LaunchDescription(actions)
+
+
+"""mecanumbot_description_pkg_share = get_package_share_directory('mecanumbot_description')
 
 def get_wifi_ssid():
     # Prefer nmcli if available
@@ -176,4 +179,4 @@ def generate_launch_description():
                 ),
             ]),
         ])
-    return LaunchDescription(launch_actions)'''
+    return LaunchDescription(launch_actions)"""

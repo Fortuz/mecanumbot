@@ -1,4 +1,8 @@
-slam_toolbox:
+# Wildcard node key: these params must apply whether the node is launched bare
+# (`slam_toolbox`) or under the robot namespace (`/mecanumbot/slam_toolbox`).
+# With a literal `slam_toolbox:` key the namespaced case silently matches nothing
+# and slam_toolbox runs on stock defaults.
+/**:
   ros__parameters:
 
     # Plugin params
@@ -22,27 +26,46 @@ slam_toolbox:
     # map_start_pose: [0.0, 0.0, 0.0]
 
     debug_logging: false
-    throttle_scans: 1                # Adjust to LIDAR frequency (e.g., 20 Hz -> 4 = 5 Hz)
+    # LDS-02 runs at ~10 Hz. minimum_time_interval already caps graph updates at
+    # 2 Hz, so feeding the message filter every 2nd scan (5 Hz) halves the TF
+    # lookup / filter work without changing what reaches the pose graph.
+    throttle_scans: 2
     transform_publish_period: 0.02
-    map_update_interval: 1.0
+    # Each map update re-rasterises the occupancy grid from the whole pose graph,
+    # so its cost grows with session length. At 1.0 s this was the dominant load
+    # on the Orin Nano and the main reason long sessions fell behind real time.
+    map_update_interval: 5.0
     resolution: 0.05
-    restamp_tf: true
     min_laser_range: 0.0
     max_laser_range: 10.0
     minimum_time_interval: 0.5
     transform_timeout: 0.5
     tf_buffer_duration: 30.0
-    scan_queue_size: 100               # Increase queue to prevent dropped scans
+    # A deep queue does NOT prevent dropped scans here - it defers them. Once the
+    # node falls behind, 100 queued scans (10 s at 10 Hz) age past the TF that can
+    # resolve them and get dropped anyway, while SLAM keeps processing 10 s-stale
+    # data forever. A shallow queue sheds the overload immediately and keeps the
+    # pose graph live.
+    scan_queue_size: 10
     stack_size_to_use: 40000000
-    enable_interactive_mode: true
+    # Publishes one interactive marker per pose-graph node and republishes the
+    # whole array on every graph change; unbounded growth over a long session.
+    # Only needed to hand-edit the pose graph in RViz - re-enable for that.
+    enable_interactive_mode: false
 
     # General Parameters
     use_scan_matching: true
     use_scan_barycenter: true
+    # 0.1 m / 0.1 rad gives 5x the pose-graph node density of the slam_toolbox
+    # default. Kept for map detail, but note this is the remaining term that
+    # scales cost with session length (map rasterisation and loop-closure search
+    # both grow with node count). Raise towards 0.25 if long sessions still lag.
     minimum_travel_distance: 0.1
     minimum_travel_heading: 0.1
-    check_min_dist_and_heading_precisely: false
-    scan_buffer_size: 100
+    # Running scan buffer used for local matching. At 0.1 m node spacing 30 scans
+    # already span ~3 m, well beyond link_scan_maximum_distance (1.5 m); 100 was
+    # 10x the default and paid on every scan match.
+    scan_buffer_size: 30
     scan_buffer_maximum_scan_distance: 10.0
     link_match_minimum_response_fine: 0.1  
     link_scan_maximum_distance: 1.5

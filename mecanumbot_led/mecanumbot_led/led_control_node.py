@@ -1,21 +1,56 @@
 import rclpy
-from rclpy.node import Node
 import serial
-
-from mecanumbot_msgs.srv  import GetLedStatus,SetLedStatus
-from rclpy.executors import MultiThreadedExecutor
+from mecanumbot_msgs.srv import GetLedStatus, SetLedStatus
 from rclpy.callback_groups import ReentrantCallbackGroup
-
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 
 START_BYTE = 0xAA
 FEEDBACK_START = 0xAB
 REQUEST_BYTE = 0xAC
 
-def build_packet(FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color, duration_ms):
+
+def build_packet(
+    FL_mode,
+    FL_color,
+    FR_mode,
+    FR_color,
+    BL_mode,
+    BL_color,
+    BR_mode,
+    BR_color,
+    duration_ms,
+):
     tL = duration_ms & 0xFF
     tH = (duration_ms >> 8) & 0xFF
-    checksum = FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color ^ tL ^ tH
-    return bytes([START_BYTE, FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color, tL, tH, checksum])
+    checksum = (
+        FL_mode
+        ^ FL_color
+        ^ FR_mode
+        ^ FR_color
+        ^ BL_mode
+        ^ BL_color
+        ^ BR_mode
+        ^ BR_color
+        ^ tL
+        ^ tH
+    )
+    return bytes(
+        [
+            START_BYTE,
+            FL_mode,
+            FL_color,
+            FR_mode,
+            FR_color,
+            BL_mode,
+            BL_color,
+            BR_mode,
+            BR_color,
+            tL,
+            tH,
+            checksum,
+        ]
+    )
 
 
 def read_feedback(ser):
@@ -33,29 +68,70 @@ def read_feedback(ser):
         elif static["state"] == 1:
             static["buf"].append(b)
             if len(static["buf"]) == 9:
-                FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color,cs = static["buf"]
+                (
+                    FL_mode,
+                    FL_color,
+                    FR_mode,
+                    FR_color,
+                    BL_mode,
+                    BL_color,
+                    BR_mode,
+                    BR_color,
+                    cs,
+                ) = static["buf"]
                 static["state"] = 0
-                if (FL_mode ^ FL_color ^ FR_mode ^ FR_color ^ BL_mode ^ BL_color ^ BR_mode ^ BR_color) == cs:
-                    return (FL_mode,FL_color,FR_mode,FR_color,BL_mode,BL_color,BR_mode,BR_color)
+                if (
+                    FL_mode
+                    ^ FL_color
+                    ^ FR_mode
+                    ^ FR_color
+                    ^ BL_mode
+                    ^ BL_color
+                    ^ BR_mode
+                    ^ BR_color
+                ) == cs:
+                    return (
+                        FL_mode,
+                        FL_color,
+                        FR_mode,
+                        FR_color,
+                        BL_mode,
+                        BL_color,
+                        BR_mode,
+                        BR_color,
+                    )
                 return None
     return None
 
+
 class LedServiceNode(Node):
     def __init__(self):
-        super().__init__('mecanumbot_led_service_node')
+        super().__init__("mecanumbot_led_service_node")
 
         # Initialize serial connection
-        self.serial_port = serial.Serial('/dev/arduino_nano', 115200, timeout=1) # Udev rule should be set first
+        self.serial_port = serial.Serial(
+            "/dev/arduino_nano", 115200, timeout=1
+        )  # Udev rule should be set first
 
         self.callback_group = ReentrantCallbackGroup()
         # Create services
         self.last_feedback = None
-        self.srv_set = self.create_service(SetLedStatus, 'set_led_status', self.set_led_status_callback,callback_group=self.callback_group)
-        self.srv_get = self.create_service(GetLedStatus, 'get_led_status', self.get_led_status_callback, callback_group=self.callback_group)
+        self.srv_set = self.create_service(
+            SetLedStatus,
+            "set_led_status",
+            self.set_led_status_callback,
+            callback_group=self.callback_group,
+        )
+        self.srv_get = self.create_service(
+            GetLedStatus,
+            "get_led_status",
+            self.get_led_status_callback,
+            callback_group=self.callback_group,
+        )
         self.duration_ms = 1000
 
     def set_led_status_callback(self, request, response):
-        
+
         packet = build_packet(
             request.fl_mode,
             request.fl_color,
@@ -65,7 +141,7 @@ class LedServiceNode(Node):
             request.bl_color,
             request.br_mode,
             request.br_color,
-            self.duration_ms
+            self.duration_ms,
         )
         try:
             self.get_logger().info("Sending packet to Arduino")
@@ -78,61 +154,79 @@ class LedServiceNode(Node):
             self.get_logger().error(e)
         return response
 
-
     def get_led_status_callback(self, request, response):
-        import time # Ensure this is imported at the top of your file
-        
+        import time  # Ensure this is imported at the top of your file
+
         try:
             self.serial_port.write(bytes([REQUEST_BYTE]))
-            self.serial_port.flush() # Ensure the byte is actually sent out
-            
+            self.serial_port.flush()  # Ensure the byte is actually sent out
+
             # Tiny sleep to allow Arduino to reply before checking in_waiting
             # Alternatively, rely on a blocking ser.read() instead of in_waiting
-            time.sleep(0.02) 
+            time.sleep(0.02)
 
             # Read fixed length response
             data = read_feedback(self.serial_port)
-            
+
             if data is None:
                 e = "Incomplete packet: Received None (No data or bad checksum)"
                 self.get_logger().error(e)
                 # Use -1 instead of 404 to stay within the [-128, 127] int8 bounds
-                (response.fl_mode, response.fl_color,
-                response.fr_mode, response.fr_color,
-                response.br_mode, response.br_color,
-                response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
+                (
+                    response.fl_mode,
+                    response.fl_color,
+                    response.fr_mode,
+                    response.fr_color,
+                    response.br_mode,
+                    response.br_color,
+                    response.bl_mode,
+                    response.bl_color,
+                ) = (-1, -1, -1, -1, -1, -1, -1, -1)
                 return response
-                
+
             elif len(data) != 8:
                 e = f"Incomplete packet: {len(data)} bytes"
                 self.get_logger().error(e)
-                (response.fl_mode, response.fl_color,
-                response.fr_mode, response.fr_color,
-                response.br_mode, response.br_color,
-                response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
+                (
+                    response.fl_mode,
+                    response.fl_color,
+                    response.fr_mode,
+                    response.fr_color,
+                    response.br_mode,
+                    response.br_color,
+                    response.bl_mode,
+                    response.bl_color,
+                ) = (-1, -1, -1, -1, -1, -1, -1, -1)
                 return response
 
             # Assign to ROS response
-            response.fl_mode  = data[0]
+            response.fl_mode = data[0]
             response.fl_color = data[1]
-            response.fr_mode  = data[2]
+            response.fr_mode = data[2]
             response.fr_color = data[3]
-            response.bl_mode  = data[4]
+            response.bl_mode = data[4]
             response.bl_color = data[5]
-            response.br_mode  = data[6]
+            response.br_mode = data[6]
             response.br_color = data[7]
-            
-            return response 
+
+            return response
 
         except Exception as e:
-            self.get_logger().error(f'Error occurred: {e}')
+            self.get_logger().error(f"Error occurred: {e}")
             # Use -1 instead of 404 here as well
-            (response.fl_mode, response.fl_color,
-            response.fr_mode, response.fr_color,
-            response.br_mode, response.br_color,
-            response.bl_mode, response.bl_color) = (-1, -1, -1, -1, -1, -1, -1, -1)
+            (
+                response.fl_mode,
+                response.fl_color,
+                response.fr_mode,
+                response.fr_color,
+                response.br_mode,
+                response.br_color,
+                response.bl_mode,
+                response.bl_color,
+            ) = (-1, -1, -1, -1, -1, -1, -1, -1)
             return response
-        
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = LedServiceNode()
@@ -147,5 +241,6 @@ def main(args=None):
         node.destroy_node()
         rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

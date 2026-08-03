@@ -18,6 +18,7 @@
   <exec_depend>rviz2</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
   <exec_depend>mecanumbot_core</exec_depend>
+  <exec_depend>mecanumbot_sim</exec_depend>
   <exec_depend>mecanumbot_camera_stream</exec_depend>
   <exec_depend>mecanumbot_audio</exec_depend>
 

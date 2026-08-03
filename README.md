@@ -14,6 +14,24 @@ Original sources: `<br>`
 [Turtlebot3 - humble version](https://github.com/ROBOTIS-GIT/turtlebot3/tree/humble) `<br>`
 [Turtlebot3_msgs - humble version](https://github.com/ROBOTIS-GIT/turtlebot3_msgs/tree/humble) `<br>`
 
+## Packages in this repository
+
+| Package | Type | Purpose |
+| --- | --- | --- |
+| `mecanumbot` | Meta (`ament_cmake`) | Dependency aggregation only. No nodes, no launch files. |
+| `mecanumbot_core` | Python | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link and the mecanum kinematics; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state and the `odom → base_footprint` transform; `mecanumbot_battery_alert` raises a visible low-battery alarm. |
+| `mecanumbot_bringup` | `ament_cmake` | Launch orchestration. No node logic of its own — it starts nodes from the other packages. Holds the full onboard stack launch, the remote-PC launch, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run. |
+| `mecanumbot_description` | `ament_cmake` | Robot assets, no nodes: URDF, meshes, maps, Nav2/SLAM/Cartographer parameter sets, RViz layouts, udev rules and the systemd autostart unit. |
+| `mecanumbot_sim` | Python | Simulation. Two interchangeable backends (MuJoCo, Gazebo Sim) behind the same robot interface, plus scenario actors and the detection/behaviour evaluators. See its README — the Gazebo backend is written but has never been run. |
+| `mecanumbot_led` | Python | `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`. |
+| `mecanumbot_camera_stream` | Python | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. Picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
+| `mecanumbot_cam_optim` | `ament_cmake` (C++) | Single `camera_stream_node` executable, a C++ capture path alongside the Python one. Package manifest is still a TODO stub. |
+| `mecanumbot_audio` | Python | `input_handler` node publishing microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. |
+| `mecanumbot_monitor` | Python | Test and evaluation utilities: `wheel_monitor` and `accessory_monitor` generate repeatable command patterns for drivetrain and servo testing; `rosbag_stepper` chunks bag playback; `metric_eval` logs ground truth against detections to CSV. |
+
+Each package has its own README with the full publisher / subscriber / parameter
+tables.
+
 Building and using a robot with additional motors with different protocols, using a mecanum wheel drive sysetem instead of a differential drive system requires some changes in the original architecture so this repository is intend to provide a full functionality similar to the original Turtlebot3 repositories.
 
 As a main source of information, documentation, codes and more the original [Turtlebot3 e-Manual](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/#overview) can be found here. Lot of the setup and codes came from the original Turtlebot3 project but a huge chunk of the codebase have been modified to accomodate the new motors, setup, and work with the mecanum wheel drive system. Altough the setups steps are basicaly the same some the important steps can be read below.

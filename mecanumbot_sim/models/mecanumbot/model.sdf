@@ -1,0 +1,314 @@
+<?xml version="1.0" ?>
+<!--
+  Gazebo Sim model of the mecanumbot.
+
+  Deliberately NOT generated from `mecanumbot_description/urdf/mecanumbot.urdf`:
+  that URDF is the real robot's kinematic description for robot_state_publisher and
+  carries an inertial on only one link, a 27 MB visual mesh, and a stray 0.2 m
+  collision box floating 0.5 m ahead of the base — none of which can be handed to a
+  physics engine as-is. TF still comes from the URDF via robot_state_publisher, so
+  link names here are local to Gazebo and do not need the `mecanumbot/` prefix.
+
+  Geometry and mass properties mirror `mujoco/mecanumbot.xml` so both backends
+  simulate the same vehicle.
+
+  Base motion is driven by VelocityControl rather than by wheel friction, which is
+  also how the MuJoCo model behaves in practice (it too uses plain cylinder wheels
+  and applies mecanum kinematics at the command level; neither backend simulates
+  roller contact). The wheels are therefore frictionless and purely cosmetic.
+-->
+<sdf version="1.9">
+  <model name="mecanumbot">
+    <pose>0 0 0.0096 0 0 0</pose>
+
+    <link name="base_link">
+      <inertial>
+        <mass>3.0</mass>
+        <pose>0 0 0.06 0 0 0</pose>
+        <inertia>
+          <ixx>0.04</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.04</iyy><iyz>0</iyz>
+          <izz>0.04</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="body_collision">
+        <pose>0 0 0.055 0 0 0</pose>
+        <geometry><box><size>0.32 0.26 0.06</size></box></geometry>
+        <surface>
+          <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <visual name="body_visual">
+        <pose>0 0 0.055 0 0 0</pose>
+        <geometry><box><size>0.32 0.26 0.06</size></box></geometry>
+        <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+      </visual>
+
+      <visual name="tower_visual">
+        <pose>0.09 0 0.12 0 0 0</pose>
+        <geometry><box><size>0.11 0.22 0.08</size></box></geometry>
+        <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+      </visual>
+    </link>
+
+    <!-- Wheels. Frictionless on purpose: see the header comment. -->
+    <link name="wheel_frontleft_link">
+      <pose relative_to="base_link">0.064 0.1522 0.02345 -1.5707963 0 0</pose>
+      <inertial>
+        <mass>0.15</mass>
+        <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <surface><friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction></surface>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.5 1</ambient><diffuse>0.1 0.1 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="wheel_frontleft_joint" type="revolute">
+      <parent>base_link</parent><child>wheel_frontleft_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="wheel_backleft_link">
+      <pose relative_to="base_link">-0.064 0.1522 0.02345 -1.5707963 0 0</pose>
+      <inertial>
+        <mass>0.15</mass>
+        <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <surface><friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction></surface>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.5 1</ambient><diffuse>0.1 0.1 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="wheel_backleft_joint" type="revolute">
+      <parent>base_link</parent><child>wheel_backleft_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="wheel_frontright_link">
+      <pose relative_to="base_link">0.064 -0.1522 0.02345 1.5707963 0 0</pose>
+      <inertial>
+        <mass>0.15</mass>
+        <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <surface><friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction></surface>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.5 1</ambient><diffuse>0.1 0.1 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="wheel_frontright_joint" type="revolute">
+      <parent>base_link</parent><child>wheel_frontright_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <link name="wheel_backright_link">
+      <pose relative_to="base_link">-0.064 -0.1522 0.02345 1.5707963 0 0</pose>
+      <inertial>
+        <mass>0.15</mass>
+        <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+      </inertial>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <surface><friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction></surface>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.033</radius><length>0.030</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.5 1</ambient><diffuse>0.1 0.1 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="wheel_backright_joint" type="revolute">
+      <parent>base_link</parent><child>wheel_backright_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis>
+    </joint>
+
+    <!-- Accessories: the neck tilt carries the camera and is the gesture channel
+         for the Doglike condition, so it is actuated here and not just in RViz. -->
+    <link name="head_link">
+      <pose relative_to="base_link">0.1063 0 0.1679 1.5707963 0 0</pose>
+      <inertial>
+        <mass>0.08</mass>
+        <inertia><ixx>0.0002</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0002</iyy><iyz>0</iyz><izz>0.0002</izz></inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry><box><size>0.04 0.06 0.04</size></box></geometry>
+        <material><ambient>1.0 0.42 0.04 1</ambient><diffuse>1.0 0.42 0.04 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="head_joint" type="revolute">
+      <parent>base_link</parent><child>head_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57</lower><upper>1.57</upper><effort>5.0</effort><velocity>1.0</velocity></limit></axis>
+    </joint>
+
+    <link name="camera_link">
+      <pose relative_to="head_link">0.022 0.038 0 0 -1.5707963 0</pose>
+      <inertial>
+        <mass>0.01</mass>
+        <inertia><ixx>1e-5</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1e-5</iyy><iyz>0</iyz><izz>1e-5</izz></inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry><box><size>0.015 0.030 0.027</size></box></geometry>
+        <material><ambient>0.8 0 0 1</ambient><diffuse>0.8 0 0 1</diffuse></material>
+      </visual>
+      <sensor name="camera" type="camera">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <update_rate>15</update_rate>
+        <topic>camera/image_raw</topic>
+        <camera>
+          <horizontal_fov>1.0471976</horizontal_fov>
+          <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+          <clip><near>0.05</near><far>12.0</far></clip>
+        </camera>
+      </sensor>
+    </link>
+    <joint name="camera_joint" type="fixed">
+      <parent>head_link</parent><child>camera_link</child>
+    </joint>
+
+    <link name="grabber_left_link">
+      <pose relative_to="base_link">0.174 0.070 0.024 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia><ixx>1e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1e-4</iyy><iyz>0</iyz><izz>1e-4</izz></inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0.05 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.10</length></cylinder></geometry>
+        <material><ambient>0 0.8 0 1</ambient><diffuse>0 0.8 0 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="grabber_left_joint" type="revolute">
+      <parent>base_link</parent><child>grabber_left_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57</lower><upper>1.57</upper><effort>5.0</effort><velocity>1.0</velocity></limit></axis>
+    </joint>
+
+    <link name="grabber_right_link">
+      <pose relative_to="base_link">0.174 -0.070 0.024 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia><ixx>1e-4</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1e-4</iyy><iyz>0</iyz><izz>1e-4</izz></inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0.05 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.10</length></cylinder></geometry>
+        <material><ambient>0 0.8 0 1</ambient><diffuse>0 0.8 0 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="grabber_right_joint" type="revolute">
+      <parent>base_link</parent><child>grabber_right_link</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57</lower><upper>1.57</upper><effort>5.0</effort><velocity>1.0</velocity></limit></axis>
+    </joint>
+
+    <!-- LD08 lidar. Ray count, span and range match the MuJoCo backend's
+         scan parameters so DR-SPAAM sees the same input shape on both. -->
+    <link name="base_scan">
+      <pose relative_to="base_link">0 0 0.122 0 0 0</pose>
+      <inertial>
+        <mass>0.114</mass>
+        <inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.055</radius><length>0.030</length></cylinder></geometry>
+        <material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.3 0.3 0.3 1</diffuse></material>
+      </visual>
+      <sensor name="lidar" type="gpu_lidar">
+        <pose>0 0 0 0 0 0</pose>
+        <update_rate>8</update_rate>
+        <topic>scan_raw</topic>
+        <always_on>true</always_on>
+        <visualize>false</visualize>
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>240</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.141592653589793</min_angle>
+              <max_angle>3.141592653589793</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.02</min>
+            <max>8.0</max>
+            <resolution>0.01</resolution>
+          </range>
+        </lidar>
+      </sensor>
+    </link>
+    <joint name="scan_joint" type="fixed">
+      <parent>base_link</parent><child>base_scan</child>
+    </joint>
+
+    <link name="imu_link">
+      <pose relative_to="base_link">0 0 0.068 0 0 0</pose>
+      <inertial>
+        <mass>0.01</mass>
+        <inertia><ixx>1e-6</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1e-6</iyy><iyz>0</iyz><izz>1e-6</izz></inertia>
+      </inertial>
+      <sensor name="imu" type="imu">
+        <update_rate>100</update_rate>
+        <topic>imu_raw</topic>
+        <always_on>true</always_on>
+      </sensor>
+    </link>
+    <joint name="imu_joint" type="fixed">
+      <parent>base_link</parent><child>imu_link</child>
+    </joint>
+
+    <!-- Base motion. cmd_vel here is already world-framed by gz_io_node when its
+         `velocity_frame` parameter says so; see that node's docstring. -->
+    <plugin filename="ignition-gazebo-velocity-control-system"
+            name="ignition::gazebo::systems::VelocityControl">
+      <topic>/model/mecanumbot/cmd_vel</topic>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-state-publisher-system"
+            name="ignition::gazebo::systems::JointStatePublisher">
+      <topic>/model/mecanumbot/joint_state</topic>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-pose-publisher-system"
+            name="ignition::gazebo::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_nested_model_pose>false</publish_nested_model_pose>
+      <use_pose_vector_msg>false</use_pose_vector_msg>
+      <update_frequency>50</update_frequency>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-position-controller-system"
+            name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>head_joint</joint_name>
+      <topic>/model/mecanumbot/head_joint/cmd_pos</topic>
+      <p_gain>2.0</p_gain><i_gain>0.0</i_gain><d_gain>0.1</d_gain>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-position-controller-system"
+            name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>grabber_left_joint</joint_name>
+      <topic>/model/mecanumbot/grabber_left_joint/cmd_pos</topic>
+      <p_gain>2.0</p_gain><i_gain>0.0</i_gain><d_gain>0.1</d_gain>
+    </plugin>
+
+    <plugin filename="ignition-gazebo-joint-position-controller-system"
+            name="ignition::gazebo::systems::JointPositionController">
+      <joint_name>grabber_right_joint</joint_name>
+      <topic>/model/mecanumbot/grabber_right_joint/cmd_pos</topic>
+      <p_gain>2.0</p_gain><i_gain>0.0</i_gain><d_gain>0.1</d_gain>
+    </plugin>
+
+  </model>
+</sdf>

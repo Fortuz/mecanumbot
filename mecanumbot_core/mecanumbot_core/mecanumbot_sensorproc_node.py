@@ -1,26 +1,24 @@
-import os 
-import rclpy
-from rclpy.node import Node
-from rclpy.time import Time as RosTime
-
-from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
-
-from std_msgs.msg import Bool
-from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Imu, JointState, BatteryState
-from geometry_msgs.msg import Twist
-from mecanumbot_msgs.msg import OpenCRState
 import math
-from builtin_interfaces.msg import Time
-from transforms3d.euler import quat2euler, euler2quat
-#from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
-from rclpy.executors import MultiThreadedExecutor
+
+import rclpy
+from geometry_msgs.msg import TransformStamped
+from mecanumbot_msgs.msg import OpenCRState
+from nav_msgs.msg import Odometry
 from rclpy.callback_groups import ReentrantCallbackGroup
 
+# from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
+from rclpy.time import Time as RosTime
+from sensor_msgs.msg import BatteryState, Imu, JointState
+from std_msgs.msg import Bool
+from tf2_ros import TransformBroadcaster
+from transforms3d.euler import euler2quat, quat2euler
+
 TICK_TO_RAD = 0.005061
-GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618 #150 deg diff in rads
-NECK_MIDPOINT_COMPENSATE_CONSTANT = 3.8172#218 deg diff in rads
+GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618  # 150 deg diff in rads
+NECK_MIDPOINT_COMPENSATE_CONSTANT = 3.8172  # 218 deg diff in rads
+
 
 def get_device_model():
     try:
@@ -28,6 +26,7 @@ def get_device_model():
             return f.read().strip().lower()
     except FileNotFoundError:
         return ""
+
 
 MODEL = get_device_model()
 
@@ -39,68 +38,99 @@ else:
     print("Unknown device:", MODEL)
 
 if MODEL and "nvidia jetson" in MODEL:
+    import adafruit_ina219
     import board
     import busio
-    import adafruit_ina219
+
 
 ################################################ MAIN CLASS ################################################
 class Mecanumbot_Sensorproc_Node(Node):
 
-    def __init__(self,namespace=''):
+    def __init__(self, namespace=""):
 
-        super().__init__('mecanumbot_sensorproc_node',namespace=namespace)
+        super().__init__("mecanumbot_sensorproc_node", namespace=namespace)
         self.callback_group = ReentrantCallbackGroup()
         self.declare_parameters(
-        namespace=namespace,
-        parameters=[
-        ('robot_params.wheel.vel_tick', 0.229), # meaning of one tick between velocity values [rot/min]
-        ('robot_params.wheel.radius', 0.0325), # radius [m]
-        ('robot_params.wheel.sep_x',0.129), # distance between front and back wheels [m]
-        ('robot_params.wheel.sep_y',0.300), # distance between left and right wheels [m]
-        ('robot_params.battery.min_voltage',9.6), #minimum voltage of battery [V]
-        ('robot_params.battery.max_voltage',12.6), #maximum voltage of battery [V]
-        ('odom_params.frame_id', 'odom'),
-        ('odom_params.child_frame_id', 'base_footprint'),
-        ('odom_params.from_imu', False),
-        ('imu_params.frame_id', 'imu_link'),
-        ('use_state_stamp_for_dt', False),
-        ('require_state_stamp', False),
-        ('has_object_threshold',250.0)
-         ])
-        
+            namespace=namespace,
+            parameters=[
+                (
+                    "robot_params.wheel.vel_tick",
+                    0.229,
+                ),  # meaning of one tick between velocity values [rot/min]
+                ("robot_params.wheel.radius", 0.0325),  # radius [m]
+                (
+                    "robot_params.wheel.sep_x",
+                    0.129,
+                ),  # distance between front and back wheels [m]
+                (
+                    "robot_params.wheel.sep_y",
+                    0.300,
+                ),  # distance between left and right wheels [m]
+                (
+                    "robot_params.battery.min_voltage",
+                    9.6,
+                ),  # minimum voltage of battery [V]
+                (
+                    "robot_params.battery.max_voltage",
+                    12.6,
+                ),  # maximum voltage of battery [V]
+                ("odom_params.frame_id", "odom"),
+                ("odom_params.child_frame_id", "base_footprint"),
+                ("odom_params.from_imu", False),
+                ("imu_params.frame_id", "imu_link"),
+                ("use_state_stamp_for_dt", False),
+                ("require_state_stamp", False),
+                ("has_object_threshold", 250.0),
+            ],
+        )
+
         self.tf_broadcaster = TransformBroadcaster(self)
-        resolved_namespace = self.get_namespace().strip('/')
+        resolved_namespace = self.get_namespace().strip("/")
         self.namespace = resolved_namespace
 
-         # Odom parameters
-        self.odom_from_imu = self.get_parameter('odom_params.from_imu').value
-        self.odom_frame_id = self.get_parameter('odom_params.frame_id').value
-        self.odom_child_frame_id = self.get_parameter('odom_params.child_frame_id').value
-        self.imu_frame_id = self.get_parameter('imu_params.frame_id').value
-        self.use_state_stamp_for_dt = bool(self.get_parameter('use_state_stamp_for_dt').value)
-        self.require_state_stamp = bool(self.get_parameter('require_state_stamp').value)
-        
-        if self.namespace != '' and self.namespace is not None:
+        # Odom parameters
+        self.odom_from_imu = self.get_parameter("odom_params.from_imu").value
+        self.odom_frame_id = self.get_parameter("odom_params.frame_id").value
+        self.odom_child_frame_id = self.get_parameter(
+            "odom_params.child_frame_id"
+        ).value
+        self.imu_frame_id = self.get_parameter("imu_params.frame_id").value
+        self.use_state_stamp_for_dt = bool(
+            self.get_parameter("use_state_stamp_for_dt").value
+        )
+        self.require_state_stamp = bool(self.get_parameter("require_state_stamp").value)
 
-            self.odom_frame_id = self.namespace + '/' + self.odom_frame_id
-            self.odom_child_frame_id = self.namespace + '/' + self.odom_child_frame_id
-            self.imu_frame_id = self.namespace + '/' + self.imu_frame_id
-        self.get_logger().info(f'Namespace: {self.namespace}')
-        self.get_logger().info(f'Odom Frame ID: {self.odom_frame_id}, Child Frame ID: {self.odom_child_frame_id}, IMU Frame ID: {self.imu_frame_id}')
-         # Robot parameters
-        self.vel_tick = self.get_parameter('robot_params.wheel.vel_tick').value/60 # rot/min to rot/s
-        self.wheel_radius = self.get_parameter('robot_params.wheel.radius').value # m
-        self.wheel_sep_x = self.get_parameter('robot_params.wheel.sep_x').value # m
-        self.wheel_sep_y = self.get_parameter('robot_params.wheel.sep_y').value
-        self.battery_min_voltage = self.get_parameter('robot_params.battery.min_voltage').value # V
-        self.battery_max_voltage = self.get_parameter('robot_params.battery.max_voltage').value # V
+        if self.namespace != "" and self.namespace is not None:
 
-        self.scale =  self.vel_tick * 2 * math.pi * self.wheel_radius # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
-        self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2 # 
+            self.odom_frame_id = self.namespace + "/" + self.odom_frame_id
+            self.odom_child_frame_id = self.namespace + "/" + self.odom_child_frame_id
+            self.imu_frame_id = self.namespace + "/" + self.imu_frame_id
+        self.get_logger().info(f"Namespace: {self.namespace}")
+        self.get_logger().info(
+            f"Odom Frame ID: {self.odom_frame_id}, Child Frame ID: {self.odom_child_frame_id}, IMU Frame ID: {self.imu_frame_id}"
+        )
+        # Robot parameters
+        self.vel_tick = (
+            self.get_parameter("robot_params.wheel.vel_tick").value / 60
+        )  # rot/min to rot/s
+        self.wheel_radius = self.get_parameter("robot_params.wheel.radius").value  # m
+        self.wheel_sep_x = self.get_parameter("robot_params.wheel.sep_x").value  # m
+        self.wheel_sep_y = self.get_parameter("robot_params.wheel.sep_y").value
+        self.battery_min_voltage = self.get_parameter(
+            "robot_params.battery.min_voltage"
+        ).value  # V
+        self.battery_max_voltage = self.get_parameter(
+            "robot_params.battery.max_voltage"
+        ).value  # V
 
-        self.has_object_threshold = self.get_parameter('has_object_threshold').value
+        self.scale = (
+            self.vel_tick * 2 * math.pi * self.wheel_radius
+        )  # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
+        self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2
 
-         # Initialize messages
+        self.has_object_threshold = self.get_parameter("has_object_threshold").value
+
+        # Initialize messages
 
         self.cr_state = OpenCRState()
         self.odom = Odometry()
@@ -112,32 +142,55 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.dms_buffer = [0] * 11
         self.has_object = False
-         # Publishers
+        # Publishers
 
-        self.odom_publisher = self.create_publisher(Odometry, 'odom', 10,callback_group=self.callback_group)
-        self.imu_publisher = self.create_publisher(Imu, 'imu', 10,callback_group=self.callback_group)
-        self.joint_state_publisher = self.create_publisher(JointState, 'joint_states', 10,callback_group=self.callback_group)
-        self.cr_battery_state_publisher = self.create_publisher(BatteryState, 'cr_battery_state', 10,callback_group=self.callback_group)
-        self.object_state_publisher = self.create_publisher(Bool, 'has_object', 10,callback_group=self.callback_group)
-        
+        self.odom_publisher = self.create_publisher(
+            Odometry, "odom", 10, callback_group=self.callback_group
+        )
+        self.imu_publisher = self.create_publisher(
+            Imu, "imu", 10, callback_group=self.callback_group
+        )
+        self.joint_state_publisher = self.create_publisher(
+            JointState, "joint_states", 10, callback_group=self.callback_group
+        )
+        self.cr_battery_state_publisher = self.create_publisher(
+            BatteryState, "cr_battery_state", 10, callback_group=self.callback_group
+        )
+        self.object_state_publisher = self.create_publisher(
+            Bool, "has_object", 10, callback_group=self.callback_group
+        )
+
         if MODEL and "nvidia jetson" in MODEL:
-            self.orin_battery_state_publisher = self.create_publisher(BatteryState, 'orin_battery_state', 10,callback_group=self.callback_group)
-        
+            self.orin_battery_state_publisher = self.create_publisher(
+                BatteryState,
+                "orin_battery_state",
+                10,
+                callback_group=self.callback_group,
+            )
+
         timer_period = 0.02  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback, callback_group=self.callback_group)
-        
-        self.board_subscription = self.create_subscription(OpenCRState, 'opencr_state', self.crstate_callback, 10,callback_group=self.callback_group)
+        self.timer = self.create_timer(
+            timer_period, self.timer_callback, callback_group=self.callback_group
+        )
+
+        self.board_subscription = self.create_subscription(
+            OpenCRState,
+            "opencr_state",
+            self.crstate_callback,
+            10,
+            callback_group=self.callback_group,
+        )
         self.board_subscription  # prevent unused variable warning
 
         self.current_time = self.get_clock().now()
         self.last_time = self.get_clock().now()
-        self.dt = 0.0 #[s]
+        self.dt = 0.0  # [s]
         self.last_state_stamp_ns = None
         self.last_stamp_source = None
 
         self.last_yaw_angle = 0.0
         self.wrote_error_once = False
-        
+
         if MODEL and "nvidia jetson" in MODEL:
             try:
                 self.i2c = busio.I2C(board.SCL, board.SDA)
@@ -146,7 +199,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             except Exception as e:
                 self.get_logger().info(f"INA219 sensor not found: {e}")
 
-    def crstate_callback(self,data):
+    def crstate_callback(self, data):
         self.cr_state = data
 
     def timer_callback(self):
@@ -156,15 +209,18 @@ class Mecanumbot_Sensorproc_Node(Node):
         stamp = self.cr_state.header.stamp
         if self.use_state_stamp_for_dt and (stamp.sec != 0 or stamp.nanosec != 0):
             raw_time = RosTime.from_msg(stamp)
-            stamp_source = 'state'
+            stamp_source = "state"
         else:
             if self.use_state_stamp_for_dt and self.require_state_stamp:
                 return
             raw_time = self.get_clock().now()
-            stamp_source = 'clock'
+            stamp_source = "clock"
 
         raw_stamp_ns = raw_time.nanoseconds
-        if self.last_stamp_source is not None and self.last_stamp_source != stamp_source:
+        if (
+            self.last_stamp_source is not None
+            and self.last_stamp_source != stamp_source
+        ):
             self.last_state_stamp_ns = None
 
         if self.last_state_stamp_ns is None:
@@ -187,14 +243,16 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_cr_battery_state()
         self.set_object_state()
         if MODEL and "nvidia jetson" in MODEL:
-            if hasattr(self, 'ina_sensor'):
+            if hasattr(self, "ina_sensor"):
                 self.set_orin_battery_state()
             else:
                 if not self.wrote_error_once:
-                    self.get_logger().info("INA219 sensor not available, skipping orin_battery_state update.")
+                    self.get_logger().info(
+                        "INA219 sensor not available, skipping orin_battery_state update."
+                    )
                     self.wrote_error_once = True
 
-         # Publish messages
+        # Publish messages
         try:
             self.odom_publisher.publish(self.odom)
             self.imu_publisher.publish(self.imu)
@@ -202,49 +260,74 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.cr_battery_state_publisher.publish(self.cr_battery_state)
             self.object_state_publisher.publish(Bool(data=self.has_object))
             if MODEL and "nvidia jetson" in MODEL:
-                if hasattr(self, 'ina_sensor'):
+                if hasattr(self, "ina_sensor"):
                     self.orin_battery_state_publisher.publish(self.orin_battery_state)
         except Exception:
             if rclpy.ok():
                 raise
 
     def set_odom(self):
-            
+
         self.odom.header.stamp = self.current_time.to_msg()
         self.odom.header.frame_id = self.odom_frame_id
         self.odom.child_frame_id = self.odom_child_frame_id
 
-        Vx_tick = (self.cr_state.vel_bl + self.cr_state.vel_br + self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-        Vy_tick = (self.cr_state.vel_bl - self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
-        Wz_tick = (-self.cr_state.vel_bl + self.cr_state.vel_br - self.cr_state.vel_fl + self.cr_state.vel_fr)/4
+        Vx_tick = (
+            self.cr_state.vel_bl
+            + self.cr_state.vel_br
+            + self.cr_state.vel_fl
+            + self.cr_state.vel_fr
+        ) / 4
+        Vy_tick = (
+            self.cr_state.vel_bl
+            - self.cr_state.vel_br
+            - self.cr_state.vel_fl
+            + self.cr_state.vel_fr
+        ) / 4
+        Wz_tick = (
+            -self.cr_state.vel_bl
+            + self.cr_state.vel_br
+            - self.cr_state.vel_fl
+            + self.cr_state.vel_fr
+        ) / 4
 
         self.odom.twist.twist.linear.x = Vx_tick * self.scale  # m/s
-        self.odom.twist.twist.linear.y = Vy_tick * self.scale # m/s
-        self.odom.twist.twist.angular.z = Wz_tick * self.scale / self.wheel_dist_scale  # rad/s
-        #self.get_logger().info(f'Wheel ticks: BL: {self.cr_state.vel_bl}, BR: {self.cr_state.vel_br}, FL: {self.cr_state.vel_fl}, FR: {self.cr_state.vel_fr}')
-        #self.get_logger().info(f'Wheel tick Velocities: Vx_tick: {Vx_tick}, Vy_tick: {Vy_tick}, Wz_tick: {Wz_tick}, scale: {self.scale}, wheel_dist_scale: {self.wheel_dist_scale}')
-        #self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
-    
-        dx =  self.odom.twist.twist.linear.x * self.dt
-        dy =  self.odom.twist.twist.linear.y * self.dt
+        self.odom.twist.twist.linear.y = Vy_tick * self.scale  # m/s
+        self.odom.twist.twist.angular.z = (
+            Wz_tick * self.scale / self.wheel_dist_scale
+        )  # rad/s
+        # self.get_logger().info(f'Wheel ticks: BL: {self.cr_state.vel_bl}, BR: {self.cr_state.vel_br}, FL: {self.cr_state.vel_fl}, FR: {self.cr_state.vel_fr}')
+        # self.get_logger().info(f'Wheel tick Velocities: Vx_tick: {Vx_tick}, Vy_tick: {Vy_tick}, Wz_tick: {Wz_tick}, scale: {self.scale}, wheel_dist_scale: {self.wheel_dist_scale}')
+        # self.get_logger().info(f'Calculated Velocities: Vx: {msg.twist.twist.linear.x}, Vy: {msg.twist.twist.linear.y}, Wz: {msg.twist.twist.angular.z}')
+
+        dx = self.odom.twist.twist.linear.x * self.dt
+        dy = self.odom.twist.twist.linear.y * self.dt
         dtheta = self.odom.twist.twist.angular.z * self.dt
 
-        self.odom.pose.pose.position.x = self.odom.pose.pose.position.x + (math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy)
-        self.odom.pose.pose.position.y = self.odom.pose.pose.position.y + (math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy)
+        self.odom.pose.pose.position.x = self.odom.pose.pose.position.x + (
+            math.cos(self.last_yaw_angle) * dx - math.sin(self.last_yaw_angle) * dy
+        )
+        self.odom.pose.pose.position.y = self.odom.pose.pose.position.y + (
+            math.sin(self.last_yaw_angle) * dx + math.cos(self.last_yaw_angle) * dy
+        )
         self.odom.pose.pose.position.z = 0.0
-        #self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
-        #self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
-        if self.odom_from_imu: #TODO
+        # self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
+        # self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
+        if self.odom_from_imu:  # TODO
             # Orientation from IMU
             self.odom.pose.pose.orientation.x = self.cr_state.imu_orientation_x
             self.odom.pose.pose.orientation.y = self.cr_state.imu_orientation_y
             self.odom.pose.pose.orientation.z = self.cr_state.imu_orientation_z
             self.odom.pose.pose.orientation.w = self.cr_state.imu_orientation_w
             # Update last_yaw_angle from IMU quaternion
-            e = quat2euler((self.cr_state.imu_orientation_w, 
-                            self.cr_state.imu_orientation_x, 
-                            self.cr_state.imu_orientation_y, 
-                            self.cr_state.imu_orientation_z, ))
+            e = quat2euler(
+                (
+                    self.cr_state.imu_orientation_w,
+                    self.cr_state.imu_orientation_x,
+                    self.cr_state.imu_orientation_y,
+                    self.cr_state.imu_orientation_z,
+                )
+            )
             self.last_yaw_angle = e[2]  # Yaw angle
         else:
             new_yaw = (self.last_yaw_angle + dtheta) % (2 * math.pi)
@@ -269,9 +352,9 @@ class Mecanumbot_Sensorproc_Node(Node):
             except Exception:
                 if rclpy.ok():
                     raise
-            
+
     def set_imu(self):
-                
+
         self.imu.header.stamp = self.current_time.to_msg()
         self.imu.header.frame_id = self.imu_frame_id
 
@@ -291,45 +374,54 @@ class Mecanumbot_Sensorproc_Node(Node):
 
         self.joint_state.header.stamp = self.current_time.to_msg()
         self.joint_state.name = [
-            f'{self.namespace}/wheel_backleft_joint', 
-            f'{self.namespace}/wheel_backright_joint', 
-            f'{self.namespace}/wheel_frontleft_joint', 
-            f'{self.namespace}/wheel_frontright_joint',
-            f'{self.namespace}/head_joint',
-            f'{self.namespace}/grabber_left_joint',
-            f'{self.namespace}/grabber_right_joint']
+            f"{self.namespace}/wheel_backleft_joint",
+            f"{self.namespace}/wheel_backright_joint",
+            f"{self.namespace}/wheel_frontleft_joint",
+            f"{self.namespace}/wheel_frontright_joint",
+            f"{self.namespace}/head_joint",
+            f"{self.namespace}/grabber_left_joint",
+            f"{self.namespace}/grabber_right_joint",
+        ]
 
         access_posis = [
             NECK_MIDPOINT_COMPENSATE_CONSTANT + self.cr_state.pos_n * TICK_TO_RAD,
             GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
-            GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD
+            GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD,
         ]
 
-        self.joint_state.position = [0.0,0.0,0.0,0.0, *access_posis]
+        self.joint_state.position = [0.0, 0.0, 0.0, 0.0, *access_posis]
         self.joint_state.velocity = [0.0] * 7
-        self.joint_state.effort   = [0.0] * 7
+        self.joint_state.effort = [0.0] * 7
 
-    def set_cr_battery_state(self): #could be more accurate - Temperature. cell values, status. etc.
+    def set_cr_battery_state(
+        self,
+    ):  # could be more accurate - Temperature. cell values, status. etc.
 
         self.cr_battery_state.header.stamp = self.current_time.to_msg()
-        
+
         self.cr_battery_state.voltage = self.cr_state.battery_voltage
-        self.cr_battery_state.percentage = (self.cr_state.battery_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
-        self.cr_battery_state.charge = self.cr_battery_state.capacity * self.cr_battery_state.percentage
-        
-    def set_orin_battery_state(self): #placeholder for orin battery state, currently set to 100%
+        self.cr_battery_state.percentage = (
+            self.cr_state.battery_voltage - self.battery_min_voltage
+        ) / (self.battery_max_voltage - self.battery_min_voltage)
+        self.cr_battery_state.charge = (
+            self.cr_battery_state.capacity * self.cr_battery_state.percentage
+        )
+
+    def set_orin_battery_state(
+        self,
+    ):  # placeholder for orin battery state, currently set to 100%
 
         # Timestamp
         self.orin_battery_state.header.stamp = self.get_clock().now().to_msg()
         self.orin_battery_state.header.frame_id = "base_footprint"
 
         # Sensor readings
-        bus_voltage = self.ina_sensor.bus_voltage       # volts
-        current_ma = self.ina_sensor.current            # mA
+        bus_voltage = self.ina_sensor.bus_voltage  # volts
+        current_ma = self.ina_sensor.current  # mA
 
         # Fill ROS BatteryState fields
         self.orin_battery_state.voltage = float(bus_voltage)
-        self.orin_battery_state.current = float(current_ma) / 1000.0    # convert mA -> A
+        self.orin_battery_state.current = float(current_ma) / 1000.0  # convert mA -> A
 
         # Optional values
         self.orin_battery_state.temperature = float("nan")
@@ -337,22 +429,33 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.orin_battery_state.capacity = float("nan")
         self.orin_battery_state.design_capacity = float("nan")
 
-        percentage = (bus_voltage - self.battery_min_voltage) / (self.battery_max_voltage - self.battery_min_voltage)
+        percentage = (bus_voltage - self.battery_min_voltage) / (
+            self.battery_max_voltage - self.battery_min_voltage
+        )
         percentage = max(0.0, min(1.0, percentage))
         self.orin_battery_state.percentage = percentage
 
         # Power supply status
-        self.orin_battery_state.power_supply_status = BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
-        self.orin_battery_state.power_supply_health = BatteryState.POWER_SUPPLY_HEALTH_GOOD
-        self.orin_battery_state.power_supply_technology = BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
+        self.orin_battery_state.power_supply_status = (
+            BatteryState.POWER_SUPPLY_STATUS_DISCHARGING
+        )
+        self.orin_battery_state.power_supply_health = (
+            BatteryState.POWER_SUPPLY_HEALTH_GOOD
+        )
+        self.orin_battery_state.power_supply_technology = (
+            BatteryState.POWER_SUPPLY_TECHNOLOGY_LION
+        )
 
         self.orin_battery_state.present = True
-    
+
     def set_object_state(self):
         self.dms_buffer.append(self.cr_state.dms)
         self.dms_buffer.pop(0)
         self.has_object = (
-            sum(dms > self.has_object_threshold or dms == -1.0 for dms in self.dms_buffer)
+            sum(
+                dms > self.has_object_threshold or dms == -1.0
+                for dms in self.dms_buffer
+            )
             > len(self.dms_buffer) / 2
         )
 
@@ -373,6 +476,7 @@ def main(args=None):
         sensorproc_node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-        
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

@@ -17,7 +17,7 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 | `launch/mecanumbot_state_publisher.launch.py` | Starts `robot_state_publisher` with robot description from URDF/xacro.                                                           |
 | `launch/rviz2.launch.py`                      | Starts RViz with the package-provided visualization config.                                                                      |
 | `launch/camera.launch.py`                     | Includes `mecanumbot_camera_stream/camera_compressed.launch.py` (JPEG compressed stream). Replaces the earlier raw `v4l2_camera_node` setup. |
-| `launch/launch_mecanumbot_sim*.launch.py`     | Simulation variants (base, mapping, perception, behaviour) intended for a development machine, not the Jetson.                   |
+| `launch/sim.launch.py`                        | The single entry point for every simulated run, intended for a development machine and not the Jetson. Two orthogonal arguments: `backend` (`mujoco` \| `gazebo`) picks the simulator, `mode` (`base` \| `mapping` \| `perception` \| `truth_twin` \| `behaviour`) picks what runs on top. Replaces the five `launch_mecanumbot_sim*` / `launch_mecanumbot_truth_twin` files, which were layered includes of one another. Everything it starts lives in `mecanumbot_sim`. |
 
 ## Additional notes
 

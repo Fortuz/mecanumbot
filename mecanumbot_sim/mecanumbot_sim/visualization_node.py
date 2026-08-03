@@ -3,31 +3,38 @@ from copy import deepcopy
 
 import rclpy
 from geometry_msgs.msg import Point, PoseArray, PoseStamped
-from mecanumbot_msgs.msg import SimActor, SimActorArray, SimBehaviorEvaluation, SimDetectionEvaluation
+from mecanumbot_msgs.msg import (
+    SimActor,
+    SimActorArray,
+    SimBehaviorEvaluation,
+    SimDetectionEvaluation,
+)
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 
 
 class MecanumbotSimVisualizationNode(Node):
     def __init__(self):
-        super().__init__('mecanumbot_sim_visualization_node')
+        super().__init__("mecanumbot_sim_visualization_node")
         self.declare_parameters(
-            namespace='',
+            namespace="",
             parameters=[
-                ('actors_topic', '/sim/actors'),
-                ('detections_topic', 'dr_spaam/dets'),
-                ('subject_pose_topic', 'subject_pose'),
-                ('detection_evaluation_topic', '/sim/detection_evaluation'),
-                ('behavior_evaluation_topic', '/sim/behavior_evaluation'),
-                ('actor_markers_topic', '/sim/actor_markers'),
-                ('detection_markers_topic', '/sim/detection_markers'),
-                ('evaluation_markers_topic', '/sim/evaluation_markers'),
-                ('publish_rate_hz', 4.0),
-                ('show_detection_markers', True),
+                ("actors_topic", "/sim/actors"),
+                ("detections_topic", "dr_spaam/dets"),
+                ("subject_pose_topic", "subject_pose"),
+                ("detection_evaluation_topic", "/sim/detection_evaluation"),
+                ("behavior_evaluation_topic", "/sim/behavior_evaluation"),
+                ("actor_markers_topic", "/sim/actor_markers"),
+                ("detection_markers_topic", "/sim/detection_markers"),
+                ("evaluation_markers_topic", "/sim/evaluation_markers"),
+                ("publish_rate_hz", 4.0),
+                ("show_detection_markers", True),
             ],
         )
 
-        self.show_detection_markers = bool(self.get_parameter('show_detection_markers').value)
+        self.show_detection_markers = bool(
+            self.get_parameter("show_detection_markers").value
+        )
         self.latest_actors = None
         self.latest_detections = None
         self.latest_subject_pose = None
@@ -36,54 +43,56 @@ class MecanumbotSimVisualizationNode(Node):
 
         self.create_subscription(
             SimActorArray,
-            str(self.get_parameter('actors_topic').value),
+            str(self.get_parameter("actors_topic").value),
             self.actors_callback,
             10,
         )
         self.create_subscription(
             PoseArray,
-            str(self.get_parameter('detections_topic').value),
+            str(self.get_parameter("detections_topic").value),
             self.detections_callback,
             10,
         )
         self.create_subscription(
             PoseStamped,
-            str(self.get_parameter('subject_pose_topic').value),
+            str(self.get_parameter("subject_pose_topic").value),
             self.subject_pose_callback,
             10,
         )
         self.create_subscription(
             SimDetectionEvaluation,
-            str(self.get_parameter('detection_evaluation_topic').value),
+            str(self.get_parameter("detection_evaluation_topic").value),
             self.detection_evaluation_callback,
             10,
         )
         self.create_subscription(
             SimBehaviorEvaluation,
-            str(self.get_parameter('behavior_evaluation_topic').value),
+            str(self.get_parameter("behavior_evaluation_topic").value),
             self.behavior_evaluation_callback,
             10,
         )
 
         self.actor_marker_publisher = self.create_publisher(
             MarkerArray,
-            str(self.get_parameter('actor_markers_topic').value),
+            str(self.get_parameter("actor_markers_topic").value),
             10,
         )
         self.detection_marker_publisher = self.create_publisher(
             MarkerArray,
-            str(self.get_parameter('detection_markers_topic').value),
+            str(self.get_parameter("detection_markers_topic").value),
             10,
         )
         self.evaluation_marker_publisher = self.create_publisher(
             MarkerArray,
-            str(self.get_parameter('evaluation_markers_topic').value),
+            str(self.get_parameter("evaluation_markers_topic").value),
             10,
         )
 
-        publish_rate_hz = float(self.get_parameter('publish_rate_hz').value)
-        self.timer = self.create_timer(1.0 / max(publish_rate_hz, 0.1), self.timer_callback)
-        self.get_logger().info('Simulation visualization labels started.')
+        publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
+        self.timer = self.create_timer(
+            1.0 / max(publish_rate_hz, 0.1), self.timer_callback
+        )
+        self.get_logger().info("Simulation visualization labels started.")
 
     def actors_callback(self, msg: SimActorArray) -> None:
         self.latest_actors = msg
@@ -106,9 +115,13 @@ class MecanumbotSimVisualizationNode(Node):
 
         try:
             if self.latest_actors is not None:
-                self.actor_marker_publisher.publish(self.build_actor_markers(self.latest_actors))
+                self.actor_marker_publisher.publish(
+                    self.build_actor_markers(self.latest_actors)
+                )
             if self.show_detection_markers and self.latest_detections is not None:
-                self.detection_marker_publisher.publish(self.build_detection_markers(self.latest_detections))
+                self.detection_marker_publisher.publish(
+                    self.build_detection_markers(self.latest_detections)
+                )
             self.evaluation_marker_publisher.publish(self.build_evaluation_markers())
         except Exception:
             if rclpy.ok():
@@ -116,8 +129,8 @@ class MecanumbotSimVisualizationNode(Node):
 
     def build_actor_markers(self, actors_msg: SimActorArray) -> MarkerArray:
         markers = [
-            self.delete_all_marker(actors_msg.header, 'sim_actors'),
-            self.delete_all_marker(actors_msg.header, 'sim_world'),
+            self.delete_all_marker(actors_msg.header, "sim_actors"),
+            self.delete_all_marker(actors_msg.header, "sim_world"),
         ]
         marker_id = 1
         world_markers = self.world_body_markers(actors_msg.header, marker_id)
@@ -130,21 +143,33 @@ class MecanumbotSimVisualizationNode(Node):
             markers.append(self.actor_label_marker(actors_msg.header, actor, marker_id))
             marker_id += 1
             if self.is_actor_moving(actor):
-                markers.append(self.actor_velocity_marker(actors_msg.header, actor, marker_id))
+                markers.append(
+                    self.actor_velocity_marker(actors_msg.header, actor, marker_id)
+                )
                 marker_id += 1
         return MarkerArray(markers=markers)
 
     def build_detection_markers(self, detections_msg: PoseArray) -> MarkerArray:
-        markers = [self.delete_all_marker(detections_msg.header, 'sim_detection_labels')]
+        markers = [
+            self.delete_all_marker(detections_msg.header, "sim_detection_labels")
+        ]
         marker_id = 1
         for index, pose in enumerate(detections_msg.poses):
-            markers.append(self.detection_label_marker(detections_msg.header, pose, index, marker_id))
+            markers.append(
+                self.detection_label_marker(
+                    detections_msg.header, pose, index, marker_id
+                )
+            )
             marker_id += 1
 
         if self.latest_subject_pose is not None:
-            markers.append(self.tracked_subject_marker(self.latest_subject_pose, marker_id))
+            markers.append(
+                self.tracked_subject_marker(self.latest_subject_pose, marker_id)
+            )
             marker_id += 1
-            markers.append(self.tracked_subject_label_marker(self.latest_subject_pose, marker_id))
+            markers.append(
+                self.tracked_subject_label_marker(self.latest_subject_pose, marker_id)
+            )
         return MarkerArray(markers=markers)
 
     def build_evaluation_markers(self) -> MarkerArray:
@@ -159,17 +184,19 @@ class MecanumbotSimVisualizationNode(Node):
         if header is None:
             return MarkerArray()
 
-        markers = [self.delete_all_marker(header, 'sim_evaluation_status')]
+        markers = [self.delete_all_marker(header, "sim_evaluation_status")]
         markers.append(self.status_text_marker(header, 1))
         return MarkerArray(markers=markers)
 
-    def actor_body_markers(self, header, actor: SimActor, marker_id: int) -> list[Marker]:
-        if actor.kind == 'wall':
+    def actor_body_markers(
+        self, header, actor: SimActor, marker_id: int
+    ) -> list[Marker]:
+        if actor.kind == "wall":
             return [self.wall_body_marker(header, actor, marker_id)]
         return self.human_body_markers(header, actor, marker_id)
 
     def wall_body_marker(self, header, actor: SimActor, marker_id: int) -> Marker:
-        marker = self.base_marker(header, 'sim_actors', marker_id)
+        marker = self.base_marker(header, "sim_actors", marker_id)
         marker.color.a = 0.65
         self.apply_actor_color(marker, actor)
         marker.type = Marker.CUBE
@@ -183,16 +210,16 @@ class MecanumbotSimVisualizationNode(Node):
     def world_body_markers(self, header, marker_id: int) -> list[Marker]:
         # Fixed MuJoCo world geometry that contributes to LiDAR but is not a scenario actor.
         specs = [
-            ('wall_north', 0.0, 2.0, 0.25, 4.40, 0.10, 0.50, 0.60, 0.60, 0.60),
-            ('wall_south', 0.0, -2.0, 0.25, 4.40, 0.10, 0.50, 0.60, 0.60, 0.60),
-            ('wall_east', 2.0, 0.0, 0.25, 0.10, 4.40, 0.50, 0.60, 0.60, 0.60),
-            ('wall_west', -2.0, 0.0, 0.25, 0.10, 4.40, 0.50, 0.60, 0.60, 0.60),
-            ('box_obstacle_a', 0.9, 0.4, 0.15, 0.36, 0.36, 0.30, 0.0, 0.80, 0.0),
-            ('box_obstacle_b', -0.7, -0.8, 0.20, 0.24, 0.50, 0.40, 1.0, 0.50, 0.05),
+            ("wall_north", 0.0, 2.0, 0.25, 4.40, 0.10, 0.50, 0.60, 0.60, 0.60),
+            ("wall_south", 0.0, -2.0, 0.25, 4.40, 0.10, 0.50, 0.60, 0.60, 0.60),
+            ("wall_east", 2.0, 0.0, 0.25, 0.10, 4.40, 0.50, 0.60, 0.60, 0.60),
+            ("wall_west", -2.0, 0.0, 0.25, 0.10, 4.40, 0.50, 0.60, 0.60, 0.60),
+            ("box_obstacle_a", 0.9, 0.4, 0.15, 0.36, 0.36, 0.30, 0.0, 0.80, 0.0),
+            ("box_obstacle_b", -0.7, -0.8, 0.20, 0.24, 0.50, 0.40, 1.0, 0.50, 0.05),
         ]
         markers = []
         for offset, (_, x, y, z, sx, sy, sz, red, green, blue) in enumerate(specs):
-            marker = self.base_marker(header, 'sim_world', marker_id + offset)
+            marker = self.base_marker(header, "sim_world", marker_id + offset)
             marker.type = Marker.CUBE
             marker.pose.position.x = x
             marker.pose.position.y = y
@@ -205,14 +232,22 @@ class MecanumbotSimVisualizationNode(Node):
             markers.append(marker)
         return markers
 
-    def human_body_markers(self, header, actor: SimActor, marker_id: int) -> list[Marker]:
+    def human_body_markers(
+        self, header, actor: SimActor, marker_id: int
+    ) -> list[Marker]:
         markers = []
-        torso = self.human_part_marker(header, actor, marker_id, 'torso', 0.0, 0.0, 0.80, 0.32, 0.70)
+        torso = self.human_part_marker(
+            header, actor, marker_id, "torso", 0.0, 0.0, 0.80, 0.32, 0.70
+        )
         self.set_color(torso, 1.0, 0.42, 0.04, 0.65)
         markers.append(torso)
 
-        left_leg = self.human_part_marker(header, actor, marker_id + 1, 'leg_left', 0.0, 0.11, 0.30, 0.12, 0.50)
-        right_leg = self.human_part_marker(header, actor, marker_id + 2, 'leg_right', 0.0, -0.11, 0.30, 0.12, 0.50)
+        left_leg = self.human_part_marker(
+            header, actor, marker_id + 1, "leg_left", 0.0, 0.11, 0.30, 0.12, 0.50
+        )
+        right_leg = self.human_part_marker(
+            header, actor, marker_id + 2, "leg_right", 0.0, -0.11, 0.30, 0.12, 0.50
+        )
         self.set_color(left_leg, 0.0, 0.80, 0.0, 0.75)
         self.set_color(right_leg, 0.0, 0.80, 0.0, 0.75)
         markers.extend([left_leg, right_leg])
@@ -230,7 +265,7 @@ class MecanumbotSimVisualizationNode(Node):
         diameter: float,
         height: float,
     ) -> Marker:
-        marker = self.base_marker(header, 'sim_actors', marker_id)
+        marker = self.base_marker(header, "sim_actors", marker_id)
         marker.type = Marker.CYLINDER
         marker.pose = deepcopy(actor.pose)
         world_x, world_y = self.local_actor_offset(actor, local_x, local_y)
@@ -243,29 +278,29 @@ class MecanumbotSimVisualizationNode(Node):
         return marker
 
     def actor_label_marker(self, header, actor: SimActor, marker_id: int) -> Marker:
-        marker = self.base_marker(header, 'sim_actor_labels', marker_id)
+        marker = self.base_marker(header, "sim_actor_labels", marker_id)
         marker.type = Marker.TEXT_VIEW_FACING
         marker.pose = deepcopy(actor.pose)
         marker.scale.z = 0.12
         marker.color.a = 1.0
         self.apply_actor_color(marker, actor)
 
-        if actor.kind == 'wall':
+        if actor.kind == "wall":
             marker.pose.position.z = 0.16
             marker.scale.z = 0.10
-            marker.text = 'WALL'
+            marker.text = "WALL"
         elif actor.is_subject:
             marker.pose.position.z = 1.05
             marker.pose.position.y -= 0.10
-            marker.text = 'SUBJECT'
+            marker.text = "SUBJECT"
         else:
             marker.pose.position.z = 0.95
             marker.pose.position.y += 0.10
-            marker.text = 'DISTRACTOR'
+            marker.text = "DISTRACTOR"
         return marker
 
     def actor_velocity_marker(self, header, actor: SimActor, marker_id: int) -> Marker:
-        marker = self.base_marker(header, 'sim_actor_velocity', marker_id)
+        marker = self.base_marker(header, "sim_actor_velocity", marker_id)
         marker.type = Marker.ARROW
         marker.pose.orientation.w = 1.0
         marker.scale.x = 0.025
@@ -290,8 +325,10 @@ class MecanumbotSimVisualizationNode(Node):
         marker.points.append(end)
         return marker
 
-    def detection_label_marker(self, header, pose, index: int, marker_id: int) -> Marker:
-        marker = self.base_marker(header, 'sim_detection_labels', marker_id)
+    def detection_label_marker(
+        self, header, pose, index: int, marker_id: int
+    ) -> Marker:
+        marker = self.base_marker(header, "sim_detection_labels", marker_id)
         marker.type = Marker.TEXT_VIEW_FACING
         marker.pose = deepcopy(pose)
         marker.pose.position.z = 0.30
@@ -300,11 +337,11 @@ class MecanumbotSimVisualizationNode(Node):
         marker.color.g = 0.95
         marker.color.b = 0.10
         marker.color.a = 1.0
-        marker.text = f'D{index + 1}'
+        marker.text = f"D{index + 1}"
         return marker
 
     def tracked_subject_marker(self, pose_msg: PoseStamped, marker_id: int) -> Marker:
-        marker = self.base_marker(pose_msg.header, 'sim_tracked_subject', marker_id)
+        marker = self.base_marker(pose_msg.header, "sim_tracked_subject", marker_id)
         marker.type = Marker.SPHERE
         marker.pose = deepcopy(pose_msg.pose)
         marker.pose.position.z = 0.05
@@ -317,8 +354,10 @@ class MecanumbotSimVisualizationNode(Node):
         marker.color.a = 0.9
         return marker
 
-    def tracked_subject_label_marker(self, pose_msg: PoseStamped, marker_id: int) -> Marker:
-        marker = self.base_marker(pose_msg.header, 'sim_tracked_subject', marker_id)
+    def tracked_subject_label_marker(
+        self, pose_msg: PoseStamped, marker_id: int
+    ) -> Marker:
+        marker = self.base_marker(pose_msg.header, "sim_tracked_subject", marker_id)
         marker.type = Marker.TEXT_VIEW_FACING
         marker.pose = deepcopy(pose_msg.pose)
         marker.pose.position.z = 0.22
@@ -327,11 +366,11 @@ class MecanumbotSimVisualizationNode(Node):
         marker.color.g = 0.45
         marker.color.b = 1.0
         marker.color.a = 1.0
-        marker.text = 'TRACK'
+        marker.text = "TRACK"
         return marker
 
     def status_text_marker(self, header, marker_id: int) -> Marker:
-        marker = self.base_marker(header, 'sim_evaluation_status', marker_id)
+        marker = self.base_marker(header, "sim_evaluation_status", marker_id)
         marker.type = Marker.TEXT_VIEW_FACING
         marker.pose.position.x = -0.70
         marker.pose.position.y = -1.35
@@ -340,22 +379,28 @@ class MecanumbotSimVisualizationNode(Node):
         marker.scale.z = 0.12
         marker.color.a = 1.0
 
-        detection_status = 'waiting'
-        detection_actor = ''
+        detection_status = "waiting"
+        detection_actor = ""
         if self.latest_detection_evaluation is not None:
             detection_status = self.latest_detection_evaluation.status
             detection_actor = self.latest_detection_evaluation.nearest_actor_name
 
-        behavior_status = 'waiting'
+        behavior_status = "waiting"
         if self.latest_behavior_evaluation is not None:
             behavior_status = self.latest_behavior_evaluation.status
 
-        unsafe = self.latest_behavior_evaluation is not None and self.latest_behavior_evaluation.unsafe_motion
+        unsafe = (
+            self.latest_behavior_evaluation is not None
+            and self.latest_behavior_evaluation.unsafe_motion
+        )
         if unsafe:
             marker.color.r = 1.0
             marker.color.g = 0.15
             marker.color.b = 0.10
-        elif self.latest_detection_evaluation is not None and self.latest_detection_evaluation.subject_tracking_ok:
+        elif (
+            self.latest_detection_evaluation is not None
+            and self.latest_detection_evaluation.subject_tracking_ok
+        ):
             marker.color.r = 0.20
             marker.color.g = 1.0
             marker.color.b = 0.25
@@ -364,8 +409,8 @@ class MecanumbotSimVisualizationNode(Node):
             marker.color.g = 0.85
             marker.color.b = 0.10
 
-        actor_line = f'near: {detection_actor}' if detection_actor else 'near: none'
-        marker.text = f'P: {detection_status}\n{actor_line}\nB: {behavior_status}'
+        actor_line = f"near: {detection_actor}" if detection_actor else "near: none"
+        marker.text = f"P: {detection_status}\n{actor_line}\nB: {behavior_status}"
         return marker
 
     @staticmethod
@@ -390,22 +435,32 @@ class MecanumbotSimVisualizationNode(Node):
 
     @staticmethod
     def apply_actor_color(marker: Marker, actor: SimActor) -> None:
-        if actor.kind == 'wall':
-            MecanumbotSimVisualizationNode.set_color(marker, 0.60, 0.60, 0.60, marker.color.a)
+        if actor.kind == "wall":
+            MecanumbotSimVisualizationNode.set_color(
+                marker, 0.60, 0.60, 0.60, marker.color.a
+            )
         elif actor.is_subject:
-            MecanumbotSimVisualizationNode.set_color(marker, 0.10, 1.00, 0.25, marker.color.a)
+            MecanumbotSimVisualizationNode.set_color(
+                marker, 0.10, 1.00, 0.25, marker.color.a
+            )
         else:
-            MecanumbotSimVisualizationNode.set_color(marker, 1.00, 0.50, 0.05, marker.color.a)
+            MecanumbotSimVisualizationNode.set_color(
+                marker, 1.00, 0.50, 0.05, marker.color.a
+            )
 
     @staticmethod
-    def set_color(marker: Marker, red: float, green: float, blue: float, alpha: float) -> None:
+    def set_color(
+        marker: Marker, red: float, green: float, blue: float, alpha: float
+    ) -> None:
         marker.color.r = red
         marker.color.g = green
         marker.color.b = blue
         marker.color.a = alpha
 
     @staticmethod
-    def local_actor_offset(actor: SimActor, local_x: float, local_y: float) -> tuple[float, float]:
+    def local_actor_offset(
+        actor: SimActor, local_x: float, local_y: float
+    ) -> tuple[float, float]:
         q = actor.pose.orientation
         yaw = math.atan2(
             2.0 * (q.w * q.z + q.x * q.y),
@@ -434,5 +489,5 @@ def main(args=None):
             rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
