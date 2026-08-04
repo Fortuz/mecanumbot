@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Mecanumbot{% endblock %}</title>
+<style>
+:root {
+  --bg: #12151a;      --panel: #1b1f27;   --panel2: #232833;
+  --line: #2f3643;    --text: #e6e9ef;    --dim: #98a2b3;
+  --ok: #3fb950;      --warn: #d29922;    --bad: #f85149;  --info: #58a6ff;
+  --accent: #58a6ff;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7f9;    --panel: #ffffff;   --panel2: #f0f2f5;
+    --line: #d7dbe0;  --text: #1c2029;    --dim: #5b6472;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+header {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  padding: 12px 20px; background: var(--panel);
+  border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20;
+}
+header .brand { font-weight: 650; letter-spacing: .2px; }
+header nav { display: flex; gap: 4px; }
+header nav a {
+  color: var(--dim); text-decoration: none; padding: 6px 12px; border-radius: 6px;
+}
+header nav a:hover { background: var(--panel2); color: var(--text); }
+header nav a.active { background: var(--accent); color: #fff; }
+header .spacer { flex: 1; }
+main { padding: 20px; max-width: 1180px; margin: 0 auto; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 24px 0 10px; }
+.sub { color: var(--dim); margin: 0 0 18px; }
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 16px; margin-bottom: 16px;
+}
+.card > h3 { margin: 0 0 12px; font-size: 14px; font-weight: 650; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+button, select, input {
+  font: inherit; color: var(--text); background: var(--panel2);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { border-color: var(--bad); color: var(--bad); }
+input[type=number] { width: 92px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--dim); font-weight: 600; font-size: 12px;
+     text-transform: uppercase; letter-spacing: .4px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+              font-size: 12.5px; }
+.pill {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 650; letter-spacing: .3px;
+}
+.pill.OK   { background: rgba(63,185,80,.16);  color: var(--ok); }
+.pill.SLOW { background: rgba(210,153,34,.16); color: var(--warn); }
+.pill.FAST { background: rgba(88,166,255,.16); color: var(--info); }
+.pill.DEAD { background: rgba(248,81,73,.16);  color: var(--bad); }
+.banner {
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  border: 1px solid; font-size: 13px;
+}
+.banner.err  { border-color: var(--bad);  background: rgba(248,81,73,.10); }
+.banner.warn { border-color: var(--warn); background: rgba(210,153,34,.10); }
+.banner.ok   { border-color: var(--ok);   background: rgba(63,185,80,.10); }
+.banner.info { border-color: var(--line); background: var(--panel2); color: var(--dim); }
+.banner ul { margin: 6px 0 0; padding-left: 20px; }
+.dim { color: var(--dim); }
+.small { font-size: 12px; }
+.scroll { overflow-x: auto; }
+.hidden { display: none !important; }
+.bar { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Mecanumbot</span>
+  <nav>
+    <a href="/joystick"    class="{{ 'active' if page == 'joystick' }}">Joystick</a>
+    <a href="/diagnostics" class="{{ 'active' if page == 'diagnostics' }}">Diagnostics</a>
+    <a href="/behaviour"   class="{{ 'active' if page == 'behaviour' }}">Behaviour</a>
+  </nav>
+  <span class="spacer"></span>
+  <span id="hdr-status" class="small dim"></span>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<script>
+// Shared helpers. No external libraries anywhere in this GUI.
+async function api(url, options) {
+  const response = await fetch(url, Object.assign({
+    headers: {'Content-Type': 'application/json'}
+  }, options || {}));
+  let body = {};
+  try { body = await response.json(); } catch (e) { /* non-JSON error page */ }
+  return {status: response.status, ok: response.ok, body: body};
+}
+function post(url, payload) {
+  return api(url, {method: 'POST', body: JSON.stringify(payload || {})});
+}
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  for (const key in (attrs || {})) {
+    if (key === 'class') node.className = attrs[key];
+    else if (key === 'text') node.textContent = attrs[key];
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), attrs[key]);
+    else if (attrs[key] !== null && attrs[key] !== undefined) node.setAttribute(key, attrs[key]);
+  }
+  (children || []).forEach(function (child) {
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  });
+  return node;
+}
+function banner(target, kind, title, items) {
+  const host = document.getElementById(target);
+  if (!host) return;
+  host.innerHTML = '';
+  if (!title && !(items || []).length) return;
+  const box = el('div', {class: 'banner ' + kind});
+  if (title) box.appendChild(el('div', {text: title}));
+  if ((items || []).length) {
+    const list = el('ul');
+    items.forEach(function (item) { list.appendChild(el('li', {text: item})); });
+    box.appendChild(list);
+  }
+  host.appendChild(box);
+}
+function setHeaderStatus(text) {
+  document.getElementById('hdr-status').textContent = text || '';
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

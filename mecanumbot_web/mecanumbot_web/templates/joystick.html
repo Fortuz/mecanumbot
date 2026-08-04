@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+{% block title %}Joystick — Mecanumbot{% endblock %}
+
+{% block content %}
+<h1>Joystick</h1>
+<p class="sub">
+  Edit the mapping profile the robot's joystick node runs on. Saving writes the
+  YAML in <code class="small">{{ config_dir }}</code>; Reload makes the running
+  node re-read it. Bindings can only name controls this profile declares, so an
+  unmappable binding cannot be expressed here.
+</p>
+
+<div id="notice"></div>
+
+<div class="card">
+  <div class="row">
+    <label for="profile-select">Profile</label>
+    <select id="profile-select" onchange="loadProfile(this.value)"></select>
+    <span id="active-badge" class="small dim"></span>
+    <span class="grow"></span>
+    <button onclick="activateProfile()">Make active</button>
+    <button class="primary" onclick="save(false)">Save</button>
+    <button class="primary" onclick="save(true)">Save &amp; reload</button>
+    <button onclick="reloadNode()">Reload</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <span id="estop-badge" class="small dim"></span>
+    <button class="danger" onclick="clearEstop()">Clear e-stop</button>
+    <span class="grow"></span>
+    <select id="backup-select" class="small"></select>
+    <button onclick="restore()">Restore backup</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Live input</h3>
+  <p class="small dim">
+    Move a stick or press a button to see which index it reports. This is the
+    fastest way to build a profile for a pad nobody has mapped before.
+  </p>
+  <div id="live-connection" class="small dim">waiting for /joy…</div>
+  <div class="row" style="align-items:flex-start; gap:26px; margin-top:10px">
+    <div><h4 class="small dim">Axes</h4><table id="live-axes"></table></div>
+    <div><h4 class="small dim">Buttons</h4><div id="live-buttons" class="row"></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Bindings</h3>
+  <div class="scroll"><table>
+    <thead><tr>
+      <th>Action</th><th>Control</th><th>Trigger</th><th>Options</th><th></th>
+    </tr></thead>
+    <tbody id="bindings"></tbody>
+  </table></div>
+</div>
+
+<div class="card">
+  <h3>Limits</h3>
+  <div class="scroll"><table><tbody id="limits"></tbody></table></div>
+</div>
+
+<div class="card">
+  <h3>Accessory travel</h3>
+  <div class="scroll"><table><tbody id="accessory"></tbody></table></div>
+</div>
+
+<div class="card">
+  <h3>Controls this profile declares</h3>
+  <p class="small dim">
+    Indices come from the pad. Change them only to match different hardware —
+    use the live readout above to find the right number.
+  </p>
+  <div class="scroll"><table><tbody id="controls"></tbody></table></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const META = {{ metadata|tojson }};
+let doc = null;         // the profile document being edited
+let stem = null;        // its file stem
+let controls = {axes: [], buttons: []};
+
+function spec() { return (doc && doc.profile) || {}; }
+
+// ── loading ────────────────────────────────────────────────────────────
+
+async function loadProfileList(select) {
+  const result = await api('/api/joystick/profiles');
+  if (!result.ok) { banner('notice', 'err', 'Cannot list profiles.'); return; }
+
+  const picker = document.getElementById('profile-select');
+  picker.innerHTML = '';
+  result.body.profiles.forEach(function (entry) {
+    picker.appendChild(el('option', {
+      value: entry.stem,
+      text: entry.stem + (entry.valid ? '' : '  (invalid)')
+    }));
+  });
+
+  const active = result.body.active;
+  document.getElementById('active-badge').textContent =
+    active ? 'node is running: ' + active : 'node has not reported a profile';
+  const estop = result.body.estop;
+  document.getElementById('estop-badge').innerHTML = estop === true
+    ? '<span class="pill DEAD">E-STOP ENGAGED</span>'
+    : (estop === false ? '<span class="pill OK">e-stop clear</span>' : '');
+
+  const wanted = select || active || (result.body.profiles[0] || {}).stem;
+  if (wanted) { picker.value = wanted; await loadProfile(wanted); }
+}
+
+async function loadProfile(name) {
+  const result = await api('/api/joystick/profile/' + encodeURIComponent(name));
+  if (!result.ok) { banner('notice', 'err', result.body.error || 'Cannot read profile.'); return; }
+
+  stem = name;
+  doc = result.body.document;
+  controls = result.body.controls;
+
+  const notes = [];
+  if (!result.body.symlinked) {
+    notes.push('This file is not symlinked to a source checkout, so a rebuild ' +
+               'will overwrite anything saved here.');
+  }
+  if (result.body.errors.length) {
+    banner('notice', 'err', 'This profile is currently invalid:', result.body.errors);
+  } else if (notes.length) {
+    banner('notice', 'warn', notes[0]);
+  } else {
+    banner('notice', 'ok', null, []);
+  }
+
+  const backups = document.getElementById('backup-select');
+  backups.innerHTML = '';
+  (result.body.backups || []).forEach(function (entry) {
+    backups.appendChild(el('option', {value: entry.name, text: entry.modified_utc}));
+  });
+  if (!(result.body.backups || []).length) {
+    backups.appendChild(el('option', {value: '', text: 'no backups yet'}));
+  }
+
+  renderBindings(); renderLimits(); renderAccessory(); renderControls();
+}
+
+// ── bindings ───────────────────────────────────────────────────────────
+
+function renderBindings() {
+  const body = document.getElementById('bindings');
+  body.innerHTML = '';
+  const bindings = spec().bindings || {};
+
+  META.vocabulary.forEach(function (action) {
+    const isAxis = META.axis_actions.indexOf(action) >= 0;
+    const binding = bindings[action] || null;
+
+    const controlSelect = el('select', {onchange: function (event) {
+      setBinding(action, isAxis, event.target.value);
+    }});
+    controlSelect.appendChild(el('option', {value: '', text: '— unbound —'}));
+    (isAxis ? controls.axes : controls.buttons).forEach(function (name) {
+      controlSelect.appendChild(el('option', {value: name, text: name}));
+    });
+    controlSelect.value = binding ? (isAxis ? binding.axis : binding.button) || '' : '';
+
+    const options = el('td', {class: 'small'});
+    let trigger = el('span', {class: 'dim', text: '—'});
+
+    if (binding && isAxis) {
+      const invert = el('input', {type: 'checkbox', onchange: function (event) {
+        binding.invert = event.target.checked;
+        if (!binding.invert) delete binding.invert;
+      }});
+      invert.checked = !!binding.invert;
+      options.appendChild(el('label', {class: 'row small'}, [invert, ' invert']));
+    } else if (binding) {
+      trigger = el('select', {onchange: function (event) {
+        binding.trigger = event.target.value;
+      }});
+      META.triggers.forEach(function (mode) {
+        trigger.appendChild(el('option', {value: mode, text: mode}));
+      });
+      trigger.value = binding.trigger || 'press';
+      if (action === 'estop') {
+        trigger.disabled = true;
+        trigger.title = 'E-stop is always edge triggered; a held toggle would ' +
+                        'flip at the joy rate.';
+      }
+      if (action === 'neck_preset') {
+        const value = el('input', {type: 'number', step: '0.1',
+          value: binding.value !== undefined ? binding.value : 8.6,
+          onchange: function (event) { binding.value = parseFloat(event.target.value); }});
+        options.appendChild(el('label', {class: 'row small'}, ['position ', value]));
+      }
+      if (action === 'led_preset') {
+        const presets = el('select', {onchange: function (event) {
+          binding.preset = event.target.value;
+        }});
+        Object.keys(spec().led_presets || {}).forEach(function (name) {
+          presets.appendChild(el('option', {value: name, text: name}));
+        });
+        presets.value = binding.preset || '';
+        options.appendChild(el('label', {class: 'row small'}, ['preset ', presets]));
+      }
+    }
+
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [
+        el('div', {text: action}),
+        el('div', {class: 'small dim', text: META.action_docs[action] || ''})
+      ]),
+      el('td', {}, [controlSelect]),
+      el('td', {}, [trigger]),
+      options,
+      el('td', {class: 'small dim',
+                text: binding ? '' : 'not bound'})
+    ]));
+  });
+}
+
+function setBinding(action, isAxis, control) {
+  const bindings = spec().bindings = spec().bindings || {};
+  if (!control) { delete bindings[action]; renderBindings(); return; }
+
+  const existing = bindings[action] || {};
+  if (isAxis) {
+    bindings[action] = {control: 'axis', axis: control};
+    if (existing.invert) bindings[action].invert = true;
+  } else {
+    bindings[action] = {control: 'button', button: control,
+                        trigger: existing.trigger || 'press'};
+    if (action === 'neck_preset') {
+      bindings[action].value = existing.value !== undefined ? existing.value : 8.6;
+    }
+    if (action === 'led_preset') {
+      const names = Object.keys(spec().led_presets || {});
+      bindings[action].preset = existing.preset || names[0] || '';
+    }
+  }
+  renderBindings();
+}
+
+// ── numeric blocks ─────────────────────────────────────────────────────
+
+function numberRow(label, doc, getter, setter, step) {
+  const input = el('input', {type: 'number', step: step || 'any', value: getter(),
+    onchange: function (event) { setter(parseFloat(event.target.value)); }});
+  return el('tr', {}, [
+    el('td', {}, [el('div', {text: label}),
+                  el('div', {class: 'small dim', text: doc || ''})]),
+    el('td', {}, [input])
+  ]);
+}
+
+function renderLimits() {
+  const body = document.getElementById('limits');
+  body.innerHTML = '';
+  const limits = spec().limits = spec().limits || {};
+  Object.keys(META.limit_defaults).forEach(function (key) {
+    if (limits[key] === undefined) limits[key] = META.limit_defaults[key];
+    const info = META.limit_docs[key] || ['', ''];
+    body.appendChild(numberRow(
+      key + (info[0] ? ' (' + info[0] + ')' : ''), info[1],
+      function () { return limits[key]; },
+      function (value) { limits[key] = value; }));
+  });
+}
+
+function renderAccessory() {
+  const body = document.getElementById('accessory');
+  body.innerHTML = '';
+  const accessory = spec().accessory = spec().accessory || {};
+  const groups = {
+    neck: {fields: ['min', 'max', 'default', 'step'],
+           doc: 'Neck tilt. step is applied per publish tick while held.'},
+    gripper: {fields: ['min', 'front', 'max', 'default'],
+              doc: 'Gripper travel. The two grippers mirror each other.'}
+  };
+  Object.keys(groups).forEach(function (group) {
+    accessory[group] = accessory[group] || {};
+    body.appendChild(el('tr', {}, [
+      el('td', {colspan: '2'}, [
+        el('div', {text: group}),
+        el('div', {class: 'small dim', text: groups[group].doc})])]));
+    groups[group].fields.forEach(function (field) {
+      body.appendChild(numberRow('    ' + field, '',
+        function () { return accessory[group][field]; },
+        function (value) { accessory[group][field] = value; }, '0.01'));
+    });
+  });
+}
+
+function renderControls() {
+  const body = document.getElementById('controls');
+  body.innerHTML = '';
+  const axes = spec().axes || {};
+  const buttons = spec().buttons || {};
+
+  Object.keys(axes).forEach(function (name) {
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [el('span', {class: 'mono', text: 'axis ' + name}),
+                    el('div', {class: 'small dim',
+                               text: axes[name].range ? 'trigger' : 'stick'})]),
+      el('td', {}, [el('input', {type: 'number', value: axes[name].index,
+        onchange: function (event) {
+          axes[name].index = parseInt(event.target.value, 10);
+        }})])
+    ]));
+  });
+  Object.keys(buttons).forEach(function (name) {
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [el('span', {class: 'mono', text: 'button ' + name})]),
+      el('td', {}, [el('input', {type: 'number', value: buttons[name],
+        onchange: function (event) {
+          buttons[name] = parseInt(event.target.value, 10);
+        }})])
+    ]));
+  });
+}
+
+// ── actions ────────────────────────────────────────────────────────────
+
+async function save(thenReload) {
+  if (!doc) return;
+  const result = await post('/api/joystick/profile/' + encodeURIComponent(stem),
+                            {document: doc});
+  if (!result.body.ok) {
+    banner('notice', 'err', 'Not saved — the profile did not validate:',
+           result.body.errors || []);
+    return;
+  }
+  let message = 'Saved ' + stem + '.yaml';
+  if (result.body.backup) message += ' (previous version backed up)';
+  if (result.body.needs_rebuild) {
+    message += '. This is a new file, so it will not be visible to the node ' +
+               'until the workspace is rebuilt.';
+  }
+  if (thenReload) {
+    const reload = await post('/api/joystick/reload');
+    banner('notice', reload.body.ok ? 'ok' : 'err',
+           message + ' — ' + (reload.body.message || ''));
+  } else {
+    banner('notice', 'ok', message);
+  }
+  loadProfileList(stem);
+}
+
+async function reloadNode() {
+  const result = await post('/api/joystick/reload');
+  banner('notice', result.body.ok ? 'ok' : 'err',
+         result.body.message || 'No response from the joystick node.');
+}
+
+async function activateProfile() {
+  const result = await post('/api/joystick/select', {profile: stem});
+  banner('notice', result.body.ok ? 'ok' : 'err', result.body.message || '');
+  loadProfileList(stem);
+}
+
+async function clearEstop() {
+  const result = await post('/api/joystick/estop/clear');
+  banner('notice', result.body.ok ? 'ok' : 'err', result.body.message || '');
+  loadProfileList(stem);
+}
+
+async function restore() {
+  const wanted = document.getElementById('backup-select').value;
+  if (!wanted) return;
+  const result = await post(
+    '/api/joystick/profile/' + encodeURIComponent(stem) + '/restore',
+    {backup: wanted});
+  banner('notice', result.body.ok ? 'ok' : 'err',
+         result.body.ok ? 'Restored ' + wanted : (result.body.error || 'Failed.'));
+  loadProfile(stem);
+}
+
+// ── live readout ───────────────────────────────────────────────────────
+
+async function pollLive() {
+  const result = await api('/api/joystick/live');
+  const status = document.getElementById('live-connection');
+  if (!result.ok || !result.body.connected) {
+    status.textContent = result.ok
+      ? 'no recent /joy messages — is joy_node running and a pad plugged in?'
+      : 'ROS node unreachable';
+    setHeaderStatus('');
+    return;
+  }
+  status.textContent = 'receiving ' + result.body.joy_topic;
+  setHeaderStatus(result.body.estop ? 'E-STOP' : '');
+
+  const axesTable = document.getElementById('live-axes');
+  axesTable.innerHTML = '';
+  result.body.axes.forEach(function (value, index) {
+    const fill = el('span', {});
+    fill.style.width = Math.round(Math.abs(value) * 100) + '%';
+    const bar = el('div', {class: 'bar'}, [fill]);
+    bar.style.width = '110px';
+    axesTable.appendChild(el('tr', {}, [
+      el('td', {class: 'mono small', text: String(index)}),
+      el('td', {class: 'num mono small', text: value.toFixed(2)}),
+      el('td', {}, [bar])
+    ]));
+  });
+
+  const buttonBox = document.getElementById('live-buttons');
+  buttonBox.innerHTML = '';
+  result.body.buttons.forEach(function (value, index) {
+    buttonBox.appendChild(el('span', {
+      class: 'pill ' + (value ? 'OK' : ''), text: String(index)
+    }));
+  });
+}
+
+loadProfileList();
+setInterval(pollLive, 200);
+</script>
+{% endblock %}

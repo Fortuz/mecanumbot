@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}Behaviour — Mecanumbot{% endblock %}
+
+{% block content %}
+<h1>Behaviour parameters</h1>
+<p class="sub">
+  Edit the leading-behaviour constants in
+  <code class="small">{{ config_dir }}</code>. These drive the thesis experiment
+  conditions, so every save is validated against what the behaviour tree
+  actually reads and the previous version is backed up first.
+</p>
+
+<div class="banner info">
+  <strong>Changes take effect the next time a behaviour tree starts, not live.</strong>
+  The tree loads this file once, in <code>ConstantParamsToBlackboard.setup()</code>.
+  {% if ssid %}Current Wi-Fi is <code>{{ ssid }}</code>.{% else %}
+  No Wi-Fi SSID detected, so the launch files will fall back to the default file.
+  {% endif %}
+</div>
+
+<div id="notice"></div>
+
+<div class="card">
+  <div class="row">
+    <label for="file-select">File</label>
+    <select id="file-select" onchange="loadFile(this.value)">
+      {% for entry in files %}
+      <option value="{{ entry.name }}">
+        {{ entry.name }}{% if entry.selected_by_ssid %} — selected by current SSID{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+    <span class="grow"></span>
+    <select id="backup-select" class="small"></select>
+    <button onclick="restore()">Restore backup</button>
+    <button class="primary" onclick="save()">Save</button>
+  </div>
+  {% if not files %}
+  <p class="dim" style="margin-bottom:0">
+    No behaviour files found. Is <code>mecanumbot_leading_behaviour</code> built?
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3>Thresholds</h3>
+  <div class="scroll"><table><tbody id="scalars"></tbody></table></div>
+</div>
+
+<div class="card">
+  <h3>Route</h3>
+  <p class="small dim">
+    The first checkpoint is the start position and the last is the target.
+  </p>
+  <div class="scroll"><table>
+    <thead><tr><th></th><th class="num">X</th><th class="num">Y</th>
+               <th class="num">Z</th><th></th></tr></thead>
+    <tbody id="checkpoints"></tbody>
+  </table></div>
+  <button class="small" onclick="addCheckpoint()">Add checkpoint</button>
+</div>
+
+<div id="scripts-host"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const LED_SCRIPTS = {{ led_scripts|tojson }};
+const GESTURE_SCRIPTS = {{ gesture_scripts|tojson }};
+const SCALARS = {{ scalars|tojson }};
+const COLORS = {0:'black',1:'white',2:'green',3:'red',4:'blue',5:'cyan',6:'pink',7:'yellow'};
+const MODES = {1:'wave right',2:'wave left',3:'pulse',4:'solid',5:'fast blink',6:'slow blink'};
+const CORNERS = ['fl', 'fr', 'bl', 'br'];
+
+let data = null;      // structured form
+let fileName = null;
+
+// ── loading ────────────────────────────────────────────────────────────
+
+async function loadFile(name) {
+  const result = await api('/api/behaviour/' + encodeURIComponent(name));
+  if (!result.ok) {
+    banner('notice', 'err', result.body.error || 'Cannot read that file.');
+    return;
+  }
+  fileName = name;
+  data = result.body.structured;
+  showMessages(result.body.errors, result.body.warnings, null);
+
+  const backups = document.getElementById('backup-select');
+  backups.innerHTML = '';
+  (result.body.backups || []).forEach(function (entry) {
+    backups.appendChild(el('option', {value: entry.name, text: entry.modified_utc}));
+  });
+  if (!(result.body.backups || []).length) {
+    backups.appendChild(el('option', {value: '', text: 'no backups yet'}));
+  }
+
+  renderScalars(); renderCheckpoints(); renderScripts();
+}
+
+function showMessages(errors, warnings, okText) {
+  const host = document.getElementById('notice');
+  host.innerHTML = '';
+  if ((errors || []).length) {
+    const box = el('div', {class: 'banner err'});
+    box.appendChild(el('div', {text: 'These must be fixed before the file can be saved:'}));
+    const list = el('ul');
+    errors.forEach(function (item) { list.appendChild(el('li', {text: item})); });
+    box.appendChild(list);
+    host.appendChild(box);
+  }
+  if ((warnings || []).length) {
+    const box = el('div', {class: 'banner warn'});
+    box.appendChild(el('div', {text: 'Worth a look — these do not block saving:'}));
+    const list = el('ul');
+    warnings.forEach(function (item) {
+      const row = el('li', {text: item});
+      const match = item.match(/^(\w+)_times: has (\d+) entries but \1_seq has only (\d+)/);
+      if (match) {
+        // Offer the two honest repairs rather than silently picking one.
+        // A surplus of delays usually means patterns were lost, not that
+        // the delays are wrong, so the choice belongs to the operator.
+        row.appendChild(document.createTextNode(' '));
+        row.appendChild(el('button', {class: 'small', text: 'trim delays',
+          onclick: function () { trimTimes(match[1], parseInt(match[3], 10)); }}));
+      }
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    host.appendChild(box);
+  }
+  if (okText) host.appendChild(el('div', {class: 'banner ok', text: okText}));
+}
+
+function scriptBlock(script) {
+  return (data.led_scripts[script] || data.gesture_scripts[script]);
+}
+
+function trimTimes(script, count) {
+  const block = scriptBlock(script);
+  if (!block) return;
+  block.times = block.times.slice(0, count);
+  renderScripts();
+  banner('notice', 'ok', 'Trimmed ' + script + '_times to ' + count +
+                         ' entries. Save to write it.');
+}
+
+// ── thresholds ─────────────────────────────────────────────────────────
+
+function renderScalars() {
+  const body = document.getElementById('scalars');
+  body.innerHTML = '';
+  SCALARS.forEach(function (entry) {
+    const input = el('input', {type: 'number', step: 'any',
+      value: data.scalars[entry.name],
+      onchange: function (event) {
+        data.scalars[entry.name] = parseFloat(event.target.value);
+      }});
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [el('div', {text: entry.name}),
+                    el('div', {class: 'small dim', text: entry.doc})]),
+      el('td', {}, [input]),
+      el('td', {class: 'small dim', text: entry.unit})
+    ]));
+  });
+}
+
+// ── route ──────────────────────────────────────────────────────────────
+
+function renderCheckpoints() {
+  const body = document.getElementById('checkpoints');
+  body.innerHTML = '';
+  data.checkpoints.forEach(function (point, index) {
+    const label = index === 0 ? 'start'
+      : (index === data.checkpoints.length - 1 ? 'target' : 'waypoint ' + index);
+    const cells = [el('td', {class: 'small dim', text: label})];
+    ['X', 'Y', 'Z'].forEach(function (axis) {
+      cells.push(el('td', {}, [el('input', {type: 'number', step: 'any',
+        value: point[axis],
+        onchange: function (event) { point[axis] = parseFloat(event.target.value); }})]));
+    });
+    cells.push(el('td', {}, [el('button', {class: 'small danger', text: 'remove',
+      onclick: function () { data.checkpoints.splice(index, 1); renderCheckpoints(); }})]));
+    body.appendChild(el('tr', {}, cells));
+  });
+}
+
+function addCheckpoint() {
+  data.checkpoints.push({X: 0.0, Y: 0.0, Z: 0.0});
+  renderCheckpoints();
+}
+
+// ── signalling scripts ─────────────────────────────────────────────────
+
+function selectFrom(map, value, onchange) {
+  const node = el('select', {class: 'small', onchange: function (event) {
+    onchange(parseInt(event.target.value, 10));
+  }});
+  Object.keys(map).forEach(function (key) {
+    node.appendChild(el('option', {value: key, text: key + ' · ' + map[key]}));
+  });
+  node.value = String(value);
+  return node;
+}
+
+function ledEntryRow(block, entry, index) {
+  const uniform = CORNERS.every(function (corner) {
+    return entry[corner].mode === entry.fl.mode &&
+           entry[corner].color === entry.fl.color;
+  });
+
+  const cell = el('td');
+  if (uniform) {
+    cell.appendChild(el('span', {class: 'small dim', text: 'all corners '}));
+    cell.appendChild(selectFrom(MODES, entry.fl.mode, function (value) {
+      CORNERS.forEach(function (corner) { entry[corner].mode = value; });
+      renderScripts();
+    }));
+    cell.appendChild(document.createTextNode(' '));
+    cell.appendChild(selectFrom(COLORS, entry.fl.color, function (value) {
+      CORNERS.forEach(function (corner) { entry[corner].color = value; });
+      renderScripts();
+    }));
+  } else {
+    CORNERS.forEach(function (corner) {
+      const line = el('div', {class: 'row small'});
+      line.appendChild(el('span', {class: 'dim mono', text: corner}));
+      line.appendChild(selectFrom(MODES, entry[corner].mode, function (value) {
+        entry[corner].mode = value;
+      }));
+      line.appendChild(selectFrom(COLORS, entry[corner].color, function (value) {
+        entry[corner].color = value;
+      }));
+      cell.appendChild(line);
+    });
+  }
+  return cell;
+}
+
+function gestureEntryRow(entry) {
+  const cell = el('td', {class: 'row small'});
+  [['n_pos', 'neck'], ['gl_pos', 'left'], ['gr_pos', 'right']].forEach(function (pair) {
+    cell.appendChild(el('span', {class: 'dim', text: pair[1]}));
+    cell.appendChild(el('input', {type: 'number', step: '0.01', value: entry[pair[0]],
+      onchange: function (event) { entry[pair[0]] = parseFloat(event.target.value); }}));
+  });
+  return cell;
+}
+
+function renderScripts() {
+  const host = document.getElementById('scripts-host');
+  host.innerHTML = '';
+
+  const groups = [
+    ['LED sequences', LED_SCRIPTS, data.led_scripts, ledEntryRow],
+    ['Gesture sequences', GESTURE_SCRIPTS, data.gesture_scripts, gestureEntryRow]
+  ];
+
+  groups.forEach(function (group) {
+    const title = group[0], names = group[1], store = group[2], renderer = group[3];
+    const card = el('div', {class: 'card'});
+    card.appendChild(el('h3', {text: title}));
+
+    names.forEach(function (script) {
+      const block = store[script];
+      if (!block) return;
+
+      card.appendChild(el('h4', {class: 'small', text: script}));
+      if (block.times.length !== block.seq.length) {
+        card.appendChild(el('div', {class: 'small',
+          text: block.seq.length + ' patterns, ' + block.times.length + ' delays'}));
+      }
+
+      const body = el('tbody');
+      block.seq.forEach(function (entry, index) {
+        if (!entry) {
+          body.appendChild(el('tr', {}, [
+            el('td', {class: 'small', colspan: '4',
+                      text: 'step ' + index + ': unparseable, fix it in the file'})]));
+          return;
+        }
+        const delay = block.times[index];
+        const cells = [el('td', {class: 'small dim', text: 'step ' + index})];
+        cells.push(renderer === ledEntryRow
+          ? ledEntryRow(block, entry, index) : gestureEntryRow(entry));
+        cells.push(el('td', {}, [el('input', {type: 'number', step: '0.05',
+          value: delay === undefined ? '' : delay,
+          onchange: function (event) {
+            block.times[index] = parseFloat(event.target.value);
+          }})]));
+        cells.push(el('td', {}, [el('button', {class: 'small danger', text: 'remove',
+          onclick: function () {
+            block.seq.splice(index, 1);
+            block.times.splice(index, 1);
+            renderScripts();
+          }})]));
+        body.appendChild(el('tr', {}, cells));
+      });
+
+      // Surplus delays with no pattern to go with them.
+      block.times.slice(block.seq.length).forEach(function (delay, offset) {
+        const index = block.seq.length + offset;
+        body.appendChild(el('tr', {}, [
+          el('td', {class: 'small dim', text: 'delay ' + index}),
+          el('td', {class: 'small dim', text: 'no pattern — never read'}),
+          el('td', {}, [el('input', {type: 'number', step: '0.05', value: delay,
+            onchange: function (event) {
+              block.times[index] = parseFloat(event.target.value);
+            }})]),
+          el('td', {}, [el('button', {class: 'small danger', text: 'remove',
+            onclick: function () { block.times.splice(index, 1); renderScripts(); }})])
+        ]));
+      });
+
+      const table = el('table', {}, [
+        el('thead', {}, [el('tr', {}, [
+          el('th', {text: 'Step'}), el('th', {text: 'Pattern'}),
+          el('th', {text: 'Delay (s)'}), el('th', {})])]),
+        body
+      ]);
+      card.appendChild(el('div', {class: 'scroll'}, [table]));
+
+      card.appendChild(el('button', {class: 'small', text: 'Add step',
+        onclick: function () {
+          block.seq.push(renderer === ledEntryRow
+            ? {fl: {mode: 4, color: 0}, fr: {mode: 4, color: 0},
+               bl: {mode: 4, color: 0}, br: {mode: 4, color: 0}}
+            : {n_pos: 6.0, gl_pos: 5.12, gr_pos: 5.12});
+          block.times.splice(block.seq.length - 1, 0, 0.5);
+          renderScripts();
+        }}));
+    });
+
+    host.appendChild(card);
+  });
+}
+
+// ── saving ─────────────────────────────────────────────────────────────
+
+async function save() {
+  if (!data) return;
+  const result = await post('/api/behaviour/' + encodeURIComponent(fileName),
+                            {structured: data});
+  if (!result.body.ok) {
+    showMessages(result.body.errors || ['Save failed.'], result.body.warnings || [], null);
+    return;
+  }
+  showMessages([], result.body.warnings || [],
+               'Saved ' + fileName + '. Applies on the next behaviour tree start.' +
+               (result.body.backup ? ' Previous version backed up.' : ''));
+  loadFile(fileName);
+}
+
+const picker = document.getElementById('file-select');
+if (picker && picker.options.length) loadFile(picker.value);
+</script>
+{% endblock %}

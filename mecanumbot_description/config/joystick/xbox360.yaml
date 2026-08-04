@@ -1,0 +1,111 @@
+# Xbox 360 wireless pad via the xpad driver.
+#
+# Loaded by mecanumbot_joy. Editable from the robot's web GUI at
+# http://<robot>:8080/joystick -- save there, then hit Reload, which calls
+# /mecanumbot/mecanumbot_joy_node/reload_profile.
+#
+# `axes` / `buttons` / `dpad` describe the pad. `bindings` describes what
+# the robot does. Rebinding an action never touches an index, and swapping
+# pads never touches a semantic.
+
+profile:
+  name: xbox360
+  description: "Xbox 360 wireless pad (xpad driver)"
+
+  # Auto-detection fingerprint. xpad reports exactly this shape, and
+  # nothing else in the lab collides with it.
+  match:
+    axes: 8
+    buttons: 11
+
+  limits:
+    max_lin_vel: 0.234        # m/s
+    max_ang_vel: 1.092        # rad/s
+    deadzone: 0.05            # applied once, here -- joy_node's is 0.0
+    lin_step: 0.02            # m/s per publish tick; 0 disables ramping
+    ang_step: 0.10            # rad/s per publish tick
+    publish_hz: 20.0
+    joy_timeout: 0.5          # s without /joy before the wheels are stopped
+    zero_hold_ticks: 5        # zero Twists sent after a stop, then silence
+    accessory_keepalive_hz: 1.0
+
+  accessory:
+    neck:
+      min: 2.0
+      max: 8.6
+      default: 8.6            # looking ahead, as the old teleop started
+      step: 0.15              # per tick while neck_up / neck_down is held
+    gripper:
+      min: 1.6
+      front: 5.12
+      max: 8.54
+      default: 5.12
+
+  axes:
+    left_x:  {index: 0}
+    left_y:  {index: 1}
+    right_x: {index: 3}
+    right_y: {index: 4}
+    # Triggers rest at +1.0 on xpad and read -1.0 fully pressed.
+    # `range: [rest, pressed]` maps that onto a clean 0.0 .. 1.0.
+    lt: {index: 2, range: [1.0, -1.0]}
+    rt: {index: 5, range: [1.0, -1.0]}
+
+  dpad:
+    source: axes
+    x_axis: 6                 # +1 = left
+    y_axis: 7                 # +1 = up
+
+  buttons:
+    A: 0
+    B: 1
+    X: 2
+    Y: 3
+    LB: 4
+    RB: 5
+    BACK: 6
+    START: 7
+    GUIDE: 8
+    LS: 9
+    RS: 10
+
+  # No `invert` anywhere: ROS joy reports stick-up and stick-left as
+  # positive, and the mecanum convention is +x forward, +y left,
+  # +yaw counter-clockwise, so the raw signs already line up. This
+  # matches the signs the previous teleop node drove with.
+  bindings:
+    drive:  {control: axis, axis: left_y}
+    strafe: {control: axis, axis: left_x}
+    turn:   {control: axis, axis: right_x}
+
+    # Y/A used to jump the neck to MAX/MID. Holding to ramp is finer
+    # grained; neck_preset keeps the old jump-to-look-ahead on a click.
+    neck_up:     {control: button, button: Y,  trigger: hold}
+    neck_down:   {control: button, button: A,  trigger: hold}
+    neck_preset: {control: button, button: LS, trigger: press, value: 8.6}
+
+    gripper_open:  {control: button, button: X, trigger: press}
+    gripper_close: {control: button, button: B, trigger: press}
+
+    estop:      {control: button, button: BACK,  trigger: press}
+    led_preset: {control: button, button: START, trigger: press, preset: attention}
+
+  # mode:  1 wave right, 2 wave left, 3 pulse, 4 solid,
+  #        5 fast blink, 6 slow blink
+  # color: 0 black, 1 white, 2 green, 3 red, 4 blue, 5 cyan, 6 pink, 7 yellow
+  led_presets:
+    blank:
+      fl: {mode: 4, color: 0}
+      fr: {mode: 4, color: 0}
+      bl: {mode: 4, color: 0}
+      br: {mode: 4, color: 0}
+    attention:
+      fl: {mode: 5, color: 1}    # white fast blink
+      fr: {mode: 5, color: 1}
+      bl: {mode: 5, color: 1}
+      br: {mode: 5, color: 1}
+    ready:
+      fl: {mode: 4, color: 2}    # green solid
+      fr: {mode: 4, color: 2}
+      bl: {mode: 4, color: 2}
+      br: {mode: 4, color: 2}

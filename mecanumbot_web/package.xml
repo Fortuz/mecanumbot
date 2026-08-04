@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mecanumbot_web</name>
+  <version>1.0.0</version>
+  <description>Robot-hosted web GUI for the mecanumbot platform. Serves three pages from the robot itself: joystick profile editing, measured topic-rate diagnostics, and leading-behaviour parameter editing. Replaces the Dockerised operator-PC GUI and its host/robot database split.</description>
+  <maintainer email="csengehubay@gmail.com">csenge</maintainer>
+  <license>Apache License 2.0</license>
+
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>mecanumbot_description</exec_depend>
+  <exec_depend>mecanumbot_joy</exec_depend>
+  <exec_depend>python3-flask</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rosidl_runtime_py</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+
+  <!-- Only needed for the behaviour page, and only to locate the YAML files.
+       The page degrades to "nothing to edit" if this repo is not checked out,
+       so it is deliberately not a hard build dependency. -->
+  <exec_depend>mecanumbot_leading_behaviour</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

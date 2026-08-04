@@ -1,0 +1,47 @@
+# PS4 DualShock 4 Controller udev rules
+# Bus 001 Device 004: ID 054c:05c4 Sony Corp. DualShock 4 [CUH-ZCT1x]
+# Bus 001 Device 005: ID 054c:09cc Sony Corp. DualShock 4 [CUH-ZCT2x]
+#
+# This file should be placed in /etc/udev/rules.d/ on Linux systems
+# After copying the file, reload udev rules with:
+# sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Installation:
+# sudo cp 99-ps4-controller.rules /etc/udev/rules.d/
+# sudo udevadm control --reload-rules
+# sudo udevadm trigger
+
+# PS4 DualShock 4 Controller (First Generation - CUH-ZCT1x)
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="05c4", MODE="0666", GROUP="plugdev"
+
+# PS4 DualShock 4 Controller (Second Generation - CUH-ZCT2x)
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="09cc", MODE="0666", GROUP="plugdev"
+
+# Alternative rules with TAG for systemd (First Generation)
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="05c4", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+
+# Alternative rules with TAG for systemd (Second Generation)
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="09cc", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+
+# Rule for hidraw devices (First Generation)
+KERNEL=="hidraw*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c4", MODE="0666", GROUP="plugdev"
+
+# Rule for hidraw devices (Second Generation)
+KERNEL=="hidraw*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0666", GROUP="plugdev"
+
+# Rule for input devices created by the controller (First Generation)
+SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c4", MODE="0666", GROUP="input"
+
+# Rule for input devices created by the controller (Second Generation)
+SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0666", GROUP="input"
+
+# Rule for Bluetooth connection (First Generation)
+SUBSYSTEM=="input", ATTRS{name}=="*Wireless Controller*", MODE="0666", GROUP="input", ENV{ID_INPUT_JOYSTICK}="1"
+
+# Rule for js* device nodes (joystick interface)
+KERNEL=="js*", SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c4", MODE="0666", GROUP="plugdev"
+KERNEL=="js*", SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0666", GROUP="plugdev"
+
+# Rule for event* device nodes
+KERNEL=="event*", SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c4", MODE="0666", GROUP="input"
+KERNEL=="event*", SUBSYSTEM=="input", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0666", GROUP="input"

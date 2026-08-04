@@ -21,6 +21,9 @@
   <exec_depend>mecanumbot_sim</exec_depend>
   <exec_depend>mecanumbot_camera_stream</exec_depend>
   <exec_depend>mecanumbot_audio</exec_depend>
+  <exec_depend>mecanumbot_joy</exec_depend>
+  <exec_depend>mecanumbot_web</exec_depend>
+  <exec_depend>joy</exec_depend>
 
 
   <export>

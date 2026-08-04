@@ -1,0 +1,100 @@
+# Topics the diagnostics page measures, and what rate each should run at.
+#
+# Every nominal_hz below is read from the node that publishes it, not
+# guessed -- the source is noted per entry. If you retune a node's timer,
+# retune the entry here too or the page will cry wolf.
+#
+# nominal_hz: 0 marks an event-driven topic. Those are judged on staleness
+# alone and can never read SLOW, because "idle" is their normal state.
+#
+# tol is the fractional band around nominal that still counts as OK.
+
+window_seconds: 3.0     # sliding window the rate is averaged over
+stale_after: 2.0        # seconds of silence before an event-driven topic is DEAD
+
+topics:
+  # ── Hardware I/O (mecanumbot_core) ──────────────────────────────────
+  - topic: /mecanumbot/opencr_state
+    nominal_hz: 100.0
+    tol: 0.30
+    label: OpenCR telemetry
+    note: mecanumbot_io_node, 0.01s timer
+
+  - topic: /mecanumbot/odom
+    nominal_hz: 50.0
+    tol: 0.30
+    label: Odometry
+    note: mecanumbot_sensorproc_node, 0.02s timer
+
+  - topic: /mecanumbot/imu
+    nominal_hz: 50.0
+    tol: 0.30
+    label: IMU
+    note: mecanumbot_sensorproc_node
+
+  - topic: /mecanumbot/joint_states
+    nominal_hz: 50.0
+    tol: 0.30
+    label: Joint states
+    note: mecanumbot_sensorproc_node
+
+  - topic: /mecanumbot/cr_battery_state
+    nominal_hz: 50.0
+    tol: 0.30
+    label: Battery (OpenCR)
+    note: mecanumbot_sensorproc_node
+
+  - topic: /mecanumbot/has_object
+    nominal_hz: 50.0
+    tol: 0.30
+    label: Gripper object flag
+    note: mecanumbot_sensorproc_node
+
+  # ── LiDAR and perception ────────────────────────────────────────────
+  - topic: /mecanumbot/scan
+    nominal_hz: 10.0
+    tol: 0.30
+    label: LiDAR scan
+    note: ld08_driver. BEST_EFFORT publisher. 8 Hz under simulation.
+
+  - topic: /mecanumbot/dr_spaam/dets
+    nominal_hz: 10.0
+    tol: 0.50
+    label: LiDAR people detections
+    note: >-
+      Runs at scan rate, but inference is capped at 5 Hz and the tracker
+      extrapolates the skipped scans, hence the wide tolerance.
+
+  - topic: /mecanumbot/people_fusion
+    nominal_hz: 0.0
+    label: Fused people
+    note: Callback-driven off dr_spaam/dets
+
+  - topic: /mecanumbot/subject_pose
+    nominal_hz: 0.0
+    label: Tracked subject
+    note: Leading mode only
+
+  # ── Camera ──────────────────────────────────────────────────────────
+  - topic: /camera/image_raw/compressed
+    nominal_hz: 15.0
+    tol: 0.40
+    label: Camera (compressed)
+    note: publish_fps default 15.0. BEST_EFFORT publisher.
+
+  # ── Teleoperation ───────────────────────────────────────────────────
+  - topic: /mecanumbot/joy
+    nominal_hz: 20.0
+    tol: 0.30
+    label: Joystick input
+    note: joy_node autorepeat_rate, so it ticks even with the sticks centred
+
+  - topic: /cmd_vel
+    nominal_hz: 0.0
+    label: Velocity command
+    note: Only published while something is driving
+
+  - topic: /cmd_accessory_pos
+    nominal_hz: 0.0
+    label: Accessory command
+    note: Published on change plus a 1 Hz keepalive

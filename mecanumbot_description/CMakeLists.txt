@@ -22,7 +22,7 @@ find_package(urdf REQUIRED)
 # Install
 ################################################################################
 install(
-  DIRECTORY meshes rviz param maps urdf udev behavior_trees
+  DIRECTORY meshes rviz param maps urdf udev behavior_trees config
   DESTINATION share/${PROJECT_NAME}
 )
 

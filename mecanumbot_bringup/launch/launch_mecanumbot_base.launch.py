@@ -10,6 +10,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     LogInfo,
 )
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -109,6 +110,24 @@ def generate_launch_description():
         description="Use simulation (Gazebo) clock",
     )
 
+    declare_use_joy = DeclareLaunchArgument(
+        "use_joy",
+        default_value="true",
+        description="Launch joy_node and the onboard joystick node",
+    )
+
+    declare_use_web = DeclareLaunchArgument(
+        "use_web",
+        default_value="true",
+        description="Launch the robot-hosted web GUI on port 8080",
+    )
+
+    declare_joystick_profile = DeclareLaunchArgument(
+        "joystick_profile",
+        default_value="auto",
+        description="Joystick profile stem, or 'auto' to detect from the pad",
+    )
+
     # --- File Paths ---
     core_yaml = os.path.join(
         get_package_share_directory("mecanumbot_core"),
@@ -138,6 +157,18 @@ def generate_launch_description():
         "input_handler.launch.py",
     )
 
+    joy_path = os.path.join(
+        get_package_share_directory("mecanumbot_joy"),
+        "launch",
+        "joy_teleop.launch.py",
+    )
+
+    web_path = os.path.join(
+        get_package_share_directory("mecanumbot_web"),
+        "launch",
+        "web.launch.py",
+    )
+
     rviz_config_dir = os.path.join(
         get_package_share_directory("mecanumbot_description"), "rviz", "model.rviz"
     )
@@ -153,6 +184,9 @@ def generate_launch_description():
     launch_actions = [
         declare_namespace,
         declare_sim_time,
+        declare_use_joy,
+        declare_use_web,
+        declare_joystick_profile,
         LogInfo(
             msg=f"[onboard_bringup] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"
         ),
@@ -224,6 +258,22 @@ def generate_launch_description():
         # Audio input handler
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(audio_path),
+        ),
+        # Onboard joystick: joy_node plus the profile-driven teleop node.
+        # This is the only /joy consumer on the robot.
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(joy_path),
+            condition=IfCondition(LaunchConfiguration("use_joy")),
+            launch_arguments={
+                "namespace": namespace,
+                "joystick_profile": LaunchConfiguration("joystick_profile"),
+            }.items(),
+        ),
+        # Robot-hosted web GUI: joystick editing, diagnostics, behaviour params
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(web_path),
+            condition=IfCondition(LaunchConfiguration("use_web")),
+            launch_arguments={"namespace": namespace}.items(),
         ),
         # State publisher
         IncludeLaunchDescription(

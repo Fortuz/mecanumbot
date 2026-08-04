@@ -1,0 +1,101 @@
+# Generic HID gamepad -- the fallback profile.
+#
+# Deliberately carries no `match:` block, so auto-detection never selects
+# it by fingerprint. It is only ever reached as the explicit fallback when
+# no other profile matches the pad, which is what makes it safe to keep
+# permissive: an unknown pad still drives, on plausible defaults.
+#
+# Covers Xbox One (xpad), most no-name USB pads, and DS4 via ds4drv.
+# Differs from xbox360.yaml in exactly two places -- the trigger rest
+# position and where the D-Pad is reported.
+
+profile:
+  name: generic
+  description: "Generic HID gamepad (fallback when no fingerprint matches)"
+
+  limits:
+    max_lin_vel: 0.234
+    max_ang_vel: 1.092
+    deadzone: 0.08            # a little wider: unknown pads drift more
+    lin_step: 0.02
+    ang_step: 0.10
+    publish_hz: 20.0
+    joy_timeout: 0.5
+    zero_hold_ticks: 5
+    accessory_keepalive_hz: 1.0
+
+  accessory:
+    neck:
+      min: 2.0
+      max: 8.6
+      default: 8.6
+      step: 0.15
+    gripper:
+      min: 1.6
+      front: 5.12
+      max: 8.54
+      default: 5.12
+
+  axes:
+    left_x:  {index: 0}
+    left_y:  {index: 1}
+    right_x: {index: 3}
+    right_y: {index: 4}
+    # Unlike xpad, these rest at -1.0 and read +1.0 fully pressed.
+    lt: {index: 2, range: [-1.0, 1.0]}
+    rt: {index: 5, range: [-1.0, 1.0]}
+
+  dpad:
+    source: buttons
+    up: 11
+    down: 12
+    left: 13
+    right: 14
+
+  buttons:
+    A: 0
+    B: 1
+    X: 2
+    Y: 3
+    LB: 4
+    RB: 5
+    BACK: 6
+    START: 7
+    HOME: 8
+    LS: 9
+    RS: 10
+
+  bindings:
+    drive:  {control: axis, axis: left_y}
+    strafe: {control: axis, axis: left_x}
+    turn:   {control: axis, axis: right_x}
+
+    neck_up:     {control: button, button: Y,  trigger: hold}
+    neck_down:   {control: button, button: A,  trigger: hold}
+    neck_preset: {control: button, button: LS, trigger: press, value: 8.6}
+
+    gripper_open:  {control: button, button: X, trigger: press}
+    gripper_close: {control: button, button: B, trigger: press}
+
+    estop:      {control: button, button: BACK,  trigger: press}
+    led_preset: {control: button, button: START, trigger: press, preset: attention}
+
+  # mode:  1 wave right, 2 wave left, 3 pulse, 4 solid,
+  #        5 fast blink, 6 slow blink
+  # color: 0 black, 1 white, 2 green, 3 red, 4 blue, 5 cyan, 6 pink, 7 yellow
+  led_presets:
+    blank:
+      fl: {mode: 4, color: 0}
+      fr: {mode: 4, color: 0}
+      bl: {mode: 4, color: 0}
+      br: {mode: 4, color: 0}
+    attention:
+      fl: {mode: 5, color: 1}
+      fr: {mode: 5, color: 1}
+      bl: {mode: 5, color: 1}
+      br: {mode: 5, color: 1}
+    ready:
+      fl: {mode: 4, color: 2}
+      fr: {mode: 4, color: 2}
+      bl: {mode: 4, color: 2}
+      br: {mode: 4, color: 2}
