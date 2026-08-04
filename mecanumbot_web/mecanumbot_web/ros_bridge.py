@@ -78,7 +78,8 @@ class WebNode(Node):
             stale_after=settings.get("stale_after", 2.0),
         )
         self._rate_lock = threading.Lock()
-        self._subscriptions: Dict[str, object] = {}
+        # Not ``_subscriptions``: rclpy's Node keeps its own list under that name.
+        self._monitor_subs: Dict[str, object] = {}
 
         self._joy_node = joy_node or "/mecanumbot/mecanumbot_joy_node"
         self._joy_topic = joy_topic or "/mecanumbot/joy"
@@ -149,7 +150,7 @@ class WebNode(Node):
             with self._rate_lock:
                 self._monitor.set_publisher_count(topic, count)
 
-            if topic in self._subscriptions or topic not in available:
+            if topic in self._monitor_subs or topic not in available:
                 continue
 
             types = available.get(topic) or []
@@ -162,10 +163,10 @@ class WebNode(Node):
                 self.get_logger().warn(
                     "Cannot monitor {} ({}): {}".format(topic, types[0], exc))
                 # Record it so the failure is not retried every 2 seconds.
-                self._subscriptions[topic] = None
+                self._monitor_subs[topic] = None
                 continue
 
-            self._subscriptions[topic] = self.create_subscription(
+            self._monitor_subs[topic] = self.create_subscription(
                 message_class,
                 topic,
                 partial(self._on_monitored, topic),
