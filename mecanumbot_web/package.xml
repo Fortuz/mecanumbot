@@ -3,13 +3,16 @@
 <package format="3">
   <name>mecanumbot_web</name>
   <version>1.0.0</version>
-  <description>Robot-hosted web GUI for the mecanumbot platform. Serves three pages from the robot itself: joystick profile editing, measured topic-rate diagnostics, and leading-behaviour parameter editing. Replaces the Dockerised operator-PC GUI and its host/robot database split.</description>
+  <description>Robot-hosted web GUI for the mecanumbot platform. Serves three pages from the robot itself: joystick profile editing, diagnostics covering LED state, movement and measured topic rates, and leading-behaviour parameter editing. Replaces the Dockerised operator-PC GUI and its host/robot database split.</description>
   <maintainer email="csengehubay@gmail.com">csenge</maintainer>
   <license>Apache License 2.0</license>
 
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>mecanumbot_description</exec_depend>
   <exec_depend>mecanumbot_joy</exec_depend>
+  <exec_depend>mecanumbot_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
   <exec_depend>python3-flask</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>rcl_interfaces</exec_depend>

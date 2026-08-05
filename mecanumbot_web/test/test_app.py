@@ -62,10 +62,27 @@ class StubNode:
                 "joy_topic": "/mecanumbot/joy", "joy_node": "/n"}
 
     def diagnostics(self):
-        """Return one healthy reading."""
+        """Return one healthy reading, plus LED and movement state."""
         self.calls.append("diagnostics")
         return {"topics": [{"topic": "/a", "status": "OK", "measured_hz": 100.0}],
-                "summary": {"OK": 1}, "window_seconds": 3.0, "stale_after": 2.0}
+                "summary": {"OK": 1}, "window_seconds": 3.0, "stale_after": 2.0,
+                "led": {
+                    "corners": {corner: {"mode": 4, "color": 5,
+                                         "mode_name": "solid",
+                                         "color_name": "cyan",
+                                         "hex": "#22d3ee", "known": True}
+                                for corner in ("fl", "fr", "bl", "br")},
+                    "summary": "cyan solid", "age_s": 0.4, "stale": False,
+                    "error": None, "polling": True,
+                    "service": "get_led_status"},
+                "motion": {
+                    "state": "forward", "source": "measured",
+                    "commanded": {"vx": 0.2, "vy": 0.0, "wz": 0.0,
+                                  "state": "forward", "available": True,
+                                  "stale": False, "moving": True},
+                    "measured": {"vx": 0.19, "vy": 0.0, "wz": 0.0,
+                                 "state": "forward", "available": True,
+                                 "stale": False, "moving": True}}}
 
     def monitor_specs(self):
         """Return the configured nominal table."""
@@ -275,6 +292,21 @@ def test_diagnostics_returns_readings(context):
     body = context["client"].get("/api/diagnostics").get_json()
     assert body["ok"] is True
     assert body["topics"][0]["topic"] == "/a"
+
+
+def test_diagnostics_carries_led_and_movement_state(context):
+    """One poll feeds all three panels; the page makes no extra requests."""
+    body = context["client"].get("/api/diagnostics").get_json()
+    assert body["led"]["corners"]["fl"]["color_name"] == "cyan"
+    assert body["motion"]["state"] == "forward"
+    assert body["motion"]["commanded"]["vx"] == 0.2
+
+
+def test_diagnostics_page_has_the_state_panels(context):
+    """The LED and movement panels are server-rendered, then filled by JS."""
+    page = context["client"].get("/diagnostics").data
+    assert b'id="led-grid"' in page
+    assert b'id="move-state"' in page
 
 
 def test_diagnostics_config_is_available_before_data(context):

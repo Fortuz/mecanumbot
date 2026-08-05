@@ -20,7 +20,7 @@ There is no login and no database.
 | Path | Function |
 | --- | --- |
 | `/joystick` | Edit and reload `mecanumbot_joy`'s profile, with a live input readout. |
-| `/diagnostics` | Measured publish rate of every important topic, against nominal. |
+| `/diagnostics` | What the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
 | `/behaviour` | Edit the leading-behaviour constants YAML. |
 
 `/` redirects to `/diagnostics`.
@@ -68,6 +68,53 @@ subscription silently never matches one, so a healthy topic would read DEAD);
 and discovery re-runs on a timer, because this node starts alongside everything
 it monitors and a one-shot lookup would miss all of it.
 
+#### Robot state: LEDs and movement
+
+Rates answer "is every node keeping up?", which is not the same question as
+"what is the robot doing". Two panels above the topic table answer the second
+one, from the same 1 Hz poll — `/api/diagnostics` carries `led` and `motion`
+alongside `topics`, so the page makes no extra requests.
+
+**LEDs.** Four corner swatches in physical layout, each showing the colour and
+the mode, and *animating the way the strip does* — pulse breathes, the two
+blink modes blink at their own speeds, the wave modes sweep. There is no LED
+state topic anywhere in the workspace; the Arduino Nano is only ever asked, so
+this comes from the `get_led_status` service, which is a serial round trip on
+the same link the behaviour trees use to set the LEDs. It is therefore polled
+on a slow timer (`led_poll_period`, 2 s) into a cache the page reads, and can
+lag a change by a second or two.
+
+Three details are deliberate. The poll is `call_async` with a done callback,
+not a blocking wait — it runs on an executor timer, and blocking there would
+stall a callback group the rest of the node shares. A poll still outstanding
+suppresses the next one, so a silent Arduino cannot queue requests behind
+itself. And the all `-1` response the LED node returns for a bad checksum or a
+silent board is treated as a failed read: it is reported as an error and the
+last good reading stays on screen, rather than being rendered as a state the
+strips can be in.
+
+**Movement.** Commanded velocity from `/cmd_vel` beside measured velocity from
+odometry, each classified into words. Showing both is the point: a command with
+no measurement under it is a drivetrain fault, and it is invisible to
+everything else on this page because both topics stay perfectly healthy
+throughout. The panel calls that case out in words.
+
+Classification lives in `motion.py`, with no rclpy in it. Mecanum drive is why
+it is not a one-liner — `vy` is a real degree of freedom rather than
+structurally zero, so "forward" and "strafing left" hold simultaneously during
+a diagonal and the state is built from up to three components. Deadbands
+(0.02 m/s, 0.05 rad/s) are set by what odometry noise looks like on a
+stationary robot, so a parked robot does not read as creeping. The dial shows
+direction of travel with the robot facing up, and a pure spin leaves it
+unpointed because a spin has no direction of travel.
+
+Odometry runs at 50 Hz and the page reads once a second, so that subscription
+is `raw=True` like the monitor's and the bytes are deserialised at most every
+0.2 s — the same reasoning as the rate monitor, taken one step further because
+here the payload is actually wanted. Set `odom_topic` to an empty string to
+drop the subscription entirely; the panel then says it is showing commanded
+velocity only.
+
 ### Behaviour
 
 Edits `behaviour_setting_constants.yaml` / `Eto_behaviour_setting_constants.yaml`
@@ -114,9 +161,15 @@ GUI.
 
 ## Design
 
-Pure modules with no rclpy: `rate_monitor.py`, `joystick_store.py`,
+Pure modules with no rclpy: `rate_monitor.py`, `motion.py`, `joystick_store.py`,
 `behaviour_store.py`, `yaml_io.py`, `led_enums.py`. Then `ros_bridge.py`
 (the node), `app.py` (Flask routes) and `web_node.py` (the entry point).
+
+The palette is cyan and magenta, defined once as custom properties in
+`base.html` and themed for both `prefers-color-scheme` settings. It carries the
+chrome only — nav, focus rings, bars, panel headings. The four rate statuses
+stay green / amber / rose, with only their temperature pulled toward the theme:
+an operator reads those at a glance and hue is the whole signal.
 
 The executor owns the main thread and Flask runs in a daemon thread — the
 opposite of the GUI this replaces, which suited a container whose only job was
@@ -138,10 +191,21 @@ complete.
 | `diagnostics_config` | `mecanumbot_web/config/diagnostics_topics.yaml` |
 | `joy_node` / `joy_topic` | `/mecanumbot/mecanumbot_joy_node` / `/mecanumbot/joy` |
 | `backup_root` | `~/.mecanumbot/config_backups` |
+| `led_service` | `get_led_status` |
+| `led_poll_period` | `2.0` s — `0` disables LED reads |
+| `cmd_vel_topic` | `/cmd_vel` |
+| `odom_topic` | `odom` — empty disables measured motion |
 
 `behaviour_config_dir` is resolved leniently: if `mecanumbot_leading_behaviour`
 is not in the checkout the behaviour page reports nothing to edit rather than
 the GUI failing to start.
+
+`led_service` and `odom_topic` are **relative** names, so they resolve inside
+this node's namespace alongside the LED service node and
+`mecanumbot_sensorproc_node`. `cmd_vel_topic` is absolute because the base
+launch remaps `cmd_vel` out of the namespace so Nav2 and the joy node meet on
+one topic. `led_poll_period` and `odom_topic` are also launch arguments of
+`web.launch.py`.
 
 ## Dependencies
 
@@ -169,7 +233,7 @@ ros2 launch mecanumbot_web web.launch.py web_port:=8080
 colcon test --packages-select mecanumbot_web && colcon test-result --verbose
 ```
 
-132 tests, none needing a ROS graph; the 34 route tests skip cleanly when Flask
+148 tests, none needing a ROS graph; the 35 route tests skip cleanly when Flask
 is absent. Note that `pytest.importorskip` is deliberately **not** used for
 that — raising `Skipped` at module level aborts collection for the whole
 session under the pytest version Humble ships, which would silently reduce the

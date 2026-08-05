@@ -5,16 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Mecanumbot{% endblock %}</title>
 <style>
+/* Cyan and magenta carry the chrome: nav, focus, bars, headings.
+   The four status colours stay semantic (green / amber / rose) because
+   an operator reads them at a glance and hue is the whole signal --
+   only their temperature is pulled toward the theme. */
 :root {
-  --bg: #12151a;      --panel: #1b1f27;   --panel2: #232833;
-  --line: #2f3643;    --text: #e6e9ef;    --dim: #98a2b3;
-  --ok: #3fb950;      --warn: #d29922;    --bad: #f85149;  --info: #58a6ff;
-  --accent: #58a6ff;
+  --bg: #0a1418;      --panel: #101f25;   --panel2: #162c34;
+  --line: #1f4652;    --text: #e2f4f7;    --dim: #86adb7;
+  --ok: #2ee6a8;      --warn: #f2b13c;    --bad: #ff5470;  --info: #22d3ee;
+  --accent: #22d3ee;  --accent-ink: #04191f;
+  --accent2: #e879f9; --accent2-ink: #24041f;
+  --ok-bg:   rgba(46,230,168,.15);
+  --warn-bg: rgba(242,177,60,.15);
+  --info-bg: rgba(34,211,238,.15);
+  --bad-bg:  rgba(255,84,112,.15);
+  --glow: rgba(34,211,238,.35);
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f6f7f9;    --panel: #ffffff;   --panel2: #f0f2f5;
-    --line: #d7dbe0;  --text: #1c2029;    --dim: #5b6472;
+    --bg: #f1f8fa;    --panel: #ffffff;   --panel2: #e6f2f6;
+    --line: #c3dee5;  --text: #0b1b21;    --dim: #4a6b76;
+    --ok: #0e8f60;    --warn: #9a6406;    --bad: #cf1f45;  --info: #0d7f97;
+    --accent: #0d7f97; --accent-ink: #ffffff;
+    --accent2: #a8228f; --accent2-ink: #ffffff;
+    --ok-bg:   rgba(14,143,96,.12);
+    --warn-bg: rgba(154,100,6,.12);
+    --info-bg: rgba(13,127,151,.12);
+    --bad-bg:  rgba(207,31,69,.12);
+    --glow: rgba(13,127,151,.25);
   }
 }
 * { box-sizing: border-box; }
@@ -27,13 +45,22 @@ header {
   padding: 12px 20px; background: var(--panel);
   border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20;
 }
-header .brand { font-weight: 650; letter-spacing: .2px; }
+header::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+header .brand {
+  font-weight: 650; letter-spacing: .2px; color: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 header nav { display: flex; gap: 4px; }
 header nav a {
   color: var(--dim); text-decoration: none; padding: 6px 12px; border-radius: 6px;
 }
 header nav a:hover { background: var(--panel2); color: var(--text); }
-header nav a.active { background: var(--accent); color: #fff; }
+header nav a.active { background: var(--accent); color: var(--accent-ink); }
 header .spacer { flex: 1; }
 main { padding: 20px; max-width: 1180px; margin: 0 auto; }
 h1 { font-size: 20px; margin: 0 0 4px; }
@@ -53,8 +80,13 @@ button, select, input {
 button { cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:disabled { opacity: .5; cursor: not-allowed; }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+  font-weight: 600;
+}
 button.danger { border-color: var(--bad); color: var(--bad); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--glow); }
 input[type=number] { width: 92px; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
@@ -67,17 +99,19 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   display: inline-block; padding: 2px 9px; border-radius: 999px;
   font-size: 11.5px; font-weight: 650; letter-spacing: .3px;
 }
-.pill.OK   { background: rgba(63,185,80,.16);  color: var(--ok); }
-.pill.SLOW { background: rgba(210,153,34,.16); color: var(--warn); }
-.pill.FAST { background: rgba(88,166,255,.16); color: var(--info); }
-.pill.DEAD { background: rgba(248,81,73,.16);  color: var(--bad); }
+.pill.OK   { background: var(--ok-bg);   color: var(--ok); }
+.pill.SLOW { background: var(--warn-bg); color: var(--warn); }
+.pill.FAST { background: var(--info-bg); color: var(--info); }
+.pill.DEAD { background: var(--bad-bg);  color: var(--bad); }
+.pill.accent  { background: var(--info-bg); color: var(--accent); }
+.pill.accent2 { background: rgba(232,121,249,.15); color: var(--accent2); }
 .banner {
   border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
   border: 1px solid; font-size: 13px;
 }
-.banner.err  { border-color: var(--bad);  background: rgba(248,81,73,.10); }
-.banner.warn { border-color: var(--warn); background: rgba(210,153,34,.10); }
-.banner.ok   { border-color: var(--ok);   background: rgba(63,185,80,.10); }
+.banner.err  { border-color: var(--bad);  background: var(--bad-bg); }
+.banner.warn { border-color: var(--warn); background: var(--warn-bg); }
+.banner.ok   { border-color: var(--ok);   background: var(--ok-bg); }
 .banner.info { border-color: var(--line); background: var(--panel2); color: var(--dim); }
 .banner ul { margin: 6px 0 0; padding-left: 20px; }
 .dim { color: var(--dim); }
@@ -85,8 +119,12 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 .scroll { overflow-x: auto; }
 .hidden { display: none !important; }
 .bar { height: 6px; border-radius: 3px; background: var(--panel2); overflow: hidden; }
-.bar > span { display: block; height: 100%; background: var(--accent); }
+.bar > span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
 </style>
+{% block styles %}{% endblock %}
 </head>
 <body>
 <header>

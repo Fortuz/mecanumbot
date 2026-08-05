@@ -23,7 +23,7 @@ from rclpy.node import Node
 
 from .app import WebApp
 from .rate_monitor import specs_from_config
-from .ros_bridge import WebNode
+from .ros_bridge import LED_POLL_PERIOD, WebNode
 from .yaml_io import DEFAULT_BACKUP_ROOT
 
 
@@ -82,6 +82,14 @@ class _ParamReader(Node):
         self.declare_parameter("joy_topic", "/mecanumbot/joy")
         self.declare_parameter("backup_root", DEFAULT_BACKUP_ROOT)
 
+        # Relative names resolve inside this node's namespace, which is
+        # the robot's. Empty disables the source; the page then says so
+        # rather than showing a permanently dead reading.
+        self.declare_parameter("led_service", "get_led_status")
+        self.declare_parameter("led_poll_period", LED_POLL_PERIOD)
+        self.declare_parameter("cmd_vel_topic", "/cmd_vel")
+        self.declare_parameter("odom_topic", "odom")
+
     def values(self) -> dict:
         """Return every parameter as a plain dict."""
         return {
@@ -89,6 +97,7 @@ class _ParamReader(Node):
             for name in (
                 "host", "port", "joystick_config_dir", "behaviour_config_dir",
                 "diagnostics_config", "joy_node", "joy_topic", "backup_root",
+                "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
             )
         }
 
@@ -109,6 +118,10 @@ def main(args=None):
             monitor_settings=monitor,
             joy_node=settings["joy_node"],
             joy_topic=settings["joy_topic"],
+            led_service=settings["led_service"],
+            led_poll_period=float(settings["led_poll_period"]),
+            cmd_vel_topic=settings["cmd_vel_topic"],
+            odom_topic=settings["odom_topic"],
         )
 
         if not settings["behaviour_config_dir"]:
@@ -137,6 +150,11 @@ def main(args=None):
             "  joystick profiles: {}".format(settings["joystick_config_dir"]))
         node.get_logger().info(
             "  behaviour config:  {}".format(settings["behaviour_config_dir"]))
+        node.get_logger().info(
+            "  robot state:       LEDs via {} every {}s, movement from {} and {}"
+            .format(settings["led_service"], settings["led_poll_period"],
+                    settings["cmd_vel_topic"] or "(disabled)",
+                    settings["odom_topic"] or "(disabled)"))
 
         executor = MultiThreadedExecutor()
         executor.add_node(node)

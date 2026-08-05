@@ -1,12 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Diagnostics — Mecanumbot{% endblock %}
 
+{% block styles %}
+<style>
+/* Robot-state panels. Cyan marks what the robot is showing, magenta what
+   it is doing, so the two halves stay tellable apart at a glance. */
+.state-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.state-panel {
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel2); padding: 14px; border-top: 2px solid var(--accent);
+}
+.state-panel.movement { border-top-color: var(--accent2); }
+.panel-head {
+  display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+}
+.panel-head h4 {
+  margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--accent);
+}
+.state-panel.movement .panel-head h4 { color: var(--accent2); }
+.panel-head .spacer { flex: 1; }
+
+/* ── LEDs ─────────────────────────────────────────────────────────── */
+.led-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  max-width: 320px; margin: 0 auto;
+}
+.led-corner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: 8px; background: var(--panel);
+  border: 1px solid var(--line);
+}
+.led-corner.fr, .led-corner.br { flex-direction: row-reverse; text-align: right; }
+.swatch {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  border: 1px solid var(--line); background: var(--led, transparent);
+  box-shadow: 0 0 12px -2px var(--led, transparent); position: relative;
+  overflow: hidden;
+}
+.swatch.unknown {
+  border-style: dashed; box-shadow: none;
+  background: repeating-linear-gradient(45deg, var(--panel2) 0 4px, transparent 4px 8px);
+}
+/* One class per LED mode number, so the swatch behaves the way the
+   strip does rather than only naming what it is doing. */
+.swatch.m3 { animation: led-pulse 1.6s ease-in-out infinite; }
+.swatch.m5 { animation: led-blink .4s steps(1, end) infinite; }
+.swatch.m6 { animation: led-blink 1.4s steps(1, end) infinite; }
+.swatch.m1::after, .swatch.m2::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+  animation: led-wave 1.2s linear infinite;
+}
+.swatch.m2::after { animation-direction: reverse; }
+@keyframes led-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+@keyframes led-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: .15; } }
+@keyframes led-wave  { from { transform: translateX(-100%); }
+                       to   { transform: translateX(100%); } }
+.led-corner .name { font-weight: 600; display: flex; gap: 6px;
+                    align-items: baseline; }
+.led-corner .name .mode { font-weight: 400; }
+.led-corner.fr .name, .led-corner.br .name { flex-direction: row-reverse; }
+.led-front {
+  text-align: center; font-size: 11px; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 6px;
+}
+
+/* ── Movement ─────────────────────────────────────────────────────── */
+.move-body { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.dial { width: 108px; height: 108px; flex: none; }
+.dial .ring { fill: none; stroke: var(--line); stroke-width: 2; }
+.dial .arrow { fill: var(--accent2); transition: transform .25s ease; }
+.dial .arrow.idle { fill: var(--line); }
+.dial .hub { fill: var(--dim); }
+.dial .spin { fill: none; stroke: var(--accent); stroke-width: 3;
+              stroke-linecap: round; transform-origin: 50px 50px; }
+.dial .spin.left  { animation: dial-spin 2s linear infinite; }
+.dial .spin.right { animation: dial-spin 2s linear infinite reverse; }
+@keyframes dial-spin { to { transform: rotate(360deg); } }
+.move-readout { flex: 1; min-width: 190px; }
+.move-state { font-size: 17px; font-weight: 650; margin-bottom: 2px;
+              line-height: 1.3; }
+.move-state.idle { color: var(--dim); font-weight: 500; }
+.vel-table { width: 100%; margin-top: 10px; }
+.vel-table td, .vel-table th { padding: 4px 6px; border-bottom: none; }
+.vel-table tr + tr td { border-top: 1px solid var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  .swatch, .swatch::after, .dial .spin { animation: none !important; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>Diagnostics</h1>
 <p class="sub">
-  Measured publish rate of every important topic, against what the node that
-  owns it is configured to produce. Rates are averaged over a sliding window of
-  received messages, so a stalled publisher's number falls rather than freezing.
+  What the robot is showing and doing, and the measured publish rate of every
+  important topic against what the node that owns it is configured to produce.
+  Rates are averaged over a sliding window of received messages, so a stalled
+  publisher's number falls rather than freezing.
 </p>
 
 <div id="notice"></div>
@@ -17,6 +112,64 @@
     <span id="updated" class="small dim"></span>
     <button onclick="resetWindows()">Reset windows</button>
     <button id="pause-btn" onclick="togglePause()">Pause</button>
+  </div>
+</div>
+
+<div class="card hidden" id="state-card">
+  <div class="state-grid">
+    <div class="state-panel leds">
+      <div class="panel-head">
+        <h4>LEDs</h4>
+        <span id="led-summary" class="small dim"></span>
+        <span class="spacer"></span>
+        <span id="led-age" class="small dim"></span>
+      </div>
+      <div id="led-notice"></div>
+      <div class="led-front">front</div>
+      <div class="led-grid" id="led-grid"></div>
+    </div>
+
+    <div class="state-panel movement">
+      <div class="panel-head">
+        <h4>Movement</h4>
+        <span id="move-source" class="small dim"></span>
+        <span class="spacer"></span>
+        <span id="move-age" class="small dim"></span>
+      </div>
+      <div class="move-body">
+        <svg class="dial" viewBox="0 0 100 100" role="img"
+             aria-labelledby="dial-title">
+          <title id="dial-title">Direction of travel, robot facing up</title>
+          <circle class="ring" cx="50" cy="50" r="42"></circle>
+          <path id="dial-spin" class="spin hidden"
+                d="M 50 12 A 38 38 0 0 1 83 31"></path>
+          <g id="dial-arrow" class="arrow idle" transform="rotate(0 50 50)">
+            <path d="M50 13 L61 41 L50 35 L39 41 Z"></path>
+          </g>
+          <circle class="hub" cx="50" cy="50" r="3.5"></circle>
+        </svg>
+        <div class="move-readout">
+          <div class="move-state idle" id="move-state">…</div>
+          <div class="small dim" id="move-detail"></div>
+          <table class="vel-table small">
+            <tr>
+              <th></th>
+              <th class="num">commanded</th>
+              <th class="num">measured</th>
+            </tr>
+            <tr><td class="dim">forward <span class="mono">vx</span></td>
+                <td class="num mono" id="cmd-vx">—</td>
+                <td class="num mono" id="odo-vx">—</td></tr>
+            <tr><td class="dim">strafe <span class="mono">vy</span></td>
+                <td class="num mono" id="cmd-vy">—</td>
+                <td class="num mono" id="odo-vy">—</td></tr>
+            <tr><td class="dim">yaw <span class="mono">wz</span></td>
+                <td class="num mono" id="cmd-wz">—</td>
+                <td class="num mono" id="odo-wz">—</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -68,10 +221,19 @@
         <td>No publisher on the graph, or nothing received recently enough to
             measure. Check the node actually started.</td></tr>
   </table>
-  <p class="small dim" style="margin-bottom:0">
+  <p class="small dim">
     Topics with no nominal rate are event-driven — <code>/cmd_vel</code> only
     publishes while something is driving — so they are judged on staleness alone
     and never read SLOW.
+  </p>
+  <p class="small dim" style="margin-bottom:0">
+    The LED panel is read from the <code>get_led_status</code> service, which is
+    a serial round trip to the Arduino Nano, so it is polled far more slowly
+    than this page refreshes and can lag a change by a second or two. The
+    movement panel shows <em>commanded</em> velocity from <code>/cmd_vel</code>
+    beside <em>measured</em> velocity from odometry: a command with no
+    measurement under it is a drivetrain fault that no topic rate would reveal,
+    since both topics stay perfectly healthy while it happens.
   </p>
 </div>
 {% endblock %}
@@ -81,8 +243,111 @@
 let paused = false;
 let timer = null;
 
+const CORNER_LABELS = {fl: 'front left', fr: 'front right',
+                       bl: 'back left',  br: 'back right'};
+
 function fmt(value, digits) {
   return (value === null || value === undefined) ? '—' : value.toFixed(digits);
+}
+
+function renderLed(led) {
+  const grid = document.getElementById('led-grid');
+  const corners = (led && led.corners) || null;
+
+  document.getElementById('led-summary').textContent =
+    corners ? (led.summary || '') : '';
+  document.getElementById('led-age').textContent =
+    led && led.age_s !== null && led.age_s !== undefined
+      ? 'read ' + fmt(led.age_s, 1) + 's ago' + (led.stale ? ' · stale' : '')
+      : '';
+
+  if (led && led.error) {
+    banner('led-notice', corners ? 'warn' : 'err', led.error,
+           corners ? ['Showing the last reading that did arrive.'] : []);
+  } else if (led && !led.polling) {
+    banner('led-notice', 'info', 'LED polling is disabled (led_poll_period 0).');
+  } else if (!corners) {
+    banner('led-notice', 'info', 'Waiting for the first LED reading…');
+  } else {
+    banner('led-notice', 'ok', null, []);
+  }
+
+  grid.innerHTML = '';
+  ['fl', 'fr', 'bl', 'br'].forEach(function (corner) {
+    const state = corners ? corners[corner] : null;
+    const swatch = el('div', {class: 'swatch' + (state && state.hex
+      ? ' m' + state.mode : ' unknown')});
+    if (state && state.hex) swatch.style.setProperty('--led', state.hex);
+    // Grid position already says which corner this is, but only if you
+    // know the convention; the label spells it out.
+    grid.appendChild(el('div', {class: 'led-corner ' + corner}, [
+      swatch,
+      el('div', {class: 'grow'}, [
+        el('div', {class: 'name'}, [
+          el('span', {text: state ? state.color_name : 'unknown'}),
+          el('span', {class: 'small dim mode',
+                      text: state ? state.mode_name : ''})
+        ]),
+        el('div', {class: 'small dim', text: CORNER_LABELS[corner]})
+      ])
+    ]));
+  });
+}
+
+function renderMotion(motion) {
+  const commanded = (motion && motion.commanded) || {};
+  const measured = (motion && motion.measured) || {};
+  const state = (motion && motion.state) || 'unknown';
+  const idle = !commanded.moving && !measured.moving;
+
+  const label = document.getElementById('move-state');
+  label.textContent = state;
+  label.classList.toggle('idle', idle);
+
+  document.getElementById('move-source').textContent =
+    motion && motion.source === 'measured' ? 'from odometry'
+      : motion && motion.source === 'commanded' ? 'from /cmd_vel (no odometry)'
+      : 'no source';
+  document.getElementById('move-age').textContent =
+    measured.age_s !== null && measured.age_s !== undefined
+      ? 'odom ' + fmt(measured.age_s, 1) + 's ago' : '';
+
+  // Commanded but not measured is the case worth calling out: the topics
+  // are healthy, so nothing else on this page would show it.
+  const detail = document.getElementById('move-detail');
+  if (commanded.moving && measured.available && !measured.stale
+      && !measured.moving) {
+    detail.textContent = 'commanded to move, odometry reads stationary';
+  } else if (measured.disabled) {
+    detail.textContent = 'odometry source disabled; commanded velocity only';
+  } else {
+    detail.textContent = commanded.state && commanded.state !== state
+      ? 'commanded: ' + commanded.state : '';
+  }
+
+  const arrow = document.getElementById('dial-arrow');
+  const heading = measured.translating ? measured.heading_deg
+    : commanded.translating ? commanded.heading_deg : null;
+  // Screen up is straight ahead and heading is positive to the left, so
+  // the rotation is negated.
+  arrow.setAttribute('transform', 'rotate(' + (heading === null ? 0 : -heading)
+                     + ' 50 50)');
+  arrow.classList.toggle('idle', heading === null);
+
+  const wz = measured.available && !measured.stale ? measured.wz : commanded.wz;
+  const rotating = measured.available && !measured.stale
+    ? measured.rotating : commanded.rotating;
+  const spin = document.getElementById('dial-spin');
+  spin.classList.toggle('hidden', !rotating);
+  spin.classList.toggle('left', rotating && wz > 0);
+  spin.classList.toggle('right', rotating && wz < 0);
+
+  [['cmd', commanded], ['odo', measured]].forEach(function (pair) {
+    ['vx', 'vy', 'wz'].forEach(function (axis) {
+      document.getElementById(pair[0] + '-' + axis).textContent =
+        pair[1].available ? fmt(pair[1][axis], 2) : '—';
+    });
+  });
 }
 
 function render(data) {
@@ -109,6 +374,13 @@ function render(data) {
     tr.querySelector('.status').innerHTML =
       '<span class="pill ' + reading.status + '">' + reading.status + '</span>';
   });
+
+  // Both are absent when the node predates them; the card stays hidden
+  // rather than rendering empty panels.
+  const stateCard = document.getElementById('state-card');
+  stateCard.classList.toggle('hidden', !data.led && !data.motion);
+  if (data.led) renderLed(data.led);
+  if (data.motion) renderMotion(data.motion);
 
   const summary = document.getElementById('summary');
   summary.innerHTML = '';

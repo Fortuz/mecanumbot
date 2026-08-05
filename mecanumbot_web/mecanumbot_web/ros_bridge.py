@@ -1,11 +1,11 @@
 """
-The ROS side of the web GUI: rate monitoring and joy-node control.
+The ROS side of the web GUI: rate monitoring, robot state, joy control.
 
 Runs as a normal rclpy node under a ``MultiThreadedExecutor``.  Flask
 serves from a daemon thread and reaches in here through the accessors
 below, all of which are lock-guarded.
 
-Two details are load bearing and easy to get wrong:
+Three details are load bearing and easy to get wrong:
 
 **Service calls come from Flask threads.**  ``call_async`` returns a
 future that only completes when the executor spins, so a Flask thread has
@@ -21,6 +21,12 @@ hands the callback undeserialised bytes, so subscribing to a 100 Hz
 ``OpenCRState`` costs essentially nothing on the Orin -- which is what
 makes it acceptable to run this permanently alongside the robot stack
 rather than only on demand.
+
+**The LED poll never blocks.**  ``get_led_status`` is a serial round trip
+with a sleep inside it, and it is called from an executor timer rather
+than from a request, so it uses ``call_async`` with a done callback.
+Blocking there the way the Flask-thread helper does would stall a
+callback group that the rest of this node shares.
 """
 
 import threading
@@ -29,16 +35,21 @@ from functools import partial
 from typing import Dict, List, Optional
 
 import rclpy
+from geometry_msgs.msg import Twist
+from mecanumbot_msgs.srv import GetLedStatus
+from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 
+from . import led_enums, motion
 from .rate_monitor import RateMonitor, TopicSpec
 
 #: How often the graph is rescanned for topics that have appeared.
@@ -46,6 +57,25 @@ DISCOVERY_PERIOD = 2.0
 
 #: Default blocking timeout for a service call made from a Flask thread.
 SERVICE_TIMEOUT = 8.0
+
+#: How often the LED controller is asked what it is showing.  Every poll
+#: is a serial exchange on the same link the behaviour trees use to set
+#: the LEDs, so this is deliberately far slower than the page refresh --
+#: the page reads a cache.
+LED_POLL_PERIOD = 2.0
+
+#: A cached LED reading older than this is reported as stale.
+LED_STALE_AFTER = 8.0
+
+#: Seconds of ``cmd_vel`` silence after which nothing is commanding the
+#: robot.  Short, because the topic ticks continuously while driving.
+COMMAND_STALE_AFTER = 0.5
+
+#: Seconds of odometry silence after which measured motion is unknown.
+ODOM_STALE_AFTER = 2.0
+
+#: Minimum gap between odometry deserialisations.  See _on_odom.
+ODOM_DECIMATE = 0.2
 
 
 def _monitor_qos() -> QoSProfile:
@@ -65,10 +95,19 @@ def _monitor_qos() -> QoSProfile:
 
 
 class WebNode(Node):
-    """Measures topic rates and proxies control of the joystick node."""
+    """Measures topic rates and robot state, proxies joystick control."""
 
-    def __init__(self, monitor_settings=None, joy_node: str = "", joy_topic: str = ""):
-        """Create the node, its monitor and its clients to the joy node."""
+    def __init__(
+        self,
+        monitor_settings=None,
+        joy_node: str = "",
+        joy_topic: str = "",
+        led_service: str = "",
+        led_poll_period: float = LED_POLL_PERIOD,
+        cmd_vel_topic: Optional[str] = None,
+        odom_topic: Optional[str] = None,
+    ):
+        """Create the node, its monitor and its clients to the robot."""
         super().__init__("mecanumbot_web_node")
 
         settings = monitor_settings or {}
@@ -89,6 +128,27 @@ class WebNode(Node):
         self._active_profile: Optional[str] = None
         self._estop: Optional[bool] = None
 
+        # Relative names on purpose: this node is launched into the
+        # ``mecanumbot`` namespace and so are the LED service and odom,
+        # so they resolve alongside it without repeating the namespace.
+        # ``cmd_vel`` is absolute because the base launch remaps it out
+        # of the namespace for Nav2's benefit.
+        self._led_service = led_service or "get_led_status"
+        self._led_poll_period = float(led_poll_period)
+        self._cmd_vel_topic = "/cmd_vel" if cmd_vel_topic is None else cmd_vel_topic
+        self._odom_topic = "odom" if odom_topic is None else odom_topic
+
+        self._led_lock = threading.Lock()
+        self._led: Optional[dict] = None
+        self._led_stamp: Optional[float] = None
+        self._led_error: Optional[str] = None
+        self._led_pending = False
+
+        self._motion_lock = threading.Lock()
+        self._commanded: Optional[tuple] = None
+        self._measured: Optional[tuple] = None
+        self._odom_decoded_at = 0.0
+
         group = ReentrantCallbackGroup()
         self._group = group
 
@@ -108,6 +168,21 @@ class WebNode(Node):
         self.create_subscription(
             Bool, "{}/estop".format(self._joy_node),
             self._on_estop, self._latched_qos(), callback_group=group)
+
+        self._led_client = self.create_client(
+            GetLedStatus, self._led_service, callback_group=group)
+        if self._led_poll_period > 0.0:
+            self.create_timer(
+                self._led_poll_period, self._poll_led, callback_group=group)
+
+        if self._cmd_vel_topic:
+            self.create_subscription(
+                Twist, self._cmd_vel_topic, self._on_cmd_vel, _monitor_qos(),
+                callback_group=group)
+        if self._odom_topic:
+            self.create_subscription(
+                Odometry, self._odom_topic, self._on_odom, _monitor_qos(),
+                raw=True, callback_group=group)
 
         self.create_timer(DISCOVERY_PERIOD, self._discover, callback_group=group)
         self._discover()
@@ -184,16 +259,20 @@ class WebNode(Node):
             self._monitor.record(topic, now)
 
     def diagnostics(self) -> dict:
-        """Return the current rate readings, for the diagnostics API."""
+        """Return rates, LED state and movement, for the diagnostics API."""
         now = time.monotonic()
         with self._rate_lock:
             readings = self._monitor.read(now)
             summary = self._monitor.summary(readings)
+        # Both of these take their own locks; taking them outside the
+        # rate lock keeps the two independent and unorderable.
         return {
             "topics": [reading.as_dict() for reading in readings],
             "summary": summary,
             "window_seconds": self._monitor.window_seconds,
             "stale_after": self._monitor.stale_after,
+            "led": self.led_state(),
+            "motion": self.motion_state(),
         }
 
     def reset_rates(self) -> None:
@@ -215,6 +294,183 @@ class WebNode(Node):
             }
             for spec in specs if spec is not None
         ]
+
+    # ── LED state ────────────────────────────────────────────────────────
+
+    def _poll_led(self) -> None:
+        """
+        Ask the LED controller what it is currently showing.
+
+        There is no LED state topic anywhere in the workspace -- the
+        Arduino Nano is only ever asked -- so this is the only way to
+        show it, and it costs a serial exchange each time.  Hence the
+        cache, the slow period, and the ``_led_pending`` guard: a reply
+        that never arrives must not queue a second request behind it.
+        """
+        if self._led_pending:
+            return
+        if not self._led_client.service_is_ready():
+            with self._led_lock:
+                self._led_error = "The LED service is not running"
+            return
+
+        self._led_pending = True
+        future = self._led_client.call_async(GetLedStatus.Request())
+        future.add_done_callback(self._on_led_response)
+
+    def _on_led_response(self, future) -> None:
+        """Cache one LED reading, or the reason there is not one."""
+        self._led_pending = False
+        try:
+            response = future.result()
+        except Exception as exc:  # pragma: no cover - transport failure
+            with self._led_lock:
+                self._led_error = "LED read failed: {}".format(exc)
+            return
+
+        corners = {
+            corner: {
+                "mode": int(getattr(response, "{}_mode".format(corner))),
+                "color": int(getattr(response, "{}_color".format(corner))),
+            }
+            for corner in led_enums.LED_CORNERS
+        }
+        with self._led_lock:
+            # The LED node answers a bad checksum or a silent Arduino
+            # with -1 in every field. That is a failed read, not a state
+            # the strips can be in, so it must not overwrite the last
+            # good reading.
+            if all(values["mode"] < 0 for values in corners.values()):
+                self._led_error = "The LED controller did not answer over serial"
+                return
+            self._led = corners
+            self._led_stamp = time.monotonic()
+            self._led_error = None
+
+    def led_state(self) -> dict:
+        """Return the cached LED reading, described for display."""
+        with self._led_lock:
+            corners = ({key: dict(value) for key, value in self._led.items()}
+                       if self._led else None)
+            stamp = self._led_stamp
+            error = self._led_error
+
+        state = {
+            "service": self._led_service,
+            "polling": self._led_poll_period > 0.0,
+            "corners": None,
+            "summary": None,
+            "age_s": None,
+            "stale": True,
+            "error": error,
+        }
+        if corners and stamp is not None:
+            age = time.monotonic() - stamp
+            state.update({
+                "corners": {corner: led_enums.describe_corner(values)
+                            for corner, values in corners.items()},
+                "summary": led_enums.describe_corners(corners),
+                "age_s": round(age, 1),
+                "stale": age > LED_STALE_AFTER,
+            })
+        return state
+
+    # ── movement state ───────────────────────────────────────────────────
+
+    def _on_cmd_vel(self, message: Twist) -> None:
+        """Cache the latest commanded body velocity."""
+        with self._motion_lock:
+            self._commanded = (
+                message.linear.x, message.linear.y, message.angular.z,
+                time.monotonic())
+
+    def _on_odom(self, data) -> None:
+        """
+        Decimate odometry before paying to deserialise it.
+
+        ``odom`` runs at 50 Hz and the page reads once a second, so all
+        but a handful of those messages would be decoded only to be
+        overwritten.  The subscription is therefore raw and the bytes are
+        decoded at most every ``ODOM_DECIMATE`` seconds -- the same
+        reasoning that makes the rate-monitor subscriptions raw, taken
+        one step further because here the payload is actually wanted.
+        """
+        now = time.monotonic()
+        if now - self._odom_decoded_at < ODOM_DECIMATE:
+            return
+        self._odom_decoded_at = now
+
+        try:
+            message = deserialize_message(data, Odometry)
+        except Exception:  # pragma: no cover - malformed payload
+            return
+
+        # REP-105: the twist in Odometry is already in the child frame,
+        # so it is the body velocity with no transform needed.
+        twist = message.twist.twist
+        with self._motion_lock:
+            self._measured = (
+                twist.linear.x, twist.linear.y, twist.angular.z, now)
+
+    def _motion_slot(self, sample, topic, stale_after, stale_state, now):
+        """Describe one velocity source, flagging staleness and absence."""
+        if not topic:
+            slot = motion.idle(motion.UNKNOWN)
+            slot.update({"topic": "", "available": False, "age_s": None,
+                         "stale": True, "disabled": True})
+            return slot
+        if sample is None:
+            slot = motion.idle(motion.UNKNOWN)
+            slot.update({"topic": topic, "available": False, "age_s": None,
+                         "stale": True, "disabled": False})
+            return slot
+
+        vx, vy, wz, stamp = sample
+        age = now - stamp
+        stale = age > stale_after
+        # A stale sample says nothing about *now*, so the numbers are
+        # kept for reference but the state falls back rather than
+        # claiming the robot is still doing whatever it last did.
+        slot = motion.describe_motion(vx, vy, wz)
+        if stale:
+            slot["state"] = stale_state
+            slot["moving"] = False
+        slot.update({"topic": topic, "available": True,
+                     "age_s": round(age, 2), "stale": stale, "disabled": False})
+        return slot
+
+    def motion_state(self) -> dict:
+        """
+        Return what the robot is being told to do and what it is doing.
+
+        Both, not one: a healthy ``cmd_vel`` carrying a forward command
+        while odometry reads zero is exactly the failure this is worth
+        showing, and either alone would hide it.
+        """
+        now = time.monotonic()
+        with self._motion_lock:
+            commanded = self._commanded
+            measured = self._measured
+
+        commanded_slot = self._motion_slot(
+            commanded, self._cmd_vel_topic, COMMAND_STALE_AFTER,
+            motion.NO_COMMAND, now)
+        measured_slot = self._motion_slot(
+            measured, self._odom_topic, ODOM_STALE_AFTER, motion.UNKNOWN, now)
+
+        if measured_slot["available"] and not measured_slot["stale"]:
+            state, source = measured_slot["state"], "measured"
+        elif commanded_slot["available"] and not commanded_slot["stale"]:
+            state, source = commanded_slot["state"], "commanded"
+        else:
+            state, source = motion.UNKNOWN, "none"
+
+        return {
+            "state": state,
+            "source": source,
+            "commanded": commanded_slot,
+            "measured": measured_slot,
+        }
 
     # ── joystick node state ──────────────────────────────────────────────
 
@@ -327,9 +583,8 @@ class WebNode(Node):
         return False, outcome.reason or "The joystick node rejected the profile"
 
 
-def create_node(monitor_settings=None, joy_node: str = "", joy_topic: str = ""):
+def create_node(monitor_settings=None, **settings):
     """Initialise rclpy and build a :class:`WebNode`."""
     if not rclpy.ok():
         rclpy.init()
-    return WebNode(
-        monitor_settings=monitor_settings, joy_node=joy_node, joy_topic=joy_topic)
+    return WebNode(monitor_settings=monitor_settings, **settings)

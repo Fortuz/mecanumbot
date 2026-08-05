@@ -17,6 +17,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def _share(package, *parts):
@@ -51,6 +52,12 @@ def generate_launch_description():
             "diagnostics_config",
             default_value=_share("mecanumbot_web", "config", "diagnostics_topics.yaml"),
             description="Table of monitored topics and their nominal rates"),
+        DeclareLaunchArgument(
+            "led_poll_period", default_value="2.0",
+            description="Seconds between LED status reads; 0 disables them"),
+        DeclareLaunchArgument(
+            "odom_topic", default_value="odom",
+            description="Odometry source for measured motion; empty disables it"),
 
         Node(
             package="mecanumbot_web",
@@ -66,6 +73,18 @@ def generate_launch_description():
                 "diagnostics_config": LaunchConfiguration("diagnostics_config"),
                 "joy_node": "/mecanumbot/mecanumbot_joy_node",
                 "joy_topic": "/mecanumbot/joy",
+                # Relative: resolved inside ``namespace``, alongside the
+                # LED service node and mecanumbot_sensorproc_node.
+                "led_service": "get_led_status",
+                # Typed explicitly: an empty odom_topic must stay an
+                # empty string rather than being inferred into None.
+                "led_poll_period": ParameterValue(
+                    LaunchConfiguration("led_poll_period"), value_type=float),
+                "odom_topic": ParameterValue(
+                    LaunchConfiguration("odom_topic"), value_type=str),
+                # Absolute: the base launch remaps cmd_vel out of the
+                # namespace so Nav2 and the joy node meet on one topic.
+                "cmd_vel_topic": "/cmd_vel",
             }],
         ),
     ])

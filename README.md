@@ -16,21 +16,36 @@ Original sources: `<br>`
 
 ## Packages in this repository
 
-| Package | Type | Purpose |
-| --- | --- | --- |
-| `mecanumbot` | Meta (`ament_cmake`) | Dependency aggregation only. No nodes, no launch files. |
-| `mecanumbot_core` | Python | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link and the mecanum kinematics; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state and the `odom → base_footprint` transform; `mecanumbot_battery_alert` raises a visible low-battery alarm. |
-| `mecanumbot_bringup` | `ament_cmake` | Launch orchestration. No node logic of its own — it starts nodes from the other packages. Holds the full onboard stack launch, the remote-PC launch, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run. |
-| `mecanumbot_description` | `ament_cmake` | Robot assets, no nodes: URDF, meshes, maps, Nav2/SLAM/Cartographer parameter sets, RViz layouts, udev rules and the systemd autostart unit. |
-| `mecanumbot_sim` | Python | Simulation. Two interchangeable backends (MuJoCo, Gazebo Sim) behind the same robot interface, plus scenario actors and the detection/behaviour evaluators. See its README — the Gazebo backend is written but has never been run. |
-| `mecanumbot_led` | Python | `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`. |
-| `mecanumbot_camera_stream` | Python | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. Picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
-| `mecanumbot_cam_optim` | `ament_cmake` (C++) | Single `camera_stream_node` executable, a C++ capture path alongside the Python one. Package manifest is still a TODO stub. |
-| `mecanumbot_audio` | Python | `input_handler` node publishing microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. |
-| `mecanumbot_monitor` | Python | Test and evaluation utilities: `wheel_monitor` and `accessory_monitor` generate repeatable command patterns for drivetrain and servo testing; `rosbag_stepper` chunks bag playback; `metric_eval` logs ground truth against detections to CSV. |
+Eleven packages, all of them part of the onboard Jetson stack (`mecanumbot_sim`
+and `mecanumbot_monitor` are equally usable on a development machine).
 
-Each package has its own README with the full publisher / subscriber / parameter
-tables.
+| Package | Build type | Executables | Purpose |
+| --- | --- | --- | --- |
+| `mecanumbot` | `ament_cmake` (meta) | — | Dependency aggregation only. No nodes, no launch files: installing it pulls in the runtime packages. |
+| `mecanumbot_core` | Python | `mecanumbot_io_node`, `mecanumbot_sensorproc_node`, `mecanumbot_battery_alert` | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link (CRC8-CCITT framing) and the mecanum kinematics, turning `cmd_vel` into four wheel commands; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state, `has_object` and the `odom → base_footprint` transform, plus `orin_battery_state` from the INA219 when running on a Jetson; `mecanumbot_battery_alert` raises a visible low-battery alarm. |
+| `mecanumbot_bringup` | `ament_cmake` | — (launch only) | Launch orchestration. No node logic of its own — it starts nodes from the other packages and picks map / Nav2 params from the current Wi-Fi SSID. Holds `launch_mecanumbot_base.launch.py` (full onboard stack), `launch_external.launch.py` (operator PC), the camera, state-publisher, mapping, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run. |
+| `mecanumbot_description` | `ament_cmake` | — (assets only) | Robot assets, no nodes: URDF/xacro and meshes, maps, Nav2/SLAM/Cartographer parameter sets, RViz layouts, the joystick profile YAMLs, the udev rules for `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano`, and the systemd autostart unit. |
+| `mecanumbot_sim` | Python | `mecanumbot_sim_mujoco_io_node`, `mecanumbot_sim_gz_io_node`, `mecanumbot_sim_oracle_subject_node`, `mecanumbot_sim_nav_shim_node`, `mecanumbot_sim_visualization_node`, `mecanumbot_sim_detector_debug_node`, `mecanumbot_sim_behavior_evaluator_node`, `mecanumbot_sim_detection_evaluator_node` | Simulation. Two interchangeable backends (MuJoCo, Gazebo Sim) presenting exactly the interface the real `mecanumbot_io_node` presents, so perception and behaviour run unchanged; plus YAML scenarios with dead-reckoned actors, a Nav2 shim, and the detection/behaviour evaluators. Holds the only real unit tests in the workspace. See its README — the Gazebo backend is written but has never been run. |
+| `mecanumbot_joy` | Python | `mecanumbot_joy_node` | The robot's joystick node and the only `/joy` consumer. Applies a YAML mapping profile (`mecanumbot_description/config/joystick/`) to publish `/cmd_vel`, `/cmd_accessory_pos` and LED service calls. Layout decoding, profile validation and the action vocabulary live in rclpy-free modules, so they are unit-tested without a ROS graph. Replaces the old operator-PC teleop and the retired `mecanumbot_gui` controller stack. |
+| `mecanumbot_web` | Python | `mecanumbot_web_node` | The robot-hosted web GUI (Flask inside an rclpy node) at `http://<robot>:8080`, started by the base launch and disabled with `use_web:=false`. Three pages: `/joystick` edits and reloads the joystick profile with a live `/joy` readout, `/diagnostics` shows LED state, commanded-vs-measured movement and measured publish rates against nominal, `/behaviour` edits the leading-behaviour constants YAML. No login, no database. |
+| `mecanumbot_led` | Python | `mecanumbot_led_service` | `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`. |
+| `mecanumbot_camera_stream` | Python | `camera_image_publisher_node`, `compressed_camera_publisher_node`, `h264_camera_publisher_node` | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. Picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
+| `mecanumbot_cam_optim` | `ament_cmake` (C++) | `camera_stream_node` | A C++ capture path alongside the Python one, built on `rclcpp`, `cv_bridge` and `image_transport`. No README; package manifest is still a TODO stub. |
+| `mecanumbot_audio` | Python | `input_handler` | Publishes microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. No README. |
+| `mecanumbot_monitor` | Python | `wheel_monitor`, `accessory_monitor`, `rosbag_stepper`, `metric_eval` | Test and evaluation utilities: `wheel_monitor` and `accessory_monitor` generate repeatable command patterns for drivetrain and servo testing; `rosbag_stepper` chunks bag playback; `metric_eval` logs ground truth against detections to CSV. |
+
+Every package except `mecanumbot`, `mecanumbot_audio` and `mecanumbot_cam_optim`
+has its own README with the full publisher / subscriber / parameter tables — read
+the relevant one before changing a node interface.
+
+### What is *not* in this repository
+
+The onboard stack is only part of the robot. The rest lives in the sibling repos
+listed above: `mecanumbot_msgs` (every custom `.msg`/`.srv`, and a build
+dependency of most packages here), `mecanumbot_sensorprocess_smart` (LiDAR and
+camera people detection and their fusion), `mecanumbot_behaviours` (the
+`py_trees_ros` behaviour trees) and `mecanumbot_remote` (operator-PC keyboard
+teleop and LED GUI).
 
 Building and using a robot with additional motors with different protocols, using a mecanum wheel drive sysetem instead of a differential drive system requires some changes in the original architecture so this repository is intend to provide a full functionality similar to the original Turtlebot3 repositories.
 
