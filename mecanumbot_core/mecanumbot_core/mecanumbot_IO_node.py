@@ -11,6 +11,7 @@ from mecanumbot_msgs.msg import AccessMotorCmd, OpenCRState
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 
 # import wiringpi
@@ -34,6 +35,10 @@ class Mecanumbot_IO_Node(Node):
         super().__init__("mecanumbot_io_node", namespace=namespace)
         self.callback_group = ReentrantCallbackGroup()
         self.cmd_lock = threading.RLock()
+        # Guards the serial port against interleaved writes from the tx timer
+        # and the shutdown path. Deliberately separate from cmd_lock so that a
+        # slow write never blocks a command callback.
+        self.tx_lock = threading.Lock()
 
         default_device = "COM3" if os.name == "nt" else "/dev/opencr"
         self.declare_parameters(
@@ -41,6 +46,10 @@ class Mecanumbot_IO_Node(Node):
             parameters=[
                 ("dev_params.device_name", default_device),
                 ("dev_params.baudrate", 1000000),
+                # Rate at which the current command set is pushed to the board.
+                # The write is periodic rather than per-message so that an
+                # incoming cmd_vel can never block on the serial link.
+                ("dev_params.tx_hz", 50.0),
                 # Robot parameters
                 ("robot_params.wheel.radius", 0.0325),
                 ("robot_params.wheel.separation_x", 0.129),
@@ -64,6 +73,7 @@ class Mecanumbot_IO_Node(Node):
         # Retrieve parameters
         self.device_name = self.get_parameter("dev_params.device_name").value
         self.baudrate = self.get_parameter("dev_params.baudrate").value
+        self.tx_hz = max(1.0, float(self.get_parameter("dev_params.tx_hz").value))
         self.wheel_radius = self.get_parameter("robot_params.wheel.radius").value
         self.wheel_separation_x = self.get_parameter(
             "robot_params.wheel.separation_x"
@@ -105,7 +115,9 @@ class Mecanumbot_IO_Node(Node):
 
         # Log parameters
 
-        self.get_logger().info(f"Device: {self.device_name} @ {self.baudrate} baud")
+        self.get_logger().info(
+            f"Device: {self.device_name} @ {self.baudrate} baud, tx {self.tx_hz} Hz"
+        )
         self.get_logger().info(
             f"Packet: payload_size={self.payload_size}, full_packet_size={self.full_packet_size}"
         )
@@ -129,6 +141,9 @@ class Mecanumbot_IO_Node(Node):
         self.i = 0
         self.rx_buffer = bytearray()
 
+        # Gates the tx timer until a real command has been seen; see
+        # update_motor_cmds_out.
+        self._have_command = False
         self.cmd_outputs = {
             "BL_vel": 0,
             "BR_vel": 0,
@@ -138,11 +153,18 @@ class Mecanumbot_IO_Node(Node):
             "GL_pos": 683,
             "GR_pos": 336,
         }
+        # Depth 1: a velocity stream only ever wants its newest sample. A
+        # deeper queue is a latency buffer -- a backlog here shows up as the
+        # wheels obeying commands the operator gave a moment ago.
         self.vel_subscription = self.create_subscription(
             Twist,
             "cmd_vel",
             self.vel_cmd_callback,
-            10,
+            QoSProfile(
+                depth=1,
+                history=HistoryPolicy.KEEP_LAST,
+                reliability=ReliabilityPolicy.RELIABLE,
+            ),
             callback_group=self.callback_group,
         )
         self.pos_subscription = self.create_subscription(
@@ -150,6 +172,16 @@ class Mecanumbot_IO_Node(Node):
             "cmd_accessory_pos",
             self.access_motor_cmd_callback,
             10,
+            callback_group=self.callback_group,
+        )
+
+        # The command set is pushed to the board on its own timer. Writing
+        # from the subscription callbacks instead made the achievable serial
+        # rate a hard cap on the cmd_vel rate, so a faster publisher simply
+        # built a backlog of stale commands.
+        self.tx_timer = self.create_timer(
+            1.0 / self.tx_hz,
+            self.update_motor_cmds_out,
             callback_group=self.callback_group,
         )
 
@@ -167,38 +199,35 @@ class Mecanumbot_IO_Node(Node):
             self.get_logger().error(f"Error opening serial port: {e}")
             self.ser = None
 
-    def close_serial(self):
-        self.get_logger().info("Initiating safe shutdown sequence...")
-
-        # 1. Stop the motors to prevent a runaway robot
-        with self.cmd_lock:
-            self.cmd_outputs["BL_vel"] = 0
-            self.cmd_outputs["BR_vel"] = 0
-            self.cmd_outputs["FL_vel"] = 0
-            self.cmd_outputs["FR_vel"] = 0
-            self.update_motor_cmds_out()
-
-        # 2. Signal the reader thread to stop and wait for it
-        self._stop_event.set()
-        if hasattr(self, "reader") and self.reader is not None:
-            self.reader.join(timeout=1.0)
-
-        # 3. Safely close the serial port
-        if self.ser is not None and self.ser.is_open:
-            self.ser.close()
-
-        self.get_logger().info("Serial port closed safely.")
-
     def init_reader_thread(self):
         self.reader = threading.Thread(target=self.read_thread_fn, daemon=True)
         self.reader.start()
 
     def close_serial(self):
-        if self.ser is not None:
-            self.ser.close()
-        self.get_logger().info("Serial port closed.")
-        if self.reader is not None:
+        self.get_logger().info("Initiating safe shutdown sequence...")
+
+        # 1. Stop the tx timer so nothing races the final stop frame
+        if getattr(self, "tx_timer", None) is not None:
+            self.tx_timer.cancel()
+
+        # 2. Stop the motors to prevent a runaway robot
+        with self.cmd_lock:
+            self.cmd_outputs["BL_vel"] = 0
+            self.cmd_outputs["BR_vel"] = 0
+            self.cmd_outputs["FL_vel"] = 0
+            self.cmd_outputs["FR_vel"] = 0
+        self.update_motor_cmds_out(force=True)
+
+        # 3. Signal the reader thread to stop and wait for it
+        self._stop_event.set()
+        if getattr(self, "reader", None) is not None:
             self.reader.join(timeout=1.0)
+
+        # 4. Safely close the serial port
+        if self.ser is not None and self.ser.is_open:
+            self.ser.close()
+
+        self.get_logger().info("Serial port closed safely.")
 
     # Plausibility check for received payload
     # Returns True if the payload is plausible, False otherwise
@@ -288,12 +317,13 @@ class Mecanumbot_IO_Node(Node):
         fl_raw = (Vx - Vy - (Wz * self.wheel_dist_scale)) / self.scale
         fr_raw = (Vx + Vy + (Wz * self.wheel_dist_scale)) / self.scale
 
+        # Only update the command set; the tx timer owns the serial write.
         with self.cmd_lock:
             self.cmd_outputs["BL_vel"] = max(min(bl_raw, 300), -300)
             self.cmd_outputs["FL_vel"] = max(min(fl_raw, 300), -300)
             self.cmd_outputs["BR_vel"] = max(min(br_raw, 300), -300)
             self.cmd_outputs["FR_vel"] = max(min(fr_raw, 300), -300)
-            self.update_motor_cmds_out()
+            self._have_command = True
 
     def access_motor_cmd_callback(self, msg):
         # wiringpi.digitalWrite(self.GPIO_pin,1)
@@ -301,10 +331,24 @@ class Mecanumbot_IO_Node(Node):
             self.cmd_outputs["N_pos"] = msg.n_pos * 100
             self.cmd_outputs["GL_pos"] = msg.gl_pos * 100
             self.cmd_outputs["GR_pos"] = msg.gr_pos * 100
+            self._have_command = True
 
-            self.update_motor_cmds_out()
+    def update_motor_cmds_out(self, force=False):
+        """
+        Push the current command set to the board.
 
-    def update_motor_cmds_out(self):
+        Driven by the tx timer, never by a subscription callback: the whole
+        7-short frame is absolute state, so sending the latest snapshot at a
+        fixed rate carries exactly the same information as sending one frame
+        per message, without coupling the serial rate to the message rate.
+
+        Stays silent until the first command arrives so that starting the
+        node does not by itself drive the accessories to their defaults;
+        ``force`` overrides that for the stop frame on shutdown.
+        """
+        if not (self._have_command or force):
+            return
+
         fmt = "<7h"
         with self.cmd_lock:
             try:
@@ -318,13 +362,24 @@ class Mecanumbot_IO_Node(Node):
                     int(self.cmd_outputs["GL_pos"]),
                     int(self.cmd_outputs["GR_pos"]),
                 )
+            except struct.error as e:
+                # Out of range for <7h. Skip this frame rather than let the
+                # exception kill the timer and freeze the command stream.
+                self.get_logger().error(
+                    f"Command does not fit the packet, skipping: {e}",
+                    throttle_duration_sec=1.0,
+                )
+                return
 
-                if self.ser is not None and self.ser.is_open:
+        if self.ser is None or not self.ser.is_open:
+            return
 
-                    self.ser.write(message_bytes)
-                    self.ser.flush()
-                    time.sleep(0.1)
-                    # wiringpi.digitalWrite(self.GPIO_pin,0)
+        # Written outside cmd_lock so the link can never stall a callback.
+        with self.tx_lock:
+            try:
+                self.ser.write(message_bytes)
+                self.ser.flush()
+                # wiringpi.digitalWrite(self.GPIO_pin,0)
             except serial.SerialException as e:
                 self.get_logger().error(f"Serial write failed: {e}")
 

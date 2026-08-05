@@ -16,12 +16,27 @@ Runs on the robot's NVIDIA Jetson Orin Nano. The nodes read `/proc/device-tree/m
 
 | Topic               | Data type                            | Processing                                                                                                                      |
 | ------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `cmd_vel`           | `geometry_msgs/msg/Twist`            | Converts commanded base velocity to four wheel commands with mecanum kinematics, clamps values, serializes and sends to OpenCR. |
-| `cmd_accessory_pos` | `mecanumbot_msgs/msg/AccessMotorCmd` | Converts neck/gripper targets to board units and sends command packet to OpenCR.                                                |
+| `cmd_vel`           | `geometry_msgs/msg/Twist`            | Converts commanded base velocity to four wheel commands with mecanum kinematics and clamps them into the current command set. Subscribed at **depth 1** — a velocity stream only ever wants its newest sample, and a deeper queue shows up as the wheels obeying commands the operator gave a moment ago. |
+| `cmd_accessory_pos` | `mecanumbot_msgs/msg/AccessMotorCmd` | Converts neck/gripper targets to board units into the current command set.                                                       |
+
+### Parameters
+
+| Parameter          | Default | Function                                                                              |
+| ------------------ | ------- | --------------------------------------------------------------------------------------- |
+| `dev_params.tx_hz` | `50.0`  | Rate at which the current command set is written to the board. See *Command transmission*. |
+
+### Command transmission
+
+Neither subscription writes to the serial port. Both only update `cmd_outputs`; a dedicated tx timer packs the whole 7-short frame and writes it at `dev_params.tx_hz`.
+
+This split matters for latency. The frame is absolute state, so sending the latest snapshot at a fixed rate carries exactly the same information as sending one frame per message — but writing from the callbacks made the achievable serial rate a hard cap on the accepted `cmd_vel` rate. With a 100 ms sleep in that path the node could only retire ~10 messages/s against a 20 Hz publisher, so the subscription queue stayed saturated and the wheels ran roughly a second behind the stick. Keep the write off the callback thread.
+
+The timer stays silent until the first command arrives, so merely starting the node does not drive the accessories to their defaults.
 
 ### Behavior
 
 - Opens a serial link to OpenCR (`/dev/opencr` by default on Linux, `COM3` on Windows) and runs a background reader thread. The `/dev/opencr` symlink comes from the udev rules in `mecanumbot_description/udev/`.
+- On shutdown, `close_serial` cancels the tx timer, forces a zeroed stop frame, then joins the reader and closes the port.
 - Uses CRC8-CCITT and payload plausibility checks before accepting inbound packets.
 - Contains a disabled GPIO timing/debug signal (pin 27). It was driven by `wiringpi` on the earlier Raspberry Pi build; `wiringpi` is not available on the Jetson Orin Nano and the calls are commented out, so nothing is toggled at runtime.
 

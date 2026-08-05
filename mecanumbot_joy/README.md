@@ -92,6 +92,18 @@ Everything else — speeds, deadzone, ramp rates, publish rate, accessory travel
 lives in the profile, not in ROS parameters, so it can be edited and version
 controlled as one document.
 
+### `publish_hz` scales every ramp
+
+`lin_step`, `ang_step` and the accessory `step` are all **per publish tick**, so
+changing `publish_hz` changes both the command rate and every ramp rate. Retune
+the steps alongside it or the neck sweep and the acceleration move with it.
+
+At the shipped 50 Hz the steps give ~0.23 s from stop to `max_lin_vel` and a
+~3 units/s neck sweep. The profiles previously ran at 20 Hz, where the same
+steps needed ~0.6 s to reach full speed — enough to read as input lag. Keep
+`joy_node`'s `autorepeat_rate` in `joy_teleop.launch.py` matched to
+`publish_hz`, so a held stick is never resampled from a stale frame.
+
 ## Running
 
 ```bash
@@ -131,7 +143,7 @@ Deliberate changes, not accidents:
 
 - **Y/A ramp the neck instead of jumping it.** The old node jumped to MAX/MID.
   `neck_preset` keeps a jump-to on a separate button.
-- **`cmd_vel` publishes at 20 Hz while driving, then goes quiet**, instead of
+- **`cmd_vel` publishes at 50 Hz while driving, then goes quiet**, instead of
   republishing unconditionally at 3 Hz. Accessory positions publish on change
   plus a 1 Hz keepalive, since they are positions rather than velocities.
 - **Ramping actually happens.** The old node declared `smoothing.*` parameters

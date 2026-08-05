@@ -84,7 +84,7 @@ topics:
 
   # ── Teleoperation ───────────────────────────────────────────────────
   - topic: /mecanumbot/joy
-    nominal_hz: 20.0
+    nominal_hz: 50.0
     tol: 0.30
     label: Joystick input
     note: joy_node autorepeat_rate, so it ticks even with the sticks centred

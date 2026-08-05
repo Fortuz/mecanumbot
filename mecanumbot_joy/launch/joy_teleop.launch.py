@@ -54,8 +54,10 @@ def generate_launch_description():
                 # Deadzone is applied once, in the profile. See module docstring.
                 "deadzone": 0.0,
                 # Republish while idle so the joystick node can tell a
-                # centred stick from an unplugged pad.
-                "autorepeat_rate": 20.0,
+                # centred stick from an unplugged pad. Matched to the
+                # profiles' publish_hz so a held stick is never resampled
+                # from a frame older than one publish tick.
+                "autorepeat_rate": 50.0,
             }],
         ),
 

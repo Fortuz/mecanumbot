@@ -22,11 +22,15 @@ profile:
     max_lin_vel: 0.234        # m/s
     max_ang_vel: 1.092        # rad/s
     deadzone: 0.05            # applied once, here -- joy_node's is 0.0
+    # Every *_step below is per publish tick, so publish_hz sets both the
+    # command rate and every ramp rate. At 20 Hz these steps needed ~0.6 s
+    # to reach max_lin_vel, which read as input lag; 50 Hz brings that to
+    # ~0.23 s and cuts the sampling quantisation to 20 ms.
     lin_step: 0.02            # m/s per publish tick; 0 disables ramping
     ang_step: 0.10            # rad/s per publish tick
-    publish_hz: 20.0
+    publish_hz: 50.0
     joy_timeout: 0.5          # s without /joy before the wheels are stopped
-    zero_hold_ticks: 5        # zero Twists sent after a stop, then silence
+    zero_hold_ticks: 12       # zero Twists sent after a stop, then silence
     accessory_keepalive_hz: 1.0
 
   accessory:
@@ -34,7 +38,9 @@ profile:
       min: 2.0
       max: 8.6
       default: 8.6            # looking ahead, as the old teleop started
-      step: 0.15              # per tick while neck_up / neck_down is held
+      step: 0.06              # per tick while neck_up / neck_down is held
+                              # (scaled with publish_hz to hold the old
+                              #  ~3 units/s sweep rate)
     gripper:
       min: 1.6
       front: 5.12

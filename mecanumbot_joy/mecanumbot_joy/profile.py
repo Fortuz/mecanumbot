@@ -76,16 +76,21 @@ DEFAULT_LIMITS = {
     # (make_simple_profile was commented out), so these are newly live.
     "lin_step": 0.02,
     "ang_step": 0.10,
-    # Was 3.0 Hz, which is far too slow to steer by.
-    "publish_hz": 20.0,
+    # Was 3.0 Hz, which is far too slow to steer by. Every *_step here and
+    # in the accessory block is per publish tick, so this also sets the ramp
+    # rates: at 20 Hz these steps took ~0.6 s to reach max_lin_vel, which
+    # read as input lag. 50 Hz brings that to ~0.23 s.
+    "publish_hz": 50.0,
     # No equivalent existed: the old node held the last velocity forever
     # if the pad was unplugged mid-drive.
     "joy_timeout": 0.5,
-    "zero_hold_ticks": 5,
+    "zero_hold_ticks": 12,
     "accessory_keepalive_hz": 1.0,
 }
 
-DEFAULT_NECK = {"min": 2.0, "max": 8.6, "default": 8.6, "step": 0.15}
+# Neck step scaled with publish_hz, so the hold-to-move sweep stays at the
+# ~3 units/s it ran at when the tick was 20 Hz.
+DEFAULT_NECK = {"min": 2.0, "max": 8.6, "default": 8.6, "step": 0.06}
 DEFAULT_GRIPPER = {"min": 1.6, "front": 5.12, "max": 8.54, "default": 5.12}
 
 #: LED corners, in the order ``SetLedStatus`` declares them.
