@@ -4,7 +4,7 @@ import rclpy
 from geometry_msgs.msg import TransformStamped
 from mecanumbot_msgs.msg import OpenCRState
 from nav_msgs.msg import Odometry
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 
 # from tf_transformations import quaternion_from_euler, euler_from_quaternion # You may need to install 'ros-humble-tf-transformations'
 from rclpy.executors import MultiThreadedExecutor
@@ -16,6 +16,13 @@ from tf2_ros import TransformBroadcaster
 from transforms3d.euler import euler2quat, quat2euler
 
 TICK_TO_RAD = 0.005061
+# A backwards stamp step larger than this is a real clock discontinuity (NTP
+# correcting the Jetson, which has no RTC, or the board restarting its stamp),
+# not callback jitter, so the timeline is re-based on it instead of waited out.
+CLOCK_STEP_TOLERANCE_NS = 500_000_000
+# The INA219 read is two blocking I2C transactions. At 50 Hz it is both wasteful
+# and the one thing in the tick that can overrun the timer period.
+ORIN_BATTERY_PERIOD_TICKS = 50
 GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618  # 150 deg diff in rads
 NECK_MIDPOINT_COMPENSATE_CONSTANT = 3.8172  # 218 deg diff in rads
 
@@ -169,8 +176,15 @@ class Mecanumbot_Sensorproc_Node(Node):
             )
 
         timer_period = 0.02  # seconds
+        # The tick MUST NOT be reentrant. It advances a shared timeline and then
+        # stamps every message from it, so two ticks overlapping (which the
+        # MultiThreadedExecutor will happily do whenever one overruns the 20 ms
+        # period) interleaves those two steps and publishes two samples carrying
+        # the same stamp. Cartographer CHECK-fails on a non-increasing odometry
+        # stamp and aborts the whole mapping run, so keep the timer serialized.
+        self.timer_callback_group = MutuallyExclusiveCallbackGroup()
         self.timer = self.create_timer(
-            timer_period, self.timer_callback, callback_group=self.callback_group
+            timer_period, self.timer_callback, callback_group=self.timer_callback_group
         )
 
         self.board_subscription = self.create_subscription(
@@ -187,6 +201,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.dt = 0.0  # [s]
         self.last_state_stamp_ns = None
         self.last_stamp_source = None
+        self.tick_count = 0
 
         self.last_yaw_angle = 0.0
         self.wrote_error_once = False
@@ -226,11 +241,28 @@ class Mecanumbot_Sensorproc_Node(Node):
         if self.last_state_stamp_ns is None:
             current_stamp_ns = raw_stamp_ns
             self.dt = 0.0
+        elif raw_stamp_ns > self.last_state_stamp_ns:
+            current_stamp_ns = raw_stamp_ns
+            self.dt = (current_stamp_ns - self.last_state_stamp_ns) * 1e-9
+        elif self.last_state_stamp_ns - raw_stamp_ns > CLOCK_STEP_TOLERANCE_NS:
+            # A genuine clock step. Follow it: every other node's stamps (scan
+            # above all) jumped too, so pinning ours to the old timeline is what
+            # would make this node inconsistent with the rest of the graph.
+            self.get_logger().warn(
+                "Clock stepped backwards by "
+                f"{(self.last_state_stamp_ns - raw_stamp_ns) * 1e-9:.3f} s "
+                f"on the {stamp_source} timeline; re-basing odometry."
+            )
+            current_stamp_ns = raw_stamp_ns
+            self.dt = 0.0
         else:
-            # Clamp to a monotonic timeline so downstream TF and joint-state
-            # consumers do not see time go backwards during callback jitter.
-            current_stamp_ns = max(raw_stamp_ns, self.last_state_stamp_ns)
-            self.dt = max((current_stamp_ns - self.last_state_stamp_ns) * 1e-9, 0.0)
+            # Time did not advance: a repeated OpenCR stamp, or small clock
+            # jitter. Skip the tick entirely rather than clamping it forward.
+            # Clamping used to emit a *duplicate* stamp, which is what killed
+            # cartographer_node ("Check failed: data.time > ...prev") and what
+            # makes tf2 log TF_REPEATED_DATA. The next tick is 20 ms away and
+            # dt keeps accumulating from last_state_stamp_ns, so nothing drifts.
+            return
 
         self.last_time = self.current_time
         self.current_time = RosTime(nanoseconds=current_stamp_ns)
@@ -242,9 +274,12 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.set_joint_state()
         self.set_cr_battery_state()
         self.set_object_state()
+        self.tick_count += 1
+        orin_battery_due = self.tick_count % ORIN_BATTERY_PERIOD_TICKS == 0
         if MODEL and "nvidia jetson" in MODEL:
             if hasattr(self, "ina_sensor"):
-                self.set_orin_battery_state()
+                if orin_battery_due:
+                    self.set_orin_battery_state()
             else:
                 if not self.wrote_error_once:
                     self.get_logger().info(
@@ -260,7 +295,7 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.cr_battery_state_publisher.publish(self.cr_battery_state)
             self.object_state_publisher.publish(Bool(data=self.has_object))
             if MODEL and "nvidia jetson" in MODEL:
-                if hasattr(self, "ina_sensor"):
+                if hasattr(self, "ina_sensor") and orin_battery_due:
                     self.orin_battery_state_publisher.publish(self.orin_battery_state)
         except Exception:
             if rclpy.ok():
