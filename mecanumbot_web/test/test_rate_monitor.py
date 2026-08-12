@@ -13,8 +13,10 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from mecanumbot_web.rate_monitor import (  # noqa: E402
+    PRESENCE_SUBSCRIBERS,
     STATUS_DEAD,
     STATUS_FAST,
+    STATUS_IDLE,
     STATUS_OK,
     STATUS_SLOW,
     RateMonitor,
@@ -157,8 +159,77 @@ def test_event_driven_topic_is_never_slow():
 
 def test_event_driven_topic_still_goes_dead_when_stale():
     """Staleness is the only judgement left for an event-driven topic."""
-    spec = TopicSpec("/cmd_vel", nominal_hz=0.0)
+    spec = TopicSpec("/topic", nominal_hz=0.0)
     assert classify(spec, 0.0, 5.0, 1, stale_after=2.0) == STATUS_DEAD
+
+
+# ── idle vs dead ─────────────────────────────────────────────────────────
+
+def test_a_silent_command_topic_is_idle_not_dead():
+    """
+    Silence on /cmd_vel means the robot is standing still, not broken.
+
+    Nothing publishes it while nothing is driving, so the subscriber on
+    the other end -- the io_node -- is the whole liveness signal.
+    """
+    spec = TopicSpec("/cmd_vel", nominal_hz=0.0, idle_when_silent=True,
+                     presence=PRESENCE_SUBSCRIBERS)
+    assert classify(spec, 0.0, 30.0, 0, stale_after=2.0, subscribers=1) \
+        == STATUS_IDLE
+
+
+def test_a_command_topic_nobody_listens_to_is_dead():
+    """No subscriber means a command would go nowhere. That is a fault."""
+    spec = TopicSpec("/cmd_vel", nominal_hz=0.0, idle_when_silent=True,
+                     presence=PRESENCE_SUBSCRIBERS)
+    assert classify(spec, 0.0, 0.1, 1, stale_after=2.0, subscribers=0) \
+        == STATUS_DEAD
+
+
+def test_a_command_topic_being_published_is_ok():
+    """Traffic on a live link outranks both idle and dead."""
+    spec = TopicSpec("/cmd_vel", nominal_hz=0.0, idle_when_silent=True,
+                     presence=PRESENCE_SUBSCRIBERS)
+    assert classify(spec, 20.0, 0.05, 1, stale_after=2.0, subscribers=1) \
+        == STATUS_OK
+
+
+def test_a_command_topic_never_published_is_idle_while_listened_to():
+    """
+    Never having published is the boot state, not a failure.
+
+    ``age_s`` is None until the first message, and the robot may simply
+    not have been driven yet.
+    """
+    spec = TopicSpec("/cmd_accessory_pos", nominal_hz=0.0,
+                     idle_when_silent=True, presence=PRESENCE_SUBSCRIBERS)
+    assert classify(spec, 0.0, None, 0, subscribers=1) == STATUS_IDLE
+
+
+def test_a_people_topic_with_nobody_in_view_is_idle():
+    """
+    people_fusion only publishes when somebody is detected.
+
+    The detector publishing nothing means it sees nobody, which is the
+    common case; the detector being down is what publishers report.
+    """
+    spec = TopicSpec("/mecanumbot/people_fusion", nominal_hz=0.0,
+                     idle_when_silent=True)
+    assert classify(spec, 0.0, 60.0, 1, stale_after=2.0) == STATUS_IDLE
+    assert classify(spec, 0.0, None, 1) == STATUS_IDLE
+
+
+def test_a_people_topic_with_no_detector_is_dead():
+    """No publisher means the detector is not running at all."""
+    spec = TopicSpec("/mecanumbot/subject_pose", nominal_hz=0.0,
+                     idle_when_silent=True)
+    assert classify(spec, 0.0, 0.1, 0) == STATUS_DEAD
+
+
+def test_subscribers_do_not_rescue_an_ordinary_topic():
+    """Only topics that ask for it are judged by their subscribers."""
+    spec = TopicSpec("/mecanumbot/odom", nominal_hz=50.0)
+    assert classify(spec, 50.0, 0.02, 0, subscribers=5) == STATUS_DEAD
 
 
 # ── the monitor ──────────────────────────────────────────────────────────
@@ -184,6 +255,19 @@ def test_monitor_tracks_a_live_topic():
     assert reading.measured_hz == pytest.approx(100.0, abs=2.0)
 
 
+def test_monitor_feeds_subscriber_counts_into_classification():
+    """A silent command topic flips on whether anything is listening."""
+    spec = TopicSpec("/cmd_vel", nominal_hz=0.0, idle_when_silent=True,
+                     presence=PRESENCE_SUBSCRIBERS)
+    monitor = RateMonitor([spec])
+    assert monitor.read(10.0)[0].status == STATUS_DEAD
+
+    monitor.set_subscriber_count("/cmd_vel", 1)
+    reading = monitor.read(10.0)[0]
+    assert reading.status == STATUS_IDLE
+    assert reading.subscribers == 1
+
+
 def test_recording_an_unmonitored_topic_is_ignored():
     """Stray callbacks must not create phantom rows."""
     monitor = RateMonitor([TopicSpec("/a", 10.0)])
@@ -204,7 +288,7 @@ def test_reading_serialises_for_the_api():
     payload = monitor.read(1.0)[0].as_dict()
     assert set(payload) >= {
         "topic", "nominal_hz", "measured_hz", "age_s",
-        "publishers", "status", "label"}
+        "publishers", "subscribers", "presence", "status", "label"}
 
 
 # ── configuration ────────────────────────────────────────────────────────
@@ -226,6 +310,18 @@ def test_specs_from_config_parses_the_shipped_table():
     opencr = next(spec for spec in settings["specs"]
                   if spec.topic == "/mecanumbot/opencr_state")
     assert opencr.nominal_hz == 100.0
+    assert not opencr.idle_when_silent
+
+    by_topic = {spec.topic: spec for spec in settings["specs"]}
+    # The topics whose silence is normal: the command topics, quiet
+    # whenever nothing is driving, and the people topics, quiet whenever
+    # nobody is in view.
+    for topic in ("/cmd_vel", "/cmd_accessory_pos"):
+        assert by_topic[topic].idle_when_silent
+        assert by_topic[topic].presence_by_subscribers
+    for topic in ("/mecanumbot/people_fusion", "/mecanumbot/subject_pose"):
+        assert by_topic[topic].idle_when_silent
+        assert not by_topic[topic].presence_by_subscribers
 
 
 def test_specs_from_config_skips_bad_entries_rather_than_failing():
@@ -241,6 +337,14 @@ def test_specs_from_config_skips_bad_entries_rather_than_failing():
     topics = {spec.topic: spec for spec in settings["specs"]}
     assert set(topics) == {"/good", "/coerced"}
     assert topics["/coerced"].nominal_hz == 0.0
+
+
+def test_specs_from_config_rejects_an_unknown_presence():
+    """A typo must not silently make a topic un-diagnosable."""
+    settings = specs_from_config({
+        "topics": [{"topic": "/t", "presence": "listeners"}],
+    })
+    assert not settings["specs"][0].presence_by_subscribers
 
 
 def test_specs_from_config_falls_back_on_bad_window():

@@ -222,8 +222,10 @@ class WebNode(Node):
                 count = self.count_publishers(topic)
             except Exception:  # pragma: no cover - rmw-dependent
                 count = 0
+            subscribers = self._external_subscriber_count(topic)
             with self._rate_lock:
                 self._monitor.set_publisher_count(topic, count)
+                self._monitor.set_subscriber_count(topic, subscribers)
 
             if topic in self._monitor_subs or topic not in available:
                 continue
@@ -250,6 +252,30 @@ class WebNode(Node):
                 callback_group=self._group,
             )
             self.get_logger().info("Monitoring {} [{}]".format(topic, types[0]))
+
+    def _external_subscriber_count(self, topic: str) -> int:
+        """
+        Count subscribers on a topic, excluding this node's own.
+
+        Load bearing for the command topics, whose liveness is judged by
+        who is listening: this node subscribes to everything it monitors,
+        so a raw ``count_subscribers`` would never be zero and ``/cmd_vel``
+        could never read DEAD, however far down the io_node was.  The
+        endpoint list carries node names, so our own entries are dropped
+        by name rather than by counting our subscriptions -- which would
+        have to resolve relative topic names to match.
+        """
+        try:
+            endpoints = self.get_subscriptions_info_by_topic(topic)
+        except Exception:  # pragma: no cover - rmw-dependent
+            return 0
+
+        name, namespace = self.get_name(), self.get_namespace()
+        return sum(
+            1 for endpoint in endpoints
+            if not (endpoint.node_name == name
+                    and endpoint.node_namespace == namespace)
+        )
 
     def _on_monitored(self, topic: str, message) -> None:
         """Record a raw message receipt. The payload is never deserialised."""
@@ -291,6 +317,8 @@ class WebNode(Node):
                 "tol": spec.tol,
                 "label": spec.label,
                 "note": spec.note,
+                "idle_when_silent": spec.idle_when_silent,
+                "presence": spec.presence,
             }
             for spec in specs if spec is not None
         ]

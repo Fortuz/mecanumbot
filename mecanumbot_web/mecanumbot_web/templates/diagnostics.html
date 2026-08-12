@@ -182,6 +182,7 @@
         <th class="num">Measured</th>
         <th class="num">Age</th>
         <th class="num">Pubs</th>
+        <th class="num">Subs</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -196,7 +197,8 @@
         <td class="num measured dim">—</td>
         <td class="num age dim">—</td>
         <td class="num pubs dim">—</td>
-        <td class="status"><span class="pill DEAD">…</span></td>
+        <td class="num subs dim">—</td>
+        <td class="status"><span class="pill IDLE">…</span></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -217,14 +219,29 @@
     <tr><td><span class="pill FAST">FAST</span></td>
         <td>Above tolerance. Informational; normally means the nominal figure here
             is stale relative to a retuned timer.</td></tr>
+    <tr><td><span class="pill IDLE">IDLE</span></td>
+        <td>Silent, but silence is this topic's resting state and it is still
+            wired up. Not a fault: the command topics are idle whenever nothing
+            is driving the robot, and the people topics whenever nobody is in
+            view.</td></tr>
     <tr><td><span class="pill DEAD">DEAD</span></td>
-        <td>No publisher on the graph, or nothing received recently enough to
-            measure. Check the node actually started.</td></tr>
+        <td>Nothing on the graph holds the topic up, or nothing was received
+            recently enough to measure. Check the node actually started.</td></tr>
   </table>
   <p class="small dim">
     Topics with no nominal rate are event-driven — <code>/cmd_vel</code> only
     publishes while something is driving — so they are judged on staleness alone
     and never read SLOW.
+  </p>
+  <p class="small dim">
+    <strong>Pubs</strong> and <strong>Subs</strong> count the other nodes on
+    each end; this page's own monitoring subscription is discounted. One of the
+    two decides the topic's fate, and the other is dimmed. For most topics it is
+    <em>Pubs</em>: the node producing the data is running. For the command
+    topics it is <em>Subs</em>, because nothing publishes <code>/cmd_vel</code>
+    or <code>/cmd_accessory_pos</code> while the robot stands still — the only
+    evidence the link is intact is that the driver is still listening, so DEAD
+    there means a command would go nowhere.
   </p>
   <p class="small dim" style="margin-bottom:0">
     The LED panel is read from the <code>get_led_status</code> service, which is
@@ -360,17 +377,34 @@ function render(data) {
         el('td', {}, [el('div', {class: 'mono', text: reading.topic})]),
         el('td', {class: 'num dim', text: reading.nominal_hz ? String(reading.nominal_hz) : '—'}),
         el('td', {class: 'num measured'}), el('td', {class: 'num age'}),
-        el('td', {class: 'num pubs'}), el('td', {class: 'status'})
+        el('td', {class: 'num pubs'}), el('td', {class: 'num subs'}),
+        el('td', {class: 'status'})
       ]);
       rows.appendChild(tr);
     }
+    const quiet = reading.status === 'DEAD' || reading.status === 'IDLE';
     const measured = tr.querySelector('.measured');
     measured.textContent = reading.nominal_hz || reading.measured_hz
       ? fmt(reading.measured_hz, 1) : '—';
-    measured.classList.toggle('dim', reading.status === 'DEAD');
+    measured.classList.toggle('dim', quiet);
     tr.querySelector('.age').textContent =
       reading.age_s === null ? '—' : fmt(reading.age_s, 1) + 's';
-    tr.querySelector('.pubs').textContent = reading.publishers;
+
+    // Whichever count decides this topic's liveness is the one worth
+    // reading, so the other is dimmed rather than dropped.
+    const bySubs = reading.presence === 'subscribers';
+    const pubs = tr.querySelector('.pubs');
+    const subs = tr.querySelector('.subs');
+    if (pubs) {
+      pubs.textContent = reading.publishers;
+      pubs.classList.toggle('dim', bySubs);
+    }
+    if (subs) {
+      subs.textContent = reading.subscribers === undefined ? '—' : reading.subscribers;
+      subs.classList.toggle('dim', !bySubs);
+      subs.title = bySubs ? 'This topic is judged alive by who is listening' : '';
+    }
+
     tr.querySelector('.status').innerHTML =
       '<span class="pill ' + reading.status + '">' + reading.status + '</span>';
   });
@@ -384,7 +418,7 @@ function render(data) {
 
   const summary = document.getElementById('summary');
   summary.innerHTML = '';
-  ['OK', 'SLOW', 'FAST', 'DEAD'].forEach(function (status) {
+  ['OK', 'SLOW', 'FAST', 'IDLE', 'DEAD'].forEach(function (status) {
     const count = data.summary[status] || 0;
     if (!count) return;
     summary.appendChild(el('span', {class: 'pill ' + status,

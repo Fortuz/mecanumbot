@@ -55,18 +55,39 @@ delivering to a subscriber.
 | `OK` | Within tolerance of nominal. |
 | `SLOW` | Running but below tolerance — usually CPU contention or a blocked callback. |
 | `FAST` | Above tolerance. Informational; usually means the nominal figure is stale. |
-| `DEAD` | No publisher, or nothing received recently enough to measure. |
+| `IDLE` | Silent, but silence is this topic's resting state and it is still wired up. |
+| `DEAD` | Nothing on the graph holds the topic up, or nothing received recently enough to measure. |
 
 The nominal table is `config/diagnostics_topics.yaml`; every rate in it is read
 from the node that publishes it, with the source noted per entry. Topics with
 `nominal_hz: 0` are event-driven and judged on staleness alone, so an idle
 `/cmd_vel` never reads SLOW.
 
-Two traps the implementation handles: monitor subscriptions are BEST_EFFORT
+#### Idle is not dead
+
+Several topics are *supposed* to be silent most of the time, and grading those
+red would train the operator to ignore the colour that means something is
+broken. `idle_when_silent: true` in the table marks them, and `presence` says
+which end of the topic proves it is still wired up:
+
+| Topic | Silent because | Alive because |
+| --- | --- | --- |
+| `/cmd_vel`, `/cmd_accessory_pos` | nothing is driving the robot | the io_node is still **subscribed** — nothing publishes these at rest, so the listener is the only evidence the link is intact |
+| `people_fusion`, `subject_pose` | nobody is in view (`mecanumbot_locate_detections` only publishes a non-empty array; `subject_pose` publishes nothing until a subject is first seen) | the detector is **publishing** it at all |
+
+So `DEAD` on `/cmd_vel` means a command would go nowhere, and `DEAD` on
+`people_fusion` means the detector is down — both real faults, neither of them
+"the robot is standing still" or "the room is empty". The table shows both
+endpoint counts, dimming whichever one is not deciding.
+
+Three traps the implementation handles: monitor subscriptions are BEST_EFFORT
 (`scan` and the compressed camera topics are published that way, and a RELIABLE
 subscription silently never matches one, so a healthy topic would read DEAD);
-and discovery re-runs on a timer, because this node starts alongside everything
-it monitors and a one-shot lookup would miss all of it.
+discovery re-runs on a timer, because this node starts alongside everything it
+monitors and a one-shot lookup would miss all of it; and the subscriber count
+discounts this node's own monitoring subscription — it subscribes to everything
+in the table, so a raw `count_subscribers` would never be zero and a
+subscriber-judged topic could never read DEAD.
 
 #### Robot state: LEDs and movement
 

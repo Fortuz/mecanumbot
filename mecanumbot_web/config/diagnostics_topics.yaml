@@ -8,6 +8,18 @@
 # alone and can never read SLOW, because "idle" is their normal state.
 #
 # tol is the fractional band around nominal that still counts as OK.
+#
+# idle_when_silent: true says silence is this topic's resting state, so it
+# reads IDLE rather than DEAD when it goes quiet. Two kinds of topic here
+# need it: the command topics, silent whenever nothing is driving the
+# robot, and the people topics, silent whenever nobody is in view.
+#
+# presence says which end of the topic proves it is still wired up.
+# Default "publishers" -- the node producing it is running. Command topics
+# use "subscribers" instead: nothing publishes /cmd_vel while the robot
+# stands still, so the only evidence the link is intact is that the driver
+# is still listening. The web node discounts its own monitoring
+# subscription, so the count is other nodes only.
 
 window_seconds: 3.0     # sliding window the rate is averaged over
 stale_after: 2.0        # seconds of silence before an event-driven topic is DEAD
@@ -67,13 +79,21 @@ topics:
 
   - topic: /mecanumbot/people_fusion
     nominal_hz: 0.0
+    idle_when_silent: true
     label: Fused people
-    note: Callback-driven off dr_spaam/dets
+    note: >-
+      Callback-driven off dr_spaam/dets, and mecanumbot_locate_detections
+      only publishes when the fused array is non-empty -- so this is silent
+      whenever nobody is in view. IDLE means the detector is up and sees
+      no one.
 
   - topic: /mecanumbot/subject_pose
     nominal_hz: 0.0
+    idle_when_silent: true
     label: Tracked subject
-    note: Leading mode only
+    note: >-
+      Leading mode only, and nothing at all until a subject is first
+      detected. IDLE means no subject is being tracked right now.
 
   # ── Camera ──────────────────────────────────────────────────────────
   - topic: /camera/image_raw/compressed
@@ -91,10 +111,20 @@ topics:
 
   - topic: /cmd_vel
     nominal_hz: 0.0
+    idle_when_silent: true
+    presence: subscribers
     label: Velocity command
-    note: Only published while something is driving
+    note: >-
+      Only published while something is driving, so IDLE is its normal
+      resting state. DEAD here means nothing is listening -- the io_node
+      (or the sim backend) is not up, and a command would go nowhere.
 
   - topic: /cmd_accessory_pos
     nominal_hz: 0.0
+    idle_when_silent: true
+    presence: subscribers
     label: Accessory command
-    note: Published on change plus a 1 Hz keepalive
+    note: >-
+      Published on change plus a slow keepalive, and the keepalive stops
+      with the controller, so IDLE is normal whenever no pad is driving.
+      DEAD means the io_node is not listening.

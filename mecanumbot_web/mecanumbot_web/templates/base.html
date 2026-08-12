@@ -6,32 +6,38 @@
 <title>{% block title %}Mecanumbot{% endblock %}</title>
 <style>
 /* Cyan and magenta carry the chrome: nav, focus, bars, headings.
-   The four status colours stay semantic (green / amber / rose) because
-   an operator reads them at a glance and hue is the whole signal --
-   only their temperature is pulled toward the theme. */
+   The status colours stay semantic (green / amber / rose) because an
+   operator reads them at a glance and hue is the whole signal -- only
+   their temperature is pulled toward the theme. IDLE is the exception
+   and is deliberately colourless: it means "nothing to report", so it
+   must not compete for attention with the states that do report. */
 :root {
-  --bg: #0a1418;      --panel: #101f25;   --panel2: #162c34;
+  --bg: #060e1c;      --panel: #101f25;   --panel2: #162c34;
   --line: #1f4652;    --text: #e2f4f7;    --dim: #86adb7;
   --ok: #2ee6a8;      --warn: #f2b13c;    --bad: #ff5470;  --info: #22d3ee;
+  --idle: #8fa8bd;
   --accent: #22d3ee;  --accent-ink: #04191f;
   --accent2: #e879f9; --accent2-ink: #24041f;
   --ok-bg:   rgba(46,230,168,.15);
   --warn-bg: rgba(242,177,60,.15);
   --info-bg: rgba(34,211,238,.15);
   --bad-bg:  rgba(255,84,112,.15);
+  --idle-bg: rgba(143,168,189,.14);
   --glow: rgba(34,211,238,.35);
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f1f8fa;    --panel: #ffffff;   --panel2: #e6f2f6;
+    --bg: #dfe9f2;    --panel: #ffffff;   --panel2: #e6f2f6;
     --line: #c3dee5;  --text: #0b1b21;    --dim: #4a6b76;
     --ok: #0e8f60;    --warn: #9a6406;    --bad: #cf1f45;  --info: #0d7f97;
+    --idle: #5a7185;
     --accent: #0d7f97; --accent-ink: #ffffff;
     --accent2: #a8228f; --accent2-ink: #ffffff;
     --ok-bg:   rgba(14,143,96,.12);
     --warn-bg: rgba(154,100,6,.12);
     --info-bg: rgba(13,127,151,.12);
     --bad-bg:  rgba(207,31,69,.12);
+    --idle-bg: rgba(90,113,133,.14);
     --glow: rgba(13,127,151,.25);
   }
 }
@@ -102,6 +108,7 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 .pill.OK   { background: var(--ok-bg);   color: var(--ok); }
 .pill.SLOW { background: var(--warn-bg); color: var(--warn); }
 .pill.FAST { background: var(--info-bg); color: var(--info); }
+.pill.IDLE { background: var(--idle-bg); color: var(--idle); }
 .pill.DEAD { background: var(--bad-bg);  color: var(--bad); }
 .pill.accent  { background: var(--info-bg); color: var(--accent); }
 .pill.accent2 { background: rgba(232,121,249,.15); color: var(--accent2); }

@@ -32,8 +32,18 @@ STATUS_OK = "OK"
 STATUS_SLOW = "SLOW"
 #: Publishing materially above the nominal rate. Informational.
 STATUS_FAST = "FAST"
+#: Wired up, but silent because it has nothing to say right now.
+STATUS_IDLE = "IDLE"
 #: No publisher, or nothing received recently enough to measure.
 STATUS_DEAD = "DEAD"
+
+#: Liveness is judged by who publishes the topic.  The default: a sensor
+#: or state topic is alive because the node producing it is running.
+PRESENCE_PUBLISHERS = "publishers"
+#: Liveness is judged by who *consumes* the topic.  Right for command
+#: topics: ``/cmd_vel`` has no permanent publisher, and the question worth
+#: answering is whether the driver is still listening.
+PRESENCE_SUBSCRIBERS = "subscribers"
 
 #: Default fractional tolerance around the nominal rate.
 DEFAULT_TOLERANCE = 0.30
@@ -57,6 +67,13 @@ class TopicSpec:
     tol: float = DEFAULT_TOLERANCE
     label: str = ""
     note: str = ""
+    #: Silence is this topic's normal resting state, so it reads IDLE
+    #: rather than DEAD once it goes quiet.  ``/cmd_vel`` is silent
+    #: whenever nothing is driving and ``people_fusion`` whenever nobody
+    #: is in view; neither is a fault.
+    idle_when_silent: bool = False
+    #: Which endpoint count proves the topic is still wired up.
+    presence: str = PRESENCE_PUBLISHERS
 
     @property
     def is_event_driven(self) -> bool:
@@ -68,6 +85,15 @@ class TopicSpec:
         idle would make the page cry wolf.
         """
         return self.nominal_hz <= 0.0
+
+    @property
+    def presence_by_subscribers(self) -> bool:
+        """Report whether subscribers, not publishers, prove this topic alive."""
+        return self.presence == PRESENCE_SUBSCRIBERS
+
+    def presence_count(self, publishers: int, subscribers: int) -> int:
+        """Return whichever endpoint count decides this topic's liveness."""
+        return subscribers if self.presence_by_subscribers else publishers
 
 
 @dataclass
@@ -83,6 +109,8 @@ class TopicReading:
     status: str
     label: str = ""
     note: str = ""
+    subscribers: int = 0
+    presence: str = PRESENCE_PUBLISHERS
 
     def as_dict(self) -> dict:
         """Return a JSON-serialisable form for the web API."""
@@ -93,6 +121,8 @@ class TopicReading:
             "age_s": None if self.age_s is None else round(self.age_s, 2),
             "samples": self.samples,
             "publishers": self.publishers,
+            "subscribers": self.subscribers,
+            "presence": self.presence,
             "status": self.status,
             "label": self.label,
             "note": self.note,
@@ -148,27 +178,37 @@ def classify(
     age_s: Optional[float],
     publishers: int,
     stale_after: float = DEFAULT_STALE_AFTER,
+    subscribers: int = 0,
 ) -> str:
     """
     Grade one topic's health.
 
-    ``DEAD`` wins over everything: no publisher, or nothing heard for long
-    enough that the measured rate is meaningless.  For a topic with a
-    nominal rate the staleness limit scales with that rate -- three
-    missed periods -- so a 100 Hz topic is not given the same two-second
-    grace as a 1 Hz one.
+    ``DEAD`` wins over everything: nothing on the graph at the end that
+    proves the topic wired up (publishers, or subscribers for a command
+    topic), or nothing heard for long enough that the measured rate is
+    meaningless.  For a topic with a nominal rate the staleness limit
+    scales with that rate -- three missed periods -- so a 100 Hz topic is
+    not given the same two-second grace as a 1 Hz one.
+
+    Silence on a topic marked ``idle_when_silent`` is ``IDLE``, not
+    ``DEAD``.  Some topics have nothing to say most of the time --
+    ``/cmd_vel`` while the robot stands still, ``people_fusion`` while
+    nobody is in view -- and grading those red would train the operator
+    to ignore the colour that means something is actually broken.
     """
-    if publishers <= 0:
+    if spec.presence_count(publishers, subscribers) <= 0:
         return STATUS_DEAD
 
+    silent = STATUS_IDLE if spec.idle_when_silent else STATUS_DEAD
+
     if age_s is None:
-        return STATUS_DEAD
+        return silent
 
     limit = stale_after
     if not spec.is_event_driven:
         limit = max(stale_after, 3.0 / spec.nominal_hz)
     if age_s > limit:
-        return STATUS_DEAD
+        return silent
 
     if spec.is_event_driven:
         return STATUS_OK
@@ -196,6 +236,7 @@ class RateMonitor:
         self._specs: Dict[str, TopicSpec] = {}
         self._windows: Dict[str, RateWindow] = {}
         self._publishers: Dict[str, int] = {}
+        self._subscribers: Dict[str, int] = {}
         for spec in specs or ():
             self.add(spec)
 
@@ -213,6 +254,7 @@ class RateMonitor:
         self._specs[spec.topic] = spec
         self._windows.setdefault(spec.topic, RateWindow(self.window_seconds))
         self._publishers.setdefault(spec.topic, 0)
+        self._subscribers.setdefault(spec.topic, 0)
 
     def record(self, topic: str, now: float) -> None:
         """Record a message receipt. Unmonitored topics are ignored."""
@@ -225,6 +267,17 @@ class RateMonitor:
         if topic in self._specs:
             self._publishers[topic] = int(count)
 
+    def set_subscriber_count(self, topic: str, count: int) -> None:
+        """
+        Update how many subscribers the graph reports for a topic.
+
+        This is what proves a command topic is still wired up: nothing
+        publishes ``/cmd_vel`` while the robot stands still, so only the
+        driver listening on the other end distinguishes idle from gone.
+        """
+        if topic in self._specs:
+            self._subscribers[topic] = int(count)
+
     def reset(self) -> None:
         """Clear every window, keeping the configured specs."""
         for window in self._windows.values():
@@ -236,6 +289,7 @@ class RateMonitor:
         for topic, spec in self._specs.items():
             measured, age, samples = self._windows[topic].measure(now)
             publishers = self._publishers.get(topic, 0)
+            subscribers = self._subscribers.get(topic, 0)
             readings.append(TopicReading(
                 topic=topic,
                 nominal_hz=spec.nominal_hz,
@@ -243,7 +297,10 @@ class RateMonitor:
                 age_s=age,
                 samples=samples,
                 publishers=publishers,
-                status=classify(spec, measured, age, publishers, self.stale_after),
+                subscribers=subscribers,
+                presence=spec.presence,
+                status=classify(spec, measured, age, publishers,
+                                self.stale_after, subscribers),
                 label=spec.label,
                 note=spec.note,
             ))
@@ -251,7 +308,8 @@ class RateMonitor:
 
     def summary(self, readings) -> Dict[str, int]:
         """Count readings per status, for the page's header badges."""
-        counts = {STATUS_OK: 0, STATUS_SLOW: 0, STATUS_FAST: 0, STATUS_DEAD: 0}
+        counts = {STATUS_OK: 0, STATUS_SLOW: 0, STATUS_FAST: 0,
+                  STATUS_IDLE: 0, STATUS_DEAD: 0}
         for reading in readings:
             counts[reading.status] = counts.get(reading.status, 0) + 1
         return counts
@@ -282,12 +340,17 @@ def specs_from_config(document) -> Dict[str, object]:
             tol = float(entry.get("tol", DEFAULT_TOLERANCE))
         except (TypeError, ValueError):
             tol = DEFAULT_TOLERANCE
+        presence = str(entry.get("presence", PRESENCE_PUBLISHERS)).strip().lower()
+        if presence not in (PRESENCE_PUBLISHERS, PRESENCE_SUBSCRIBERS):
+            presence = PRESENCE_PUBLISHERS
         specs.append(TopicSpec(
             topic=str(entry["topic"]),
             nominal_hz=nominal,
             tol=tol,
             label=str(entry.get("label", "")),
             note=str(entry.get("note", "")),
+            idle_when_silent=bool(entry.get("idle_when_silent", False)),
+            presence=presence,
         ))
 
     def _positive(key, fallback):
