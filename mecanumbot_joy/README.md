@@ -146,6 +146,14 @@ Deliberate changes, not accidents:
 - **`cmd_vel` publishes at 50 Hz while driving, then goes quiet**, instead of
   republishing unconditionally at 3 Hz. Accessory positions publish on change
   plus a 1 Hz keepalive, since they are positions rather than velocities.
+- **Nothing is published until a controller is actually there.** `joy_node`
+  publishes no `/joy` at all with the pad unplugged, so this node stays off
+  `cmd_vel` and `cmd_accessory_pos` entirely rather than emitting idle zeros
+  that would fight Nav2 and the behaviour trees, and rather than snapping the
+  neck and grippers to the profile defaults. After the `joy_timeout` watchdog
+  fires it sends its stopping zeros and then goes quiet again, keepalive
+  included; a change that lands while the pad is gone is held and published
+  when input resumes.
 - **Ramping actually happens.** The old node declared `smoothing.*` parameters
   but the ramp call was commented out, so they did nothing.
 - **A `joy_timeout` watchdog stops the wheels** if the pad goes silent. The old

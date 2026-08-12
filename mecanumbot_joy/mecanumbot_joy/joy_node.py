@@ -8,6 +8,11 @@ both of the previous joystick paths -- ``mecanumbot_teleop``'s
 (which routed input through custom event messages into a SQLite-backed
 action interpreter).
 
+The node is silent on ``cmd_vel`` and ``cmd_accessory_pos`` until a
+``/joy`` frame has actually arrived, and goes silent again once the pad
+stops reporting.  With no controller plugged in this node is not a
+publisher anyone has to arbitrate against.
+
 Everything interesting lives in :mod:`~mecanumbot_joy.layout`,
 :mod:`~mecanumbot_joy.profile` and :mod:`~mecanumbot_joy.actions`, none of
 which import rclpy.  What is left here is exactly the ROS-shaped work:
@@ -106,6 +111,7 @@ class MecanumbotJoyNode(Node):
         self._joy_last = None
         self._joy_lost = False
         self._accessory_last_sent = None
+        self._accessory_pending = False
 
         callback_group = ReentrantCallbackGroup()
 
@@ -274,6 +280,9 @@ class MecanumbotJoyNode(Node):
 
     def _on_joy(self, message: Joy) -> None:
         """Handle one controller frame."""
+        if self._joy_last is None:
+            self.get_logger().info("Controller connected; joystick output enabled")
+
         if self._auto and not self._detected:
             self._detect(message)
 
@@ -306,8 +315,20 @@ class MecanumbotJoyNode(Node):
     # ── output ───────────────────────────────────────────────────────────
 
     def _on_tick(self) -> None:
-        """Advance the executor and publish whatever changed."""
+        """
+        Advance the executor and publish whatever changed.
+
+        Nothing is published until a ``/joy`` frame has actually arrived.
+        With no pad plugged in, ``joy_node`` never publishes, so this node
+        would otherwise sit there emitting idle zero twists -- fighting
+        Nav2 and the behaviour trees for ``/cmd_vel`` -- and snapping the
+        neck and grippers to the profile defaults on a robot nobody is
+        driving.
+        """
         self._check_joy_timeout()
+
+        if self._joy_last is None:
+            return
 
         intents = self._executor_core.tick()
         limits = self._executor_core.profile.limits
@@ -360,7 +381,16 @@ class MecanumbotJoyNode(Node):
         These are positions rather than velocities, so republishing them
         at the drive rate is pure noise -- but a periodic refresh still
         matters so a board that missed the change eventually catches up.
+
+        The keepalive stops with the controller: once the pad is gone
+        there is no new position for the board to have missed.  A change
+        that lands while it is gone (a profile swap, say) is held in
+        ``_accessory_pending`` and goes out when input resumes.
         """
+        self._accessory_pending = self._accessory_pending or intents.accessory_changed
+        if self._joy_lost:
+            return
+
         now = self.get_clock().now()
         due = False
         if self._accessory_last_sent is not None:
@@ -369,7 +399,7 @@ class MecanumbotJoyNode(Node):
                 elapsed = (now - self._accessory_last_sent).nanoseconds / 1e9
                 due = elapsed >= 1.0 / keepalive_hz
 
-        if not (intents.accessory_changed or due):
+        if not (self._accessory_pending or due):
             return
 
         message = AccessMotorCmd()
@@ -378,6 +408,7 @@ class MecanumbotJoyNode(Node):
         message.gr_pos = float(intents.accessory[2])
         self._pub_accessory.publish(message)
         self._accessory_last_sent = now
+        self._accessory_pending = False
 
     def _send_led(self, preset) -> None:
         """Fire a SetLedStatus request without blocking the timer."""

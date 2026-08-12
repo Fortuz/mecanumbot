@@ -1,5 +1,4 @@
 import rclpy
-from mecanumbot_msgs.msg._access_motor_cmd import AccessMotorCmd
 from mecanumbot_msgs.srv import SetLedStatus
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -32,7 +31,6 @@ class MecanumbotBatteryAlert(Node):
 
         # Get battery threshold from parameter or use default
         self.declare_parameter("battery_threshold", 9.7)  # Default threshold in volts
-        self.tick_index = 0
 
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
@@ -61,8 +59,6 @@ class MecanumbotBatteryAlert(Node):
                 callback_group=self.callback_group,
             )
 
-        self.publisher = self.create_publisher(AccessMotorCmd, "cmd_accessory_pos", 10)
-
     def timer_callback(self):
         if self.alert:
             req = SetLedStatus.Request()
@@ -74,17 +70,6 @@ class MecanumbotBatteryAlert(Node):
                 5,
             )  # fast blink
             self.pending_future = self.srv_client.call_async(req)
-
-            cmd = AccessMotorCmd()
-            cmd.gl_pos = 5.12
-            cmd.gr_pos = 5.12
-            if self.tick_index % 2 == 0:
-                cmd.n_pos = 8.9
-            else:
-                cmd.n_pos = 8.5
-
-            self.publisher.publish(cmd)
-            self.tick_index += 1
 
     def batterystate_callback(self, msg, battery):
         voltage = msg.voltage
