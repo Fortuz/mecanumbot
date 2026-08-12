@@ -14,7 +14,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mecanumbot_web import behaviour_store  # noqa: E402
+from mecanumbot_web import behaviour_runner, behaviour_store  # noqa: E402
 
 # Deliberately NOT pytest.importorskip: raising Skipped at module level
 # aborts collection for the whole session under pytest 6.2 (the version
@@ -42,6 +42,8 @@ JOYSTICK_DIR = os.path.join(
     PKG_ROOT, "mecanumbot_description", "config", "joystick")
 BEHAVIOUR_DIR = os.path.join(
     SRC_DIR, "mecanumbot_behaviours", "mecanumbot_leading_behaviour", "config")
+OSTENSIVE_DIR = os.path.join(
+    SRC_DIR, "mecanumbot_behaviours", "mecanumbot_ostensive_behaviour", "config")
 
 
 class StubNode:
@@ -53,6 +55,11 @@ class StubNode:
         self.reload_result = (True, "Reloaded 'xbox360'")
         self.select_result = (True, "Profile set to 'generic'")
         self.estop_result = (True, "E-stop cleared")
+        self.graph_nodes = []
+
+    def info(self, message):
+        """Swallow a log line, the way a real logger would emit one."""
+        self.calls.append(("log", message))
 
     def joy_state(self):
         """Return a plausible controller frame."""
@@ -108,30 +115,88 @@ class StubNode:
         self.calls.append(("select_profile", name))
         return self.select_result
 
+    def behaviour_nodes(self, names):
+        """Report which behaviour trees are on the graph. None, by default."""
+        self.calls.append(("behaviour_nodes", tuple(names)))
+        return list(self.graph_nodes)
+
+    def get_logger(self):
+        """Return a logger the way rclpy's Node does."""
+        return self
+
+
+class StubRunner:
+    """Records start/stop calls, so no process is ever spawned by a test."""
+
+    def __init__(self):
+        """Start idle, with nothing ever run."""
+        self.calls = []
+        self.started = None
+        self.fail_with = None
+        self.running = False
+
+    def start(self, key, values):
+        """Record a start request, or raise the error the test asked for."""
+        self.calls.append(("start", key, dict(values or {})))
+        if self.fail_with:
+            raise behaviour_runner.RunnerError(self.fail_with)
+        self.started = (key, dict(values or {}))
+        self.running = True
+        return self.status()
+
+    def stop(self):
+        """Record a stop request, or raise the error the test asked for."""
+        self.calls.append("stop")
+        if self.fail_with:
+            raise behaviour_runner.RunnerError(self.fail_with)
+        self.running = False
+        return self.status()
+
+    def status(self):
+        """Return a plausible run status."""
+        return {"running": self.running,
+                "behaviour": self.started[0] if self.started else None,
+                "label": "Leading", "arguments": {}, "command": [],
+                "command_text": "", "pid": 4242 if self.running else None,
+                "uptime_s": 1.0, "returncode": None, "exit_note": "",
+                "last_seq": 2, "stopping": False}
+
+    def log(self, after=0):
+        """Return one line of console output."""
+        return {"lines": ["tree started"], "last_seq": after + 1, "dropped": 0}
+
 
 @pytest.fixture
 def context(tmp_path):
-    """Build a test client over writable copies of both config directories."""
+    """Build a test client over writable copies of every config directory."""
     joystick_dir = tmp_path / "joystick"
     joystick_dir.mkdir()
     for name in os.listdir(JOYSTICK_DIR):
         if name.endswith(".yaml"):
             shutil.copy(os.path.join(JOYSTICK_DIR, name), str(joystick_dir))
 
-    behaviour_dir = tmp_path / "behaviour"
-    behaviour_dir.mkdir()
-    if os.path.isdir(BEHAVIOUR_DIR):
-        for name in os.listdir(BEHAVIOUR_DIR):
-            if name.endswith(".yaml"):
-                shutil.copy(os.path.join(BEHAVIOUR_DIR, name), str(behaviour_dir))
+    behaviour_dirs = {}
+    for key, source in (("leading", BEHAVIOUR_DIR), ("ostensive", OSTENSIVE_DIR)):
+        target = tmp_path / key
+        target.mkdir()
+        if os.path.isdir(source):
+            for name in os.listdir(source):
+                if name.endswith(".yaml"):
+                    shutil.copy(os.path.join(source, name), str(target))
+        behaviour_dirs[key] = str(target)
 
     node = StubNode()
+    runner = StubRunner()
     web = WebApp(node=node, joystick_dir=str(joystick_dir),
-                 behaviour_dir=str(behaviour_dir),
+                 behaviour_dir=behaviour_dirs["leading"],
+                 behaviour_dirs=behaviour_dirs,
+                 runner=runner,
                  backup_root=str(tmp_path / "backups"))
     web.app.config["TESTING"] = True
-    return {"client": web.app.test_client(), "node": node,
-            "joystick_dir": str(joystick_dir), "behaviour_dir": str(behaviour_dir)}
+    return {"client": web.app.test_client(), "node": node, "runner": runner,
+            "joystick_dir": str(joystick_dir),
+            "behaviour_dir": behaviour_dirs["leading"],
+            "ostensive_dir": behaviour_dirs["ostensive"]}
 
 
 # ── pages ────────────────────────────────────────────────────────────────
@@ -396,6 +461,173 @@ def test_behaviour_save_to_an_unknown_file_is_404(context):
     """The GUI cannot create arbitrary files."""
     assert context["client"].post(
         "/api/behaviour/invented.yaml", json={"params": {}}).status_code == 404
+
+
+def test_a_save_keeps_every_parameter_the_file_declares(context):
+    """
+    Saving must not delete the tunables the editor has no widget for.
+
+    The shipped files declare about thirty of them, and a tree that lost
+    one would silently fall back to a packaged default mid-experiment.
+    """
+    if not _has_behaviour(context):
+        pytest.skip("mecanumbot_leading_behaviour is not checked out")
+    client = context["client"]
+    name = "behaviour_setting_constants.yaml"
+
+    before = client.get("/api/behaviour/" + name).get_json()["params"]
+    structured = client.get("/api/behaviour/" + name).get_json()["structured"]
+    body = client.post("/api/behaviour/" + name,
+                       json={"structured": structured}).get_json()
+    assert body["ok"], body["errors"]
+
+    after = client.get("/api/behaviour/" + name).get_json()["params"]
+    assert set(after) == set(before)
+    # The quoted literals are normalised on the way out by design, so
+    # compare everything else exactly and those by value.
+    for key, value in before.items():
+        if key in behaviour_store.STRUCTURED_KEYS and isinstance(value, list):
+            continue
+        assert after[key] == value, key
+
+
+def test_tunables_come_with_the_files_own_documentation(context):
+    """These keys are described nowhere else, so the page reads the file."""
+    if not _has_behaviour(context):
+        pytest.skip("mecanumbot_leading_behaviour is not checked out")
+    body = context["client"].get(
+        "/api/behaviour/behaviour_setting_constants.yaml").get_json()
+
+    tunables = {entry["name"]: entry for entry in body["structured"]["tunables"]}
+    assert "turn_max_speed" in tunables
+    assert tunables["turn_max_speed"]["doc"]
+
+
+# ── the ostensive behaviour's own editor ─────────────────────────────────
+
+def _has_ostensive(context):
+    """Report whether the ostensive repo was available to copy from."""
+    return bool(os.listdir(context["ostensive_dir"]))
+
+
+def test_the_ostensive_file_uses_the_flat_editor(context):
+    """Its schema is flat, and its comments cannot be regenerated."""
+    if not _has_ostensive(context):
+        pytest.skip("mecanumbot_ostensive_behaviour is not checked out")
+    body = context["client"].get(
+        "/api/behaviour/ostensive_setting_constants.yaml"
+        "?behaviour=ostensive").get_json()
+
+    assert body["editor"] == "flat"
+    names = {entry["name"] for entry in body["flat"]["entries"]}
+    assert "attention_signal_mode" in names
+
+
+def test_saving_an_ostensive_value_leaves_the_rest_alone(context):
+    """Only the edited line changes; the file's reasoning stays put."""
+    if not _has_ostensive(context):
+        pytest.skip("mecanumbot_ostensive_behaviour is not checked out")
+    client = context["client"]
+    url = ("/api/behaviour/ostensive_setting_constants.yaml"
+           "?behaviour=ostensive")
+    path = os.path.join(context["ostensive_dir"],
+                        "ostensive_setting_constants.yaml")
+    with open(path) as stream:
+        before = stream.read()
+
+    body = client.post(url, json={"values": {"cue_distance": 2.75}}).get_json()
+    assert body["ok"], body.get("errors")
+
+    with open(path) as stream:
+        after = stream.read()
+    assert len(after.splitlines()) == len(before.splitlines())
+    assert "cue_distance: 2.75" in after
+    assert "body scale" in after
+
+
+def test_an_ostensive_value_the_tree_cannot_use_is_rejected(context):
+    """The three modes the tree implements are the only ones savable."""
+    if not _has_ostensive(context):
+        pytest.skip("mecanumbot_ostensive_behaviour is not checked out")
+    response = context["client"].post(
+        "/api/behaviour/ostensive_setting_constants.yaml?behaviour=ostensive",
+        json={"values": {"attention_signal_mode": "semaphore"}})
+    assert response.status_code == 400
+
+
+def test_a_file_belongs_to_one_behaviour_only(context):
+    """
+    The two directories hold different schemas under similar names.
+
+    Reading a leading file as an ostensive one would parse and then edit
+    the wrong document, so the behaviour is part of the address.
+    """
+    if not (_has_behaviour(context) and _has_ostensive(context)):
+        pytest.skip("both behaviour repos are needed")
+    assert context["client"].get(
+        "/api/behaviour/ostensive_setting_constants.yaml").status_code == 404
+
+
+# ── starting and stopping behaviours ─────────────────────────────────────
+
+def test_the_catalog_lists_every_behaviour(context):
+    """The page cannot offer a behaviour the catalog does not describe."""
+    body = context["client"].get("/api/behaviours").get_json()
+    keys = {entry["key"] for entry in body["behaviours"]}
+    assert {"leading", "ostensive", "demo"} <= keys
+    assert body["status"]["running"] is False
+
+
+def test_starting_passes_the_condition_through(context):
+    """The condition is the experimental condition; it must reach the runner."""
+    response = context["client"].post(
+        "/api/behaviours/start",
+        json={"behaviour": "leading", "arguments": {"condition": "LED"}})
+
+    assert response.status_code == 200
+    assert context["runner"].started == ("leading", {"condition": "LED"})
+
+
+def test_a_refused_start_is_reported_with_the_reason(context):
+    """The operator is told why, and the status still comes back."""
+    context["runner"].fail_with = "Leading is already running."
+    response = context["client"].post(
+        "/api/behaviours/start", json={"behaviour": "leading", "arguments": {}})
+    body = response.get_json()
+
+    assert response.status_code == 400
+    assert body["error"] == "Leading is already running."
+    assert "status" in body
+
+
+def test_stopping_reaches_the_runner(context):
+    """One button, one call, and the status that came back from it."""
+    context["client"].post("/api/behaviours/start",
+                           json={"behaviour": "leading", "arguments": {}})
+    body = context["client"].post("/api/behaviours/stop").get_json()
+
+    assert "stop" in context["runner"].calls
+    assert body["status"]["running"] is False
+
+
+def test_status_carries_the_log_from_where_the_page_left_off(context):
+    """The page polls for what it has not seen, not for the whole log."""
+    body = context["client"].get("/api/behaviours/status?after=7").get_json()
+    assert body["log"]["last_seq"] == 8
+    assert body["ok"] is True
+
+
+def test_a_tree_started_outside_this_page_is_reported(context):
+    """
+    A tree somebody launched from a terminal still owns the robot.
+
+    The page has no record of it, so the graph is the only place it can
+    be seen -- and starting a second tree would put two of them on
+    /goal_pose at once.
+    """
+    context["node"].graph_nodes = ["/mecanumbot/bottom_up_tree_node"]
+    body = context["client"].get("/api/behaviours/status").get_json()
+    assert body["status"]["graph_nodes"] == ["/mecanumbot/bottom_up_tree_node"]
 
 
 # ── SSID selection ───────────────────────────────────────────────────────

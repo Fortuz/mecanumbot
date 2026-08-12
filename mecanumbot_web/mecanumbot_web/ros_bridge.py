@@ -323,6 +323,30 @@ class WebNode(Node):
             for spec in specs if spec is not None
         ]
 
+    # ── behaviour trees on the graph ─────────────────────────────────────
+
+    def behaviour_nodes(self, names) -> List[str]:
+        """
+        Return which of ``names`` are on the graph, fully qualified.
+
+        The behaviour page starts trees itself, but a tree started from a
+        terminal is just as real and would fight the one the page starts
+        for ``/goal_pose`` and ``/cmd_vel``.  This is how the page knows
+        about it: the graph is the only common ground between a run this
+        node spawned and a run somebody else did.
+        """
+        wanted = set(names or ())
+        if not wanted:
+            return []
+        try:
+            found = self.get_node_names_and_namespaces()
+        except Exception:  # pragma: no cover - rmw-dependent
+            return []
+        return [
+            "{}/{}".format(namespace.rstrip("/"), name)
+            for name, namespace in found if name in wanted
+        ]
+
     # ── LED state ────────────────────────────────────────────────────────
 
     def _poll_led(self) -> None:

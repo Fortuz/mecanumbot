@@ -21,7 +21,7 @@ There is no login and no database.
 | --- | --- |
 | `/joystick` | Edit and reload `mecanumbot_joy`'s profile, with a live input readout. |
 | `/diagnostics` | What the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
-| `/behaviour` | Edit the leading-behaviour constants YAML. |
+| `/behaviour` | Choose a behaviour tree, edit the constants it will load, and run it. |
 
 `/` redirects to `/diagnostics`.
 
@@ -138,14 +138,75 @@ velocity only.
 
 ### Behaviour
 
-Edits `behaviour_setting_constants.yaml` / `Eto_behaviour_setting_constants.yaml`
-in `mecanumbot_leading_behaviour`, and marks which one the current Wi-Fi SSID
-selects.
+One page for a whole trial: pick the tree, set the hyperparameters, edit the
+constants it will load, start it, watch its console, stop it.
 
-**Edits take effect the next time a behaviour tree starts, not live.** The tree
-reads the file once, in `ConstantParamsToBlackboard.setup()`. The page says so.
+| Behaviour | Started as | Hyperparameters |
+| --- | --- | --- |
+| Leading | `ros2 launch mecanumbot_leading_behaviour launch_wifi_condition_sequence.launch.py` | **condition** (`Doglike` / `Control` / `LED`), constants file, namespace |
+| Ostensive | `ros2 launch mecanumbot_ostensive_behaviour launch_ostensive.launch.py` | constants file, namespace |
+| Demo: wander between people | `ros2 run mecanumbot_demo_behaviours wander_between_people_node` | constants file, namespace |
 
-Validation follows what actually consumes the file:
+The catalog is `behaviour_catalog.py`, and every entry is the command the
+workspace documents for that tree — so a run started here and a run typed at a
+terminal are the same run. The demo is the one exception to "use the launch
+file", and for a stated reason: its launch file names `*_demo_bt_node`
+executables its `setup.py` does not register, so launching it fails.
+
+The constants file is not a separate control. The file the run will load *is*
+the file the editor below is editing, chosen once, defaulting to whatever the
+current SSID selects.
+
+Only what a hyperparameter's own spec allows can be sent: a condition must be
+one of the three the launch file implements, a namespace must be a single ROS
+name token, and a constants file must be a name that exists in that behaviour's
+own config directory — matched against the directory listing rather than
+sanitised, so traversal, absolute paths and typos all fail identically.
+`build_command` returns an argv list and nothing reaches a shell.
+
+**One tree at a time.** Every tree publishes `/goal_pose` and `/cmd_vel`, so a
+second one does not run alongside the first — they fight over the robot and the
+trial is quietly invalid rather than obviously broken. Starting while something
+runs is an error, and the page also watches the ROS graph for a tree somebody
+started from a terminal, which its own bookkeeping cannot see.
+
+Stopping sends SIGINT to the child's process group, because `ros2 launch` shuts
+its nodes down properly on SIGINT and killing it outright would orphan the tree
+— still on the graph, still driving. SIGTERM and then SIGKILL follow only if it
+will not go. The child gets its own session, which is also why `web_node`'s
+shutdown path stops it explicitly: nothing else would.
+
+The console is a 400-line ring buffer, polled incrementally and numbered so a
+gap is reported rather than silently closed. It is where a missing prerequisite
+shows up, since a tree whose `setup()` cannot find nav2 exits before the page
+next polls.
+
+#### Editing the constants
+
+**Edits take effect the next time a behaviour tree starts, not live.** Every
+tree reads its file once, in its params behaviour's `setup()`. The page says so,
+and warns before starting a run with unsaved edits on screen.
+
+Two schemas, two editors, for a reason:
+
+- **Leading and demo** (`behaviour_store.py`) — thresholds, the route, and the
+  LED and gesture sequences, whose inline comments are *derived from the values*
+  and are regenerated on save. Plus the **tunables**: the turn profile, timeouts
+  and poses that used to be constructor defaults in the behaviour library. Those
+  carry the reasoning for their numbers in prose, which cannot be regenerated,
+  so it is read off the outgoing file and written back around the same keys.
+- **Ostensive** (`flat_store.py`) — a flat block of scalars whose comments *are*
+  the documentation. Nothing is rewritten there: only the value on each
+  parameter's own line changes, then the result is reparsed and checked that
+  exactly the intended keys moved. Parameters cannot be added or removed, since
+  the tree reads a fixed set.
+
+The emitter's `_self_check` refuses to write a document that has lost a key.
+That is not defensive dressing: before the tunables were carried through, a save
+from this page deleted about thirty of them, and a tree that lost one would fall
+back to a packaged default mid-experiment without saying anything.
+
+Validation follows what actually consumes each file:
 
 - A `_times` list **shorter** than its `_seq` list is a hard error —
   `LEDBehaviourSequence` reads `delays[index - 1]` up to `len(patterns)`, so it
@@ -160,10 +221,12 @@ them by hand rather than through a YAML dumper — turning one into a real YAML
 mapping breaks `ast.literal_eval` and the tree throws at setup. `dump()`
 self-checks by reparsing before returning.
 
-Inline comments are **regenerated from the values** rather than preserved,
-which is an upgrade: several comments in the shipped files contradict what they
-annotate (`'color':6` is labelled "white" where 6 is pink, `'color':2` is
-labelled "yellow" where 2 is green).
+Inline comments on the LED and gesture entries are **regenerated from the
+values** rather than preserved, which is an upgrade: several comments in the
+shipped files contradict what they annotate (`'color':6` is labelled "white"
+where 6 is pink, `'color':2` is labelled "yellow" where 2 is green). The
+tunables' comments are carried over instead, because nothing can regenerate a
+sentence about why a turn speed has to stay inside Nav2's `max_vel_theta`.
 
 ## Saving config safely
 
@@ -183,8 +246,12 @@ GUI.
 ## Design
 
 Pure modules with no rclpy: `rate_monitor.py`, `motion.py`, `joystick_store.py`,
-`behaviour_store.py`, `yaml_io.py`, `led_enums.py`. Then `ros_bridge.py`
+`behaviour_store.py`, `flat_store.py`, `behaviour_catalog.py`,
+`behaviour_runner.py`, `yaml_io.py`, `led_enums.py`. Then `ros_bridge.py`
 (the node), `app.py` (Flask routes) and `web_node.py` (the entry point).
+
+`behaviour_runner.py` spawns processes but touches no ROS API, so the Flask app
+owns it and the node's only involvement is stopping it on shutdown.
 
 The palette is cyan and magenta, defined once as custom properties in
 `base.html` and themed for both `prefers-color-scheme` settings. It carries the
@@ -209,6 +276,8 @@ complete.
 | `host` / `port` | `0.0.0.0` / `8080` |
 | `joystick_config_dir` | `mecanumbot_description/config/joystick` |
 | `behaviour_config_dir` | `mecanumbot_leading_behaviour/config` |
+| `ostensive_config_dir` | `mecanumbot_ostensive_behaviour/config` |
+| `demo_config_dir` | `mecanumbot_demo_behaviours/config` |
 | `diagnostics_config` | `mecanumbot_web/config/diagnostics_topics.yaml` |
 | `joy_node` / `joy_topic` | `/mecanumbot/mecanumbot_joy_node` / `/mecanumbot/joy` |
 | `backup_root` | `~/.mecanumbot/config_backups` |
@@ -217,9 +286,9 @@ complete.
 | `cmd_vel_topic` | `/cmd_vel` |
 | `odom_topic` | `odom` — empty disables measured motion |
 
-`behaviour_config_dir` is resolved leniently: if `mecanumbot_leading_behaviour`
-is not in the checkout the behaviour page reports nothing to edit rather than
-the GUI failing to start.
+The three config directories are resolved leniently: a behaviour whose package
+is not in the checkout is shown on the page as unavailable, and cannot be edited
+or started, rather than the GUI failing to come up.
 
 `led_service` and `odom_topic` are **relative** names, so they resolve inside
 this node's namespace alongside the LED service node and
@@ -254,8 +323,15 @@ ros2 launch mecanumbot_web web.launch.py web_port:=8080
 colcon test --packages-select mecanumbot_web && colcon test-result --verbose
 ```
 
-148 tests, none needing a ROS graph; the 35 route tests skip cleanly when Flask
+224 tests, none needing a ROS graph; the 47 route tests skip cleanly when Flask
 is absent. Note that `pytest.importorskip` is deliberately **not** used for
 that — raising `Skipped` at module level aborts collection for the whole
 session under the pytest version Humble ships, which would silently reduce the
 suite to one test instead of skipping one file.
+
+`test_behaviour_runner.py` starts **real child processes** — short Python
+scripts, not `ros2 launch`, injected by standing a fake spec in for the
+catalog's. What that module is for is starting a process and being sure it is
+gone afterwards, and a mocked `Popen` would prove neither. One of them ignores
+SIGINT and SIGTERM, so the escalation to SIGKILL is exercised rather than
+assumed.

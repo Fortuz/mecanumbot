@@ -72,9 +72,19 @@ class _ParamReader(Node):
         self.declare_parameter(
             "joystick_config_dir",
             _share("mecanumbot_description", "config", "joystick"))
+        # One per startable behaviour. Each is resolved leniently: a
+        # package missing from the checkout leaves its entry empty, and
+        # the page shows that behaviour as unavailable instead of the
+        # GUI failing to start.
         self.declare_parameter(
             "behaviour_config_dir",
             _share("mecanumbot_leading_behaviour", "config"))
+        self.declare_parameter(
+            "ostensive_config_dir",
+            _share("mecanumbot_ostensive_behaviour", "config"))
+        self.declare_parameter(
+            "demo_config_dir",
+            _share("mecanumbot_demo_behaviours", "config"))
         self.declare_parameter(
             "diagnostics_config",
             _share("mecanumbot_web", "config", "diagnostics_topics.yaml"))
@@ -96,6 +106,7 @@ class _ParamReader(Node):
             name: self.get_parameter(name).value
             for name in (
                 "host", "port", "joystick_config_dir", "behaviour_config_dir",
+                "ostensive_config_dir", "demo_config_dir",
                 "diagnostics_config", "joy_node", "joy_topic", "backup_root",
                 "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
             )
@@ -113,6 +124,7 @@ def main(args=None):
     reader.destroy_node()
 
     node = None
+    web = None
     try:
         node = WebNode(
             monitor_settings=monitor,
@@ -124,15 +136,22 @@ def main(args=None):
             odom_topic=settings["odom_topic"],
         )
 
-        if not settings["behaviour_config_dir"]:
-            node.get_logger().warn(
-                "mecanumbot_leading_behaviour is not installed; the behaviour "
-                "page will have nothing to edit")
+        behaviour_dirs = {
+            "leading": settings["behaviour_config_dir"],
+            "ostensive": settings["ostensive_config_dir"],
+            "demo": settings["demo_config_dir"],
+        }
+        for key, path in sorted(behaviour_dirs.items()):
+            if not path:
+                node.get_logger().warn(
+                    "The '{}' behaviour package is not installed; that "
+                    "behaviour cannot be edited or started".format(key))
 
         web = WebApp(
             node=node,
             joystick_dir=settings["joystick_config_dir"],
             behaviour_dir=settings["behaviour_config_dir"],
+            behaviour_dirs=behaviour_dirs,
             backup_root=settings["backup_root"],
         )
 
@@ -149,7 +168,9 @@ def main(args=None):
         node.get_logger().info(
             "  joystick profiles: {}".format(settings["joystick_config_dir"]))
         node.get_logger().info(
-            "  behaviour config:  {}".format(settings["behaviour_config_dir"]))
+            "  behaviour config:  {}".format(", ".join(
+                "{}: {}".format(key, path or "(not installed)")
+                for key, path in sorted(behaviour_dirs.items()))))
         node.get_logger().info(
             "  robot state:       LEDs via {} every {}s, movement from {} and {}"
             .format(settings["led_service"], settings["led_poll_period"],
@@ -162,6 +183,13 @@ def main(args=None):
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
+        # A behaviour this node started is a child process, and Ctrl-C
+        # reaches only this node -- the child has its own session so that
+        # stopping it is a deliberate, ordered act rather than a race.
+        # Which means shutting down here is the only thing that stops a
+        # tree from outliving the stack it was driving.
+        if web is not None:
+            web.runner.shutdown()
         if node is not None:
             node.destroy_node()
         try:

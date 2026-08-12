@@ -1,20 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Behaviour — Mecanumbot{% endblock %}
 
+{% block styles %}
+<style>
+/* The console of a running tree. Monospace and scrolling, and tall
+   enough to hold the setup chatter a tree emits before it starts
+   ticking -- that is where a missing prerequisite shows up. */
+pre.log {
+  margin: 10px 0 0; padding: 10px 12px; max-height: 260px; overflow: auto;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+}
+pre.log:empty { display: none; }
+.args { display: grid; gap: 12px; margin: 12px 0;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.arg label { display: block; font-weight: 600; margin-bottom: 3px; }
+.arg select, .arg input { width: 100%; }
+.arg .doc { margin-top: 4px; }
+.section-head { margin: 18px 0 6px; font-size: 12px; text-transform: uppercase;
+                letter-spacing: .4px; color: var(--accent); font-weight: 650; }
+.section-head:first-child { margin-top: 0; }
+td.name { max-width: 380px; }
+input.bad-input { border-color: var(--bad); }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1>Behaviour parameters</h1>
+<h1>Behaviour</h1>
 <p class="sub">
-  Edit the leading-behaviour constants in
-  <code class="small">{{ config_dir }}</code>. These drive the thesis experiment
-  conditions, so every save is validated against what the behaviour tree
-  actually reads and the previous version is backed up first.
+  Choose a behaviour tree, edit the constants it will load, and run it. The
+  command this page builds is the same one the workspace documents for that
+  tree, so a run started here and a run started from a terminal are the same run.
 </p>
 
 <div class="banner info">
-  <strong>Changes take effect the next time a behaviour tree starts, not live.</strong>
-  The tree loads this file once, in <code>ConstantParamsToBlackboard.setup()</code>.
+  <strong>Edits take effect the next time a behaviour tree starts, not live.</strong>
+  Every tree loads its constants once, in its params behaviour's <code>setup()</code>.
+  Save first, then start.
   {% if ssid %}Current Wi-Fi is <code>{{ ssid }}</code>.{% else %}
-  No Wi-Fi SSID detected, so the launch files will fall back to the default file.
+  No Wi-Fi SSID detected, so the launch files fall back to their default file.
   {% endif %}
 </div>
 
@@ -22,49 +47,59 @@
 
 <div class="card">
   <div class="row">
-    <label for="file-select">File</label>
-    <select id="file-select" onchange="loadFile(this.value)">
-      {% for entry in files %}
-      <option value="{{ entry.name }}">
-        {{ entry.name }}{% if entry.selected_by_ssid %} — selected by current SSID{% endif %}
+    <label for="behaviour-select"><strong>Behaviour</strong></label>
+    <select id="behaviour-select" onchange="selectBehaviour(this.value)">
+      {% for entry in behaviours %}
+      <option value="{{ entry.key }}"{% if not entry.available %} disabled{% endif %}>
+        {{ entry.label }}{% if not entry.available %} — not installed{% endif %}
       </option>
       {% endfor %}
     </select>
+    <span class="grow"></span>
+    <span id="run-pill" class="pill IDLE">idle</span>
+  </div>
+
+  <p id="behaviour-summary" class="small dim" style="margin:10px 0 0"></p>
+  <div id="behaviour-note"></div>
+
+  <div class="args" id="run-args"></div>
+
+  <div class="row">
+    <button class="primary" id="start-btn" onclick="startRun()">Start behaviour</button>
+    <button class="danger" id="stop-btn" onclick="stopRun()">Stop</button>
+    <span class="grow"></span>
+    <label class="small dim">
+      <input type="checkbox" id="follow-log" checked style="width:auto"> follow log
+    </label>
+  </div>
+
+  <div id="run-state" class="small dim" style="margin-top:10px"></div>
+  <pre class="log" id="run-log"></pre>
+  <div id="prereqs" class="small dim" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <label for="file-note"><strong>Constants</strong></label>
+    <span id="file-note" class="small dim"></span>
     <span class="grow"></span>
     <select id="backup-select" class="small"></select>
     <button onclick="restore()">Restore backup</button>
     <button class="primary" onclick="save()">Save</button>
   </div>
-  {% if not files %}
-  <p class="dim" style="margin-bottom:0">
-    No behaviour files found. Is <code>mecanumbot_leading_behaviour</code> built?
+  <p class="small dim" style="margin:8px 0 0">
+    The file edited here is the one the run above will load — they are the same
+    choice, made once.
   </p>
-  {% endif %}
 </div>
 
-<div class="card">
-  <h3>Thresholds</h3>
-  <div class="scroll"><table><tbody id="scalars"></tbody></table></div>
-</div>
-
-<div class="card">
-  <h3>Route</h3>
-  <p class="small dim">
-    The first checkpoint is the start position and the last is the target.
-  </p>
-  <div class="scroll"><table>
-    <thead><tr><th></th><th class="num">X</th><th class="num">Y</th>
-               <th class="num">Z</th><th></th></tr></thead>
-    <tbody id="checkpoints"></tbody>
-  </table></div>
-  <button class="small" onclick="addCheckpoint()">Add checkpoint</button>
-</div>
-
-<div id="scripts-host"></div>
+<div id="editor-host"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const BEHAVIOURS = {{ behaviours|tojson }};
+const DEFAULT_BEHAVIOUR = {{ default_behaviour|tojson }};
 const LED_SCRIPTS = {{ led_scripts|tojson }};
 const GESTURE_SCRIPTS = {{ gesture_scripts|tojson }};
 const SCALARS = {{ scalars|tojson }};
@@ -72,19 +107,211 @@ const COLORS = {0:'black',1:'white',2:'green',3:'red',4:'blue',5:'cyan',6:'pink'
 const MODES = {1:'wave right',2:'wave left',3:'pulse',4:'solid',5:'fast blink',6:'slow blink'};
 const CORNERS = ['fl', 'fr', 'bl', 'br'];
 
-let data = null;      // structured form
-let fileName = null;
+const byKey = {};
+BEHAVIOURS.forEach(function (entry) { byKey[entry.key] = entry; });
 
-// ── loading ────────────────────────────────────────────────────────────
+let spec = null;      // the selected behaviour
+let values = {};      // its launch hyperparameters
+let editor = null;    // 'leading' | 'flat'
+let data = null;      // leading: the structured form
+let flat = null;      // flat: {entries: [...]}
+let flatEdits = {};   // flat: only what the operator changed
+let fileName = null;
+let dirty = false;
+let lastSeq = 0;
+let running = false;
+
+// ── behaviour selection ────────────────────────────────────────────────
+
+function selectBehaviour(key) {
+  spec = byKey[key];
+  if (!spec) return;
+  values = Object.assign({}, spec.defaults);
+  fileName = values.params_file || (spec.files[0] || null);
+  document.getElementById('behaviour-summary').textContent = spec.summary;
+
+  const note = document.getElementById('behaviour-note');
+  note.innerHTML = '';
+  if (spec.note) {
+    note.appendChild(el('div', {class: 'banner info', text: spec.note}));
+  }
+  if (!spec.available) {
+    note.appendChild(el('div', {class: 'banner warn',
+      text: 'No constants files under ' + (spec.config_dir || 'its config directory') +
+            '. Is ' + spec.package + ' built?'}));
+  }
+
+  const prereqs = document.getElementById('prereqs');
+  prereqs.innerHTML = '';
+  if (spec.requires.length) {
+    prereqs.appendChild(el('div', {text: 'This tree only runs the behaviour. It needs:'}));
+    const list = el('ul');
+    spec.requires.forEach(function (item) { list.appendChild(el('li', {text: item})); });
+    prereqs.appendChild(list);
+  }
+
+  renderArguments();
+  if (fileName) loadFile(fileName); else clearEditor();
+}
+
+function renderArguments() {
+  const host = document.getElementById('run-args');
+  host.innerHTML = '';
+
+  spec.arguments.forEach(function (argument) {
+    const box = el('div', {class: 'arg'});
+    box.appendChild(el('label', {text: argument.label}));
+
+    let field;
+    if (argument.options.length) {
+      field = el('select', {onchange: function (event) {
+        values[argument.name] = event.target.value;
+        // The constants file is not just a launch argument: it is what
+        // the editor below is editing, so the two move together.
+        if (argument.kind === 'file') loadFile(event.target.value);
+      }});
+      argument.options.forEach(function (option) {
+        const label = (argument.kind === 'file' && option === spec.ssid_file)
+          ? option + ' — selected by current SSID' : option;
+        field.appendChild(el('option', {value: option, text: label}));
+      });
+      field.value = values[argument.name];
+      // The SSID's file need not exist in every behaviour's directory —
+      // the ostensive package ships one room's file and not the other's.
+      if (field.selectedIndex < 0 && field.options.length) {
+        field.selectedIndex = 0;
+        values[argument.name] = field.value;
+      }
+    } else {
+      field = el('input', {type: 'text', value: values[argument.name] || '',
+        onchange: function (event) { values[argument.name] = event.target.value; }});
+    }
+    box.appendChild(field);
+    if (argument.doc) box.appendChild(el('div', {class: 'small dim doc', text: argument.doc}));
+    host.appendChild(box);
+  });
+}
+
+// ── running ────────────────────────────────────────────────────────────
+
+async function startRun() {
+  if (!spec) return;
+  if (dirty && !window.confirm(
+      'There are unsaved edits to ' + fileName + '. The tree reads the file ' +
+      'from disk, so this run would use the saved version. Start anyway?')) {
+    return;
+  }
+  const result = await post('/api/behaviours/start',
+                            {behaviour: spec.key, arguments: values});
+  if (!result.body.ok) {
+    banner('notice', 'err', result.body.error || 'Could not start the behaviour.');
+    applyStatus(result.body.status);
+    return;
+  }
+  banner('notice', 'ok', 'Started ' + spec.label + '.');
+  lastSeq = 0;
+  document.getElementById('run-log').textContent = '';
+  applyStatus(result.body.status);
+  pollStatus();
+}
+
+async function stopRun() {
+  const button = document.getElementById('stop-btn');
+  button.disabled = true;
+  const result = await post('/api/behaviours/stop', {});
+  if (!result.body.ok) {
+    banner('notice', 'err', result.body.error || 'Could not stop the behaviour.');
+  } else {
+    banner('notice', 'ok', 'Stopped.');
+  }
+  applyStatus(result.body.status);
+  pollStatus();
+}
+
+function applyStatus(status) {
+  if (!status) return;
+  running = !!status.running;
+
+  const pill = document.getElementById('run-pill');
+  pill.className = 'pill ' + (running ? 'OK' : (status.returncode ? 'DEAD' : 'IDLE'));
+  pill.textContent = status.stopping ? 'stopping'
+    : (running ? 'running' : (status.behaviour ? 'stopped' : 'idle'));
+
+  document.getElementById('start-btn').disabled =
+    running || !(spec && spec.available);
+  document.getElementById('stop-btn').disabled = !running;
+
+  const state = document.getElementById('run-state');
+  state.innerHTML = '';
+  if (status.behaviour) {
+    const words = running
+      ? status.label + ' — pid ' + status.pid + ', up ' + status.uptime_s + ' s'
+      : status.label + ' — ' + (status.exit_note || 'not running');
+    state.appendChild(el('div', {text: words}));
+    if (status.command_text) {
+      state.appendChild(el('div', {class: 'mono dim', text: status.command_text}));
+    }
+  }
+
+  // A tree somebody started from a terminal is invisible to this page's
+  // own bookkeeping but is very visible to the robot, and a second tree
+  // would drive /goal_pose and /cmd_vel at the same time.
+  const foreign = (status.graph_nodes || []).length && !running;
+  if (foreign) {
+    state.appendChild(el('div', {class: 'banner warn', text:
+      'A behaviour tree is already on the ROS graph (' +
+      status.graph_nodes.join(', ') + '), started outside this page. ' +
+      'Starting another would put two trees on /goal_pose and /cmd_vel at once.'}));
+  }
+}
+
+function appendLog(log) {
+  if (!log) return;
+  const host = document.getElementById('run-log');
+  if (log.dropped) {
+    host.textContent += '… ' + log.dropped + ' earlier lines dropped …\n';
+  }
+  if (log.lines.length) {
+    host.textContent += log.lines.join('\n') + '\n';
+    if (document.getElementById('follow-log').checked) {
+      host.scrollTop = host.scrollHeight;
+    }
+  }
+  lastSeq = log.last_seq;
+}
+
+async function pollStatus() {
+  const result = await api('/api/behaviours/status?after=' + lastSeq);
+  if (!result.body.ok) return;
+  applyStatus(result.body.status);
+  appendLog(result.body.log);
+}
+
+// ── loading a constants file ───────────────────────────────────────────
+
+function clearEditor() {
+  data = null; flat = null; flatEdits = {}; editor = null; dirty = false;
+  document.getElementById('editor-host').innerHTML = '';
+  document.getElementById('file-note').textContent = 'nothing to edit';
+}
 
 async function loadFile(name) {
-  const result = await api('/api/behaviour/' + encodeURIComponent(name));
+  const result = await api('/api/behaviour/' + encodeURIComponent(name) +
+                           '?behaviour=' + encodeURIComponent(spec.key));
   if (!result.ok) {
     banner('notice', 'err', result.body.error || 'Cannot read that file.');
+    clearEditor();
     return;
   }
   fileName = name;
-  data = result.body.structured;
+  values.params_file = name;
+  editor = result.body.editor;
+  data = result.body.structured || null;
+  flat = result.body.flat || null;
+  flatEdits = {};
+  dirty = false;
+
+  document.getElementById('file-note').textContent = result.body.path;
   showMessages(result.body.errors, result.body.warnings, null);
 
   const backups = document.getElementById('backup-select');
@@ -96,8 +323,17 @@ async function loadFile(name) {
     backups.appendChild(el('option', {value: '', text: 'no backups yet'}));
   }
 
-  renderScalars(); renderCheckpoints(); renderScripts();
+  render();
 }
+
+function render() {
+  const host = document.getElementById('editor-host');
+  host.innerHTML = '';
+  if (editor === 'flat') renderFlat(host);
+  else if (editor === 'leading') renderLeading(host);
+}
+
+function touch() { dirty = true; }
 
 function showMessages(errors, warnings, okText) {
   const host = document.getElementById('notice');
@@ -133,43 +369,173 @@ function showMessages(errors, warnings, okText) {
   if (okText) host.appendChild(el('div', {class: 'banner ok', text: okText}));
 }
 
-function scriptBlock(script) {
-  return (data.led_scripts[script] || data.gesture_scripts[script]);
+// ── flat editor (the ostensive constants) ──────────────────────────────
+
+function flatField(entry) {
+  if (entry.kind === 'unsupported') {
+    return el('span', {class: 'small dim',
+      text: JSON.stringify(entry.value) + ' — edit this one in the file'});
+  }
+
+  if (entry.choices.length) {
+    const node = el('select', {onchange: function (event) {
+      flatEdits[entry.name] = event.target.value; touch();
+    }});
+    entry.choices.forEach(function (choice) {
+      node.appendChild(el('option', {value: choice, text: choice}));
+    });
+    node.value = entry.value;
+    return node;
+  }
+
+  if (entry.kind === 'list') {
+    const node = el('input', {type: 'text', value: entry.value.join(', '),
+      onchange: function (event) {
+        const parts = event.target.value.split(',')
+          .map(function (part) { return part.trim(); })
+          .filter(function (part) { return part.length; });
+        const numbers = parts.map(Number);
+        if (!numbers.length || numbers.some(isNaN)) {
+          node.classList.add('bad-input');
+          banner('notice', 'err', entry.name + ': every entry must be a number.');
+          return;
+        }
+        node.classList.remove('bad-input');
+        flatEdits[entry.name] = numbers; touch();
+      }});
+    node.style.width = '220px';
+    return node;
+  }
+
+  return el('input', {
+    type: 'number', step: entry.kind === 'integer' ? '1' : 'any',
+    value: entry.value,
+    onchange: function (event) {
+      flatEdits[entry.name] = parseFloat(event.target.value); touch();
+    }});
 }
 
-function trimTimes(script, count) {
-  const block = scriptBlock(script);
-  if (!block) return;
-  block.times = block.times.slice(0, count);
-  renderScripts();
-  banner('notice', 'ok', 'Trimmed ' + script + '_times to ' + count +
-                         ' entries. Save to write it.');
+function renderFlat(host) {
+  const card = el('div', {class: 'card'});
+  card.appendChild(el('h3', {text: flat.root_key + ' → ros__parameters'}));
+  card.appendChild(el('p', {class: 'small dim', text:
+    'Comments in this file are the reasoning behind the numbers, so only the ' +
+    'value on each line is rewritten — everything else is left exactly as it is.'}));
+
+  // Grouped by the file's own '# ----- section -----' banners, so the
+  // page reads in the order the file was written to be read in.
+  let section = null;
+  let body = null;
+
+  flat.entries.forEach(function (entry) {
+    if (entry.section !== section || body === null) {
+      section = entry.section;
+      body = el('tbody');
+      card.appendChild(el('div', {class: 'section-head',
+                                  text: section || 'Parameters'}));
+      card.appendChild(el('div', {class: 'scroll'}, [el('table', {}, [body])]));
+    }
+    const name = el('td', {class: 'name'}, [el('div', {class: 'mono', text: entry.name})]);
+    if (entry.doc) name.appendChild(el('div', {class: 'small dim', text: entry.doc}));
+    const cells = [name, el('td', {}, [flatField(entry)])];
+    cells.push(el('td', {class: 'small dim', text: entry.comment || ''}));
+    body.appendChild(el('tr', {}, cells));
+  });
+
+  host.appendChild(card);
 }
 
-// ── thresholds ─────────────────────────────────────────────────────────
+// ── leading editor (the leading and demo constants) ────────────────────
 
-function renderScalars() {
-  const body = document.getElementById('scalars');
-  body.innerHTML = '';
+function renderLeading(host) {
+  const thresholds = el('div', {class: 'card'});
+  thresholds.appendChild(el('h3', {text: 'Thresholds'}));
+  const scalarBody = el('tbody');
   SCALARS.forEach(function (entry) {
     const input = el('input', {type: 'number', step: 'any',
       value: data.scalars[entry.name],
       onchange: function (event) {
-        data.scalars[entry.name] = parseFloat(event.target.value);
+        data.scalars[entry.name] = parseFloat(event.target.value); touch();
       }});
-    body.appendChild(el('tr', {}, [
+    scalarBody.appendChild(el('tr', {}, [
       el('td', {}, [el('div', {text: entry.name}),
                     el('div', {class: 'small dim', text: entry.doc})]),
       el('td', {}, [input]),
       el('td', {class: 'small dim', text: entry.unit})
     ]));
   });
+  thresholds.appendChild(el('div', {class: 'scroll'},
+                            [el('table', {}, [scalarBody])]));
+  host.appendChild(thresholds);
+
+  renderTunables(host);
+
+  const route = el('div', {class: 'card'});
+  route.appendChild(el('h3', {text: 'Route'}));
+  route.appendChild(el('p', {class: 'small dim', text:
+    'The first checkpoint is the start position and the last is the target.'}));
+  const routeBody = el('tbody', {id: 'checkpoints'});
+  route.appendChild(el('div', {class: 'scroll'}, [el('table', {}, [
+    el('thead', {}, [el('tr', {}, [el('th', {}), el('th', {class: 'num', text: 'X'}),
+                                   el('th', {class: 'num', text: 'Y'}),
+                                   el('th', {class: 'num', text: 'Z'}), el('th', {})])]),
+    routeBody])]));
+  route.appendChild(el('button', {class: 'small', text: 'Add checkpoint',
+    onclick: function () {
+      data.checkpoints.push({X: 0.0, Y: 0.0, Z: 0.0}); touch(); render();
+    }}));
+  host.appendChild(route);
+  renderCheckpoints(routeBody);
+
+  host.appendChild(el('div', {id: 'scripts-host'}));
+  renderScripts();
 }
 
-// ── route ──────────────────────────────────────────────────────────────
+function renderTunables(host) {
+  const tunables = data.tunables || [];
+  if (!tunables.length) return;
 
-function renderCheckpoints() {
-  const body = document.getElementById('checkpoints');
+  const card = el('div', {class: 'card'});
+  card.appendChild(el('h3', {text: 'Tunables'}));
+  card.appendChild(el('p', {class: 'small dim', text:
+    'Turn profile, timeouts and poses. Each was a constructor default in the ' +
+    'behaviour library before it moved here, so a file that omits one still ' +
+    'runs on the packaged default.'}));
+
+  // Grouped and described by the file's own comments: these keys have no
+  // documentation anywhere else.
+  let section = null;
+  let body = null;
+  tunables.forEach(function (entry) {
+    if (entry.section !== section || body === null) {
+      section = entry.section;
+      body = el('tbody');
+      card.appendChild(el('div', {class: 'section-head',
+                                  text: section || 'Tunables'}));
+      card.appendChild(el('div', {class: 'scroll'}, [el('table', {}, [body])]));
+    }
+
+    const name = el('td', {class: 'name'}, [el('div', {class: 'mono', text: entry.name})]);
+    if (entry.doc) name.appendChild(el('div', {class: 'small dim', text: entry.doc}));
+
+    const isText = typeof entry.value === 'string';
+    const field = el('input', {
+      type: isText ? 'text' : 'number', step: 'any', value: entry.value,
+      onchange: function (event) {
+        entry.value = isText ? event.target.value : parseFloat(event.target.value);
+        touch();
+      }});
+
+    body.appendChild(el('tr', {}, [
+      name, el('td', {}, [field]),
+      el('td', {class: 'small dim', text: entry.comment || ''})
+    ]));
+  });
+
+  host.appendChild(card);
+}
+
+function renderCheckpoints(body) {
   body.innerHTML = '';
   data.checkpoints.forEach(function (point, index) {
     const label = index === 0 ? 'start'
@@ -178,20 +544,31 @@ function renderCheckpoints() {
     ['X', 'Y', 'Z'].forEach(function (axis) {
       cells.push(el('td', {}, [el('input', {type: 'number', step: 'any',
         value: point[axis],
-        onchange: function (event) { point[axis] = parseFloat(event.target.value); }})]));
+        onchange: function (event) {
+          point[axis] = parseFloat(event.target.value); touch();
+        }})]));
     });
     cells.push(el('td', {}, [el('button', {class: 'small danger', text: 'remove',
-      onclick: function () { data.checkpoints.splice(index, 1); renderCheckpoints(); }})]));
+      onclick: function () {
+        data.checkpoints.splice(index, 1); touch(); render();
+      }})]));
     body.appendChild(el('tr', {}, cells));
   });
 }
 
-function addCheckpoint() {
-  data.checkpoints.push({X: 0.0, Y: 0.0, Z: 0.0});
-  renderCheckpoints();
+function scriptBlock(script) {
+  return (data.led_scripts[script] || data.gesture_scripts[script]);
 }
 
-// ── signalling scripts ─────────────────────────────────────────────────
+function trimTimes(script, count) {
+  const block = scriptBlock(script);
+  if (!block) return;
+  block.times = block.times.slice(0, count);
+  touch();
+  render();
+  banner('notice', 'ok', 'Trimmed ' + script + '_times to ' + count +
+                         ' entries. Save to write it.');
+}
 
 function selectFrom(map, value, onchange) {
   const node = el('select', {class: 'small', onchange: function (event) {
@@ -204,7 +581,7 @@ function selectFrom(map, value, onchange) {
   return node;
 }
 
-function ledEntryRow(block, entry, index) {
+function ledEntryRow(entry) {
   const uniform = CORNERS.every(function (corner) {
     return entry[corner].mode === entry.fl.mode &&
            entry[corner].color === entry.fl.color;
@@ -215,22 +592,22 @@ function ledEntryRow(block, entry, index) {
     cell.appendChild(el('span', {class: 'small dim', text: 'all corners '}));
     cell.appendChild(selectFrom(MODES, entry.fl.mode, function (value) {
       CORNERS.forEach(function (corner) { entry[corner].mode = value; });
-      renderScripts();
+      touch(); renderScripts();
     }));
     cell.appendChild(document.createTextNode(' '));
     cell.appendChild(selectFrom(COLORS, entry.fl.color, function (value) {
       CORNERS.forEach(function (corner) { entry[corner].color = value; });
-      renderScripts();
+      touch(); renderScripts();
     }));
   } else {
     CORNERS.forEach(function (corner) {
       const line = el('div', {class: 'row small'});
       line.appendChild(el('span', {class: 'dim mono', text: corner}));
       line.appendChild(selectFrom(MODES, entry[corner].mode, function (value) {
-        entry[corner].mode = value;
+        entry[corner].mode = value; touch();
       }));
       line.appendChild(selectFrom(COLORS, entry[corner].color, function (value) {
-        entry[corner].color = value;
+        entry[corner].color = value; touch();
       }));
       cell.appendChild(line);
     });
@@ -243,13 +620,16 @@ function gestureEntryRow(entry) {
   [['n_pos', 'neck'], ['gl_pos', 'left'], ['gr_pos', 'right']].forEach(function (pair) {
     cell.appendChild(el('span', {class: 'dim', text: pair[1]}));
     cell.appendChild(el('input', {type: 'number', step: '0.01', value: entry[pair[0]],
-      onchange: function (event) { entry[pair[0]] = parseFloat(event.target.value); }}));
+      onchange: function (event) {
+        entry[pair[0]] = parseFloat(event.target.value); touch();
+      }}));
   });
   return cell;
 }
 
 function renderScripts() {
   const host = document.getElementById('scripts-host');
+  if (!host) return;
   host.innerHTML = '';
 
   const groups = [
@@ -283,17 +663,17 @@ function renderScripts() {
         const delay = block.times[index];
         const cells = [el('td', {class: 'small dim', text: 'step ' + index})];
         cells.push(renderer === ledEntryRow
-          ? ledEntryRow(block, entry, index) : gestureEntryRow(entry));
+          ? ledEntryRow(entry) : gestureEntryRow(entry));
         cells.push(el('td', {}, [el('input', {type: 'number', step: '0.05',
           value: delay === undefined ? '' : delay,
           onchange: function (event) {
-            block.times[index] = parseFloat(event.target.value);
+            block.times[index] = parseFloat(event.target.value); touch();
           }})]));
         cells.push(el('td', {}, [el('button', {class: 'small danger', text: 'remove',
           onclick: function () {
             block.seq.splice(index, 1);
             block.times.splice(index, 1);
-            renderScripts();
+            touch(); renderScripts();
           }})]));
         body.appendChild(el('tr', {}, cells));
       });
@@ -306,10 +686,10 @@ function renderScripts() {
           el('td', {class: 'small dim', text: 'no pattern — never read'}),
           el('td', {}, [el('input', {type: 'number', step: '0.05', value: delay,
             onchange: function (event) {
-              block.times[index] = parseFloat(event.target.value);
+              block.times[index] = parseFloat(event.target.value); touch();
             }})]),
           el('td', {}, [el('button', {class: 'small danger', text: 'remove',
-            onclick: function () { block.times.splice(index, 1); renderScripts(); }})])
+            onclick: function () { block.times.splice(index, 1); touch(); renderScripts(); }})])
         ]));
       });
 
@@ -328,7 +708,7 @@ function renderScripts() {
                bl: {mode: 4, color: 0}, br: {mode: 4, color: 0}}
             : {n_pos: 6.0, gl_pos: 5.12, gr_pos: 5.12});
           block.times.splice(block.seq.length - 1, 0, 0.5);
-          renderScripts();
+          touch(); renderScripts();
         }}));
     });
 
@@ -336,23 +716,61 @@ function renderScripts() {
   });
 }
 
-// ── saving ─────────────────────────────────────────────────────────────
+// ── saving and restoring ───────────────────────────────────────────────
+
+function saveUrl() {
+  return '/api/behaviour/' + encodeURIComponent(fileName) +
+         '?behaviour=' + encodeURIComponent(spec.key);
+}
 
 async function save() {
-  if (!data) return;
-  const result = await post('/api/behaviour/' + encodeURIComponent(fileName),
-                            {structured: data});
+  if (!fileName || !editor) return;
+  const payload = editor === 'flat' ? {values: flatEdits} : {structured: data};
+  if (editor === 'flat' && !Object.keys(flatEdits).length) {
+    banner('notice', 'info', 'Nothing has been changed.');
+    return;
+  }
+
+  const result = await post(saveUrl(), payload);
   if (!result.body.ok) {
     showMessages(result.body.errors || ['Save failed.'], result.body.warnings || [], null);
     return;
   }
+  dirty = false;
   showMessages([], result.body.warnings || [],
                'Saved ' + fileName + '. Applies on the next behaviour tree start.' +
                (result.body.backup ? ' Previous version backed up.' : ''));
   loadFile(fileName);
 }
 
-const picker = document.getElementById('file-select');
-if (picker && picker.options.length) loadFile(picker.value);
+async function restore() {
+  const wanted = document.getElementById('backup-select').value;
+  if (!wanted) {
+    banner('notice', 'info', 'There are no backups of this file yet.');
+    return;
+  }
+  const result = await post('/api/behaviour/' + encodeURIComponent(fileName) +
+                            '/restore?behaviour=' + encodeURIComponent(spec.key),
+                            {backup: wanted});
+  if (!result.body.ok) {
+    banner('notice', 'err', result.body.error || 'Could not restore that backup.');
+    return;
+  }
+  banner('notice', 'ok', 'Restored ' + wanted + '.');
+  loadFile(fileName);
+}
+
+// ── start ──────────────────────────────────────────────────────────────
+
+const picker = document.getElementById('behaviour-select');
+if (picker && picker.options.length) {
+  const available = BEHAVIOURS.filter(function (entry) { return entry.available; });
+  const initial = byKey[DEFAULT_BEHAVIOUR] && byKey[DEFAULT_BEHAVIOUR].available
+    ? DEFAULT_BEHAVIOUR : (available.length ? available[0].key : BEHAVIOURS[0].key);
+  picker.value = initial;
+  selectBehaviour(initial);
+}
+pollStatus();
+setInterval(pollStatus, 1500);
 </script>
 {% endblock %}

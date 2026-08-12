@@ -32,11 +32,12 @@ time -- an edit therefore applies on the next tree start, not live.
 """
 
 import ast
-from typing import Dict, List, Tuple
+import textwrap
+from typing import Dict, List, Optional, Tuple
 
 import yaml
 
-from . import led_enums, yaml_io
+from . import flat_store, led_enums, yaml_io
 
 #: The nesting every behaviour constants file uses, whichever tree loads it.
 #: Mirrors ``blackboard_managers.YAML_ROOT_KEYS``.
@@ -84,6 +85,27 @@ MODE_NAMES = led_enums.MODE_NAMES
 #: Accessory travel limits, for range warnings. Match the joystick profiles.
 NECK_RANGE = (2.0, 8.6)
 GRIPPER_RANGE = (1.6, 8.54)
+
+
+def _script_keys() -> frozenset:
+    """Return every key the structured editor renders as a sequence."""
+    keys = {"Dog_checkpoints", "LED_start_setting"}
+    for script in LED_SCRIPTS + GESTURE_SCRIPTS:
+        keys.add("{}_seq".format(script))
+        keys.add("{}_times".format(script))
+    return frozenset(keys)
+
+
+#: Keys this module gives a purpose-built editor to.  Everything else in
+#: the file is a *tunable*: one of the turn speeds, timeouts and poses
+#: that used to be constructor defaults in the behaviour library and now
+#: live in the YAML so that a run is described by one file.
+#:
+#: Tunables are carried through unchanged unless they are edited.  That
+#: is load bearing rather than tidy: this emitter rewrites the whole
+#: document, so a key it does not know about is a key it would delete,
+#: and the shipped files declare about thirty of them.
+STRUCTURED_KEYS = frozenset(SCALAR_NAMES) | _script_keys()
 
 
 class BehaviourStoreError(Exception):
@@ -205,6 +227,8 @@ def parse_params(params: Dict) -> Dict:
     """
     structured = {
         "scalars": {},
+        "tunables": [],
+        "extras": {},
         "checkpoints": [],
         "led_start": None,
         "led_scripts": {},
@@ -215,6 +239,16 @@ def parse_params(params: Dict) -> Dict:
     for name in SCALAR_NAMES:
         if name in params:
             structured["scalars"][name] = params[name]
+
+    for name, value in params.items():
+        if name in STRUCTURED_KEYS:
+            continue
+        if _is_number(value) or isinstance(value, str):
+            structured["tunables"].append({"name": name, "value": value})
+        else:
+            # Neither a tunable nor anything this editor renders: kept so
+            # that saving cannot lose it.
+            structured["extras"][name] = value
 
     for index, entry in enumerate(params.get("Dog_checkpoints") or ()):
         try:
@@ -247,6 +281,28 @@ def parse_params(params: Dict) -> Dict:
     return structured
 
 
+def annotate_tunables(structured: Dict, path: str) -> Dict:
+    """
+    Attach each tunable's own documentation from the file it came from.
+
+    The page shows a tunable next to the sentence in the file that says
+    what it does, which is the only description of it anywhere -- these
+    keys have no table in this module the way the thresholds do.
+    """
+    try:
+        with open(path, "r") as stream:
+            notes = annotations(stream.read())
+    except OSError:
+        notes = {}
+
+    for entry in structured.get("tunables") or ():
+        note = notes.get(entry["name"]) or {}
+        entry["doc"] = note.get("doc", "")
+        entry["section"] = note.get("section", "")
+        entry["comment"] = note.get("comment", "")
+    return structured
+
+
 def params_from_structured(structured: Dict) -> Dict:
     """Rebuild the raw params mapping from the structured editor form."""
     params: Dict = {}
@@ -254,6 +310,12 @@ def params_from_structured(structured: Dict) -> Dict:
     for name in SCALAR_NAMES:
         if name in structured.get("scalars", {}):
             params[name] = structured["scalars"][name]
+
+    for entry in structured.get("tunables") or ():
+        params[entry["name"]] = entry["value"]
+
+    for name, value in (structured.get("extras") or {}).items():
+        params[name] = value
 
     params["Dog_checkpoints"] = [
         format_checkpoint(point) for point in structured.get("checkpoints") or ()]
@@ -470,6 +532,94 @@ def _emit_scalars(lines: List[str], params: Dict) -> None:
             value=_number(params[name]), doc=doc, unit=unit))
 
 
+def annotations(text: str) -> Dict[str, Dict]:
+    """
+    Return the comments the file itself attaches to each scalar.
+
+    The tunables carry the reasoning for their values -- which Nav2 limit
+    a turn speed has to stay inside, why a timeout is short -- and none
+    of it can be regenerated from the numbers the way the LED and gesture
+    comments can.  So it is read off the file before a save and written
+    back out around the same keys.
+    """
+    try:
+        parsed = flat_store.parse(text)
+    except flat_store.FlatStoreError:
+        return {}
+    return {entry["name"]: entry for entry in parsed["entries"]}
+
+
+def _emit_annotation(lines: List[str], note: Dict, section: Optional[str]) -> Optional[str]:
+    """Write one tunable's section banner and comment block. Return the section."""
+    if note.get("section") and note["section"] != section:
+        section = note["section"]
+        rule = "-" * max(3, 68 - len(section))
+        lines.append("")
+        lines.append("    # ----- {} {}".format(section, rule))
+    for line in textwrap.wrap(note.get("doc") or "", width=72):
+        lines.append("    # {}".format(line))
+    return section
+
+
+def _emit_tunables(lines: List[str], params: Dict, notes: Dict) -> None:
+    """Write every scalar the structured editor does not own itself."""
+    tunables = [(name, value) for name, value in params.items()
+                if name not in STRUCTURED_KEYS and (
+                    _is_number(value) or isinstance(value, str))]
+    if not tunables:
+        return
+
+    lines.append("")
+    lines.append("    # ======================================================"
+                 "================")
+    lines.append("    # Tunables. Every key below used to be a constructor "
+                 "default or a module")
+    lines.append("    # constant in the behaviour library. A file that omits "
+                 "one keeps the")
+    lines.append("    # packaged default in `behaviours/constants.py`.")
+    lines.append("    #")
+    lines.append("    # Angles are in degrees and reach the blackboard in "
+                 "radians, under the")
+    lines.append("    # same name without the `_deg` suffix.")
+    lines.append("    # ======================================================"
+                 "================")
+
+    section = None
+    for name, value in tunables:
+        note = notes.get(name) or {}
+        new_section = _emit_annotation(lines, note, section)
+        if new_section != section:
+            section = new_section
+        comment = note.get("comment") or ""
+        lines.append("    {}: {}{}".format(
+            name, value if isinstance(value, str) else _number(value),
+            "  # " + comment if comment else ""))
+
+
+def _emit_extras(lines: List[str], params: Dict) -> None:
+    """
+    Write anything this editor neither owns nor recognises as a tunable.
+
+    Nothing in the shipped files lands here.  It exists so that a key
+    somebody adds by hand -- a new list, a nested mapping -- survives a
+    save from the GUI rather than being deleted by an emitter that had
+    never heard of it.
+    """
+    extras = [(name, value) for name, value in params.items()
+              if name not in STRUCTURED_KEYS
+              and not _is_number(value) and not isinstance(value, str)]
+    if not extras:
+        return
+
+    lines.append("")
+    lines.append("    # Kept as found: this editor does not render these.")
+    for name, value in extras:
+        dumped = yaml.safe_dump(value, default_flow_style=True).strip()
+        if dumped.endswith("..."):
+            dumped = dumped[:-3].strip()
+        lines.append("    {}: {}".format(name, dumped))
+
+
 def _emit_literal_list(lines: List[str], key: str, entries, comments=None) -> None:
     """Write a list of quoted dict literals, one per line, with comments."""
     lines.append("    {}:".format(key))
@@ -492,7 +642,7 @@ def _emit_times(lines: List[str], key: str, times, comments=None) -> None:
         lines.append("      - {}{}".format(_number(value), comment))
 
 
-def dump(params: Dict) -> str:
+def dump(params: Dict, notes: Optional[Dict] = None) -> str:
     """
     Render a params mapping as a behaviour constants YAML document.
 
@@ -500,9 +650,12 @@ def dump(params: Dict) -> str:
     so the quoting the behaviour tree depends on cannot be lost, and
     self-checks the result with ``ast.literal_eval`` before returning.
 
-    Inline comments are regenerated from the values.  That is a deliberate
-    upgrade rather than preservation: several comments in the original
-    files contradict the values they annotate.
+    Comments are handled two ways, because the file has two kinds.  Those
+    annotating an LED pattern or a gesture pose are regenerated from the
+    values -- a deliberate upgrade, since several in the original files
+    contradict what they annotate.  Those on the tunables are the
+    reasoning behind a number and cannot be regenerated at all, so they
+    are carried over from the file being replaced, via ``notes``.
     """
     lines: List[str] = []
     lines.append(_HEADER.format(
@@ -513,6 +666,8 @@ def dump(params: Dict) -> str:
     lines.append("  {}:".format(ROOT_KEYS[1]))
 
     _emit_scalars(lines, params)
+    _emit_tunables(lines, params, notes or {})
+    _emit_extras(lines, params)
 
     checkpoints = params.get("Dog_checkpoints") or []
     if checkpoints:
@@ -590,6 +745,16 @@ def _self_check(text: str, params: Dict) -> None:
             "internal error: emitted document lost its {} nesting".format(
                 " -> ".join(ROOT_KEYS)))
 
+    missing = sorted(set(params) - set(document))
+    if missing:
+        # The emitter is a whitelist of shapes it knows how to write, so
+        # this is the failure that matters: a key it did not recognise
+        # would be gone from the file, and the tree would fall back to a
+        # packaged default mid-experiment without saying so.
+        raise BehaviourStoreError(
+            "internal error: {} would be dropped from the file".format(
+                ", ".join(missing)))
+
     literal_keys = ["Dog_checkpoints", "LED_start_setting"]
     literal_keys += ["{}_seq".format(name) for name in LED_SCRIPTS + GESTURE_SCRIPTS]
 
@@ -627,8 +792,16 @@ def save(path: str, params: Dict, backup_root=yaml_io.DEFAULT_BACKUP_ROOT):
     if errors:
         return False, errors, warnings, None
 
+    # Read the outgoing file for the comments on its tunables, so the
+    # reasoning written next to those numbers survives the rewrite.
     try:
-        text = dump(params)
+        with open(path, "r") as stream:
+            notes = annotations(stream.read())
+    except OSError:
+        notes = {}
+
+    try:
+        text = dump(params, notes)
     except BehaviourStoreError as exc:
         return False, [str(exc)], warnings, None
 

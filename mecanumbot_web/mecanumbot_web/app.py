@@ -16,32 +16,32 @@ Three pages:
 
 ``/joystick``     edit and reload the joystick profile
 ``/diagnostics``  measured publish rate of every important topic
-``/behaviour``    edit the leading-behaviour constants
+``/behaviour``    choose a behaviour tree, edit its constants, run it
 
 There is deliberately no user model.  The old "login" was a
 process-global name rather than a session -- two browsers already shared
 one identity -- so on a single-operator robot GUI it was friction that
-bought nothing.
+bought nothing.  That does mean anything that can reach port 8080 can
+start a behaviour tree, so this belongs on the robot's own network, the
+same as every other control surface in the workspace.
 """
 
 import os
 import subprocess
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from . import behaviour_store, joystick_store, yaml_io
+from . import (behaviour_catalog, behaviour_runner, behaviour_store,
+               flat_store, joystick_store, yaml_io)
 
-#: Wi-Fi SSID to behaviour constants file.  Mirrors the selection
-#: ``launch_wifi_condition_sequence.launch.py`` makes, so the page can
-#: show which file is actually in play.
-SSID_BEHAVIOUR_FILES = {
-    "MecanumNet": "behaviour_setting_constants.yaml",
-    "MecanumetoNet": "Eto_behaviour_setting_constants.yaml",
-    "APOLLO2028": "behaviour_setting_constants.yaml",
-}
+#: Wi-Fi SSID to behaviour constants file, for the leading behaviour.
+#: Held in the catalog, which mirrors what each behaviour's own launch
+#: file picks, so the page and the launch file cannot disagree about
+#: which room the robot thinks it is in.
+SSID_BEHAVIOUR_FILES = dict(behaviour_catalog.LEADING.ssid_files)
 
-DEFAULT_BEHAVIOUR_FILE = "behaviour_setting_constants.yaml"
+DEFAULT_BEHAVIOUR_FILE = behaviour_catalog.LEADING.default_file
 
 
 def current_ssid() -> Optional[str]:
@@ -70,8 +70,8 @@ def current_ssid() -> Optional[str]:
 
 
 def behaviour_file_for_ssid(ssid: Optional[str]) -> str:
-    """Return the behaviour file the current SSID selects."""
-    return SSID_BEHAVIOUR_FILES.get(ssid or "", DEFAULT_BEHAVIOUR_FILE)
+    """Return the leading-behaviour file the current SSID selects."""
+    return behaviour_catalog.LEADING.file_for_ssid(ssid)
 
 
 class WebApp:
@@ -82,13 +82,30 @@ class WebApp:
         node=None,
         joystick_dir: str = "",
         behaviour_dir: str = "",
+        behaviour_dirs: Optional[Dict[str, str]] = None,
+        runner=None,
         backup_root: str = yaml_io.DEFAULT_BACKUP_ROOT,
     ):
         """Build the app. ``node`` may be None, in which case ROS routes 503."""
         self._node = node
         self._joystick_dir = joystick_dir
-        self._behaviour_dir = behaviour_dir
+        # One config directory per behaviour. ``behaviour_dir`` names the
+        # leading behaviour's, which is the one the un-scoped config
+        # routes address and the only one that existed before the page
+        # could start trees.
+        self._behaviour_dirs = dict(behaviour_dirs or {})
+        if behaviour_dir:
+            self._behaviour_dirs.setdefault(behaviour_catalog.DEFAULT_BEHAVIOUR,
+                                            behaviour_dir)
+        self._behaviour_dir = self._behaviour_dirs.get(
+            behaviour_catalog.DEFAULT_BEHAVIOUR, "")
         self._backup_root = backup_root
+
+        # The runner spawns processes but touches no ROS API, so the app
+        # owns it and the node only has to stop it on shutdown.
+        self.runner = runner if runner is not None else behaviour_runner.BehaviourRunner(
+            config_dirs=self._behaviour_dirs,
+            logger=node.get_logger() if node is not None else None)
 
         self.app = Flask(__name__)
         self.app.config["JSON_SORT_KEYS"] = False
@@ -105,36 +122,94 @@ class WebApp:
             }), 503)
         return self._node, None
 
-    def _behaviour_path(self, name: str) -> str:
-        """Resolve a behaviour filename inside the configured directory."""
+    def _behaviour_spec(self, key: Optional[str]):
+        """Resolve a behaviour key, defaulting to the leading behaviour."""
+        try:
+            return behaviour_catalog.get(key or behaviour_catalog.DEFAULT_BEHAVIOUR)
+        except behaviour_catalog.CatalogError as exc:
+            raise behaviour_store.BehaviourStoreError(str(exc)) from exc
+
+    def _behaviour_dir_for(self, key: Optional[str]) -> str:
+        """Return the config directory of one behaviour."""
+        return self._behaviour_dirs.get(
+            (key or behaviour_catalog.DEFAULT_BEHAVIOUR), "")
+
+    def _behaviour_path(self, name: str, behaviour: Optional[str] = None) -> str:
+        """Resolve a constants filename inside one behaviour's directory."""
+        spec = self._behaviour_spec(behaviour)
         if not name or os.sep in name or not name.endswith(".yaml") or \
                 name.startswith("."):
             raise behaviour_store.BehaviourStoreError(
                 "Invalid behaviour file name '{}'".format(name))
-        path = os.path.join(self._behaviour_dir, name)
+        path = os.path.join(self._behaviour_dir_for(spec.key), name)
         if not os.path.isfile(path):
             raise behaviour_store.BehaviourStoreError(
                 "No such behaviour file '{}'".format(name))
         return path
 
-    def _behaviour_files(self) -> List[dict]:
-        """List the behaviour constants files available for editing."""
-        if not self._behaviour_dir or not os.path.isdir(self._behaviour_dir):
-            return []
-        ssid = current_ssid()
-        selected = behaviour_file_for_ssid(ssid)
+    def _behaviour_files(self, behaviour: Optional[str] = None) -> List[dict]:
+        """List one behaviour's constants files, available for editing."""
+        spec = self._behaviour_spec(behaviour)
+        config_dir = self._behaviour_dir_for(spec.key)
+        selected = spec.file_for_ssid(current_ssid())
         files = []
-        for name in sorted(os.listdir(self._behaviour_dir)):
-            if not name.endswith(".yaml"):
-                continue
-            path = os.path.join(self._behaviour_dir, name)
+        for name in behaviour_catalog.list_config_files(config_dir):
+            path = os.path.join(config_dir, name)
             files.append({
                 "name": name,
                 "path": path,
+                "behaviour": spec.key,
                 "selected_by_ssid": name == selected,
                 "symlinked": yaml_io.is_symlinked_install(path),
             })
         return files
+
+    def _read_constants(self, spec, name: str, path: str) -> dict:
+        """Return one constants file in the shape its editor needs."""
+        if spec.editor == "flat":
+            described = flat_store.describe(path)
+            return {
+                "ok": True,
+                "name": name,
+                "behaviour": spec.key,
+                "editor": "flat",
+                "path": path,
+                "flat": described,
+                "errors": described["errors"],
+                "warnings": described["warnings"],
+                "backups": yaml_io.list_backups(path, self._backup_root),
+            }
+
+        params = behaviour_store.load_params(path)
+        errors, warnings = behaviour_store.validate(params)
+        return {
+            "ok": True,
+            "name": name,
+            "behaviour": spec.key,
+            "editor": "leading",
+            "path": path,
+            "params": params,
+            "structured": behaviour_store.annotate_tunables(
+                behaviour_store.parse_params(params), path),
+            "errors": errors,
+            "warnings": warnings,
+            "backups": yaml_io.list_backups(path, self._backup_root),
+        }
+
+    def _run_status(self) -> dict:
+        """Return the runner's status, plus any tree already on the graph."""
+        status = self.runner.status()
+        graph = []
+        if self._node is not None:
+            try:
+                graph = self._node.behaviour_nodes(behaviour_catalog.all_node_names())
+            except Exception:  # pragma: no cover - rmw-dependent
+                graph = []
+        # A tree started from a terminal is invisible to the runner but
+        # very visible to the robot, and starting a second one would put
+        # two trees on /goal_pose and /cmd_vel at once.
+        status["graph_nodes"] = graph
+        return status
 
     # ── routes ───────────────────────────────────────────────────────────
 
@@ -167,13 +242,15 @@ class WebApp:
 
         @app.route("/behaviour")
         def behaviour_page():
-            """Render the behaviour constants editor."""
+            """Render the behaviour runner and constants editor."""
             ssid = current_ssid()
             return render_template(
                 "behaviour.html",
                 page="behaviour",
                 ssid=ssid,
-                files=self._behaviour_files(),
+                behaviours=behaviour_catalog.describe_all(
+                    self._behaviour_dirs, ssid),
+                default_behaviour=behaviour_catalog.DEFAULT_BEHAVIOUR,
                 scalars=[
                     {"name": name, "unit": unit, "doc": doc}
                     for name, unit, doc in behaviour_store.SCALAR_PARAMS
@@ -307,48 +384,113 @@ class WebApp:
 
         # ── behaviour API ────────────────────────────────────────────────
 
-        @app.route("/api/behaviour/files")
-        def api_behaviour_files():
-            """List behaviour constants files and which the SSID selects."""
+        @app.route("/api/behaviours")
+        def api_behaviours():
+            """List every startable behaviour, and what is running now."""
             ssid = current_ssid()
             return jsonify({
                 "ok": True,
                 "ssid": ssid,
-                "selected": behaviour_file_for_ssid(ssid),
-                "config_dir": self._behaviour_dir,
-                "files": self._behaviour_files(),
+                "behaviours": behaviour_catalog.describe_all(
+                    self._behaviour_dirs, ssid),
+                "status": self._run_status(),
+            })
+
+        @app.route("/api/behaviours/status")
+        def api_behaviours_status():
+            """Return the run status, with whatever log is new since ``after``."""
+            try:
+                after = int(request.args.get("after", 0))
+            except (TypeError, ValueError):
+                after = 0
+            return jsonify({
+                "ok": True,
+                "status": self._run_status(),
+                "log": self.runner.log(after),
+            })
+
+        @app.route("/api/behaviours/start", methods=["POST"])
+        def api_behaviours_start():
+            """Start one behaviour with the hyperparameters supplied."""
+            payload = request.get_json(silent=True) or {}
+            try:
+                status = self.runner.start(
+                    payload.get("behaviour"), payload.get("arguments") or {})
+            except behaviour_runner.RunnerError as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "status": self._run_status()}), 400
+            return jsonify({"ok": True, "status": status})
+
+        @app.route("/api/behaviours/stop", methods=["POST"])
+        def api_behaviours_stop():
+            """Stop the running behaviour."""
+            try:
+                status = self.runner.stop()
+            except behaviour_runner.RunnerError as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "status": self._run_status()}), 400
+            return jsonify({"ok": True, "status": status})
+
+        @app.route("/api/behaviour/files")
+        def api_behaviour_files():
+            """List one behaviour's constants files and which the SSID selects."""
+            ssid = current_ssid()
+            behaviour = request.args.get("behaviour")
+            try:
+                spec = self._behaviour_spec(behaviour)
+            except behaviour_store.BehaviourStoreError as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 404
+            return jsonify({
+                "ok": True,
+                "ssid": ssid,
+                "behaviour": spec.key,
+                "selected": spec.file_for_ssid(ssid),
+                "config_dir": self._behaviour_dir_for(spec.key),
+                "files": self._behaviour_files(spec.key),
             })
 
         @app.route("/api/behaviour/<name>", methods=["GET"])
         def api_behaviour_read(name):
-            """Return one behaviour file, parsed and validated."""
+            """Return one constants file, parsed and validated for its editor."""
             try:
-                path = self._behaviour_path(name)
-                params = behaviour_store.load_params(path)
-            except behaviour_store.BehaviourStoreError as exc:
+                spec = self._behaviour_spec(request.args.get("behaviour"))
+                path = self._behaviour_path(name, spec.key)
+                return jsonify(self._read_constants(spec, name, path))
+            except (behaviour_store.BehaviourStoreError,
+                    flat_store.FlatStoreError) as exc:
                 return jsonify({"ok": False, "error": str(exc)}), 404
-
-            errors, warnings = behaviour_store.validate(params)
-            return jsonify({
-                "ok": True,
-                "name": name,
-                "path": path,
-                "params": params,
-                "structured": behaviour_store.parse_params(params),
-                "errors": errors,
-                "warnings": warnings,
-                "backups": yaml_io.list_backups(path, self._backup_root),
-            })
 
         @app.route("/api/behaviour/<name>", methods=["POST"])
         def api_behaviour_write(name):
-            """Validate and save one behaviour file."""
+            """Validate and save one constants file."""
             try:
-                path = self._behaviour_path(name)
+                spec = self._behaviour_spec(request.args.get("behaviour"))
+                path = self._behaviour_path(name, spec.key)
             except behaviour_store.BehaviourStoreError as exc:
                 return jsonify({"ok": False, "errors": [str(exc)]}), 404
 
             payload = request.get_json(silent=True) or {}
+
+            if spec.editor == "flat":
+                if "values" not in payload:
+                    return jsonify({"ok": False,
+                                    "errors": ["No values supplied"]}), 400
+                try:
+                    ok, errors, warnings, backup = flat_store.save(
+                        path, payload["values"], backup_root=self._backup_root)
+                except flat_store.FlatStoreError as exc:
+                    return jsonify({"ok": False, "errors": [str(exc)]}), 400
+                except OSError as exc:
+                    return jsonify({
+                        "ok": False,
+                        "errors": ["Could not write the file: {}".format(exc)],
+                    }), 500
+                return jsonify({
+                    "ok": ok, "errors": errors, "warnings": warnings,
+                    "backup": backup,
+                    "applies": "next behaviour tree start",
+                }), (200 if ok else 400)
+
             if "structured" in payload:
                 try:
                     params = behaviour_store.params_from_structured(
@@ -380,15 +522,15 @@ class WebApp:
                 "errors": errors,
                 "warnings": warnings,
                 "backup": backup,
-                # Only ConstantParamsToBlackboard reads these, at setup() time.
+                # Only the tree's params loader reads these, at setup() time.
                 "applies": "next behaviour tree start",
             }), status
 
         @app.route("/api/behaviour/<name>/backups", methods=["GET"])
         def api_behaviour_backups(name):
-            """List a behaviour file's backups."""
+            """List a constants file's backups."""
             try:
-                path = self._behaviour_path(name)
+                path = self._behaviour_path(name, request.args.get("behaviour"))
             except behaviour_store.BehaviourStoreError as exc:
                 return jsonify({"ok": False, "error": str(exc)}), 404
             return jsonify({
@@ -398,9 +540,9 @@ class WebApp:
 
         @app.route("/api/behaviour/<name>/restore", methods=["POST"])
         def api_behaviour_restore(name):
-            """Restore a behaviour file from one of its backups."""
+            """Restore a constants file from one of its backups."""
             try:
-                path = self._behaviour_path(name)
+                path = self._behaviour_path(name, request.args.get("behaviour"))
             except behaviour_store.BehaviourStoreError as exc:
                 return jsonify({"ok": False, "error": str(exc)}), 404
 
