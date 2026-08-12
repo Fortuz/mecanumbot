@@ -6,6 +6,7 @@ do.  The pattern is carried over from the GUI this replaces, which tested
 its Flask layer the same way.
 """
 
+import ast
 import os
 import shutil
 import sys
@@ -449,6 +450,56 @@ def test_behaviour_save_rejects_a_short_delay_list(context):
     response = client.post("/api/behaviour/" + name, json={"structured": structured})
     assert response.status_code == 400
     assert any("IndexError" in error for error in response.get_json()["errors"])
+
+
+def test_behaviour_save_types_the_numbers_json_cannot(context):
+    """
+    A whole coordinate must reach the file as a float.
+
+    This is the browser's payload verbatim: JSON has one number type and
+    ``JSON.stringify`` drops the decimal point, so a checkpoint left at
+    zero arrives as ``0`` -- and ``parse_checkpoint`` assigns it straight
+    into ``Point.z``, which refuses an int and stops the tree at setup.
+    """
+    if not _has_behaviour(context):
+        pytest.skip("mecanumbot_leading_behaviour is not checked out")
+    client = context["client"]
+    name = "behaviour_setting_constants.yaml"
+
+    structured = client.get("/api/behaviour/" + name).get_json()["structured"]
+    structured["checkpoints"].append({"X": 2, "Y": -1, "Z": 0})
+    structured["gesture_scripts"]["Dog_thank"]["seq"][0] = {
+        "n_pos": 7, "gl_pos": 6, "gr_pos": 3}
+
+    body = client.post("/api/behaviour/" + name,
+                       json={"structured": structured}).get_json()
+    assert body["ok"] is True, body["errors"]
+
+    params = client.get("/api/behaviour/" + name).get_json()["params"]
+    for entry in params["Dog_checkpoints"]:
+        point = ast.literal_eval(entry)
+        assert all(isinstance(value, float) for value in point.values()), entry
+    pose = ast.literal_eval(params["Dog_thank_seq"][0])
+    assert all(isinstance(value, float) for value in pose.values())
+    # ...and the LED codes are the mirror image: int8 fields, still ints.
+    corners = ast.literal_eval(params["LED_thank_seq"][0])
+    assert all(isinstance(value, int)
+               for fields in corners.values() for value in fields.values())
+
+
+def test_behaviour_save_names_a_field_it_cannot_type(context):
+    """A cleared input arrives as null and comes back as a 400, not a 500."""
+    if not _has_behaviour(context):
+        pytest.skip("mecanumbot_leading_behaviour is not checked out")
+    client = context["client"]
+    name = "behaviour_setting_constants.yaml"
+
+    structured = client.get("/api/behaviour/" + name).get_json()["structured"]
+    structured["checkpoints"][0]["Y"] = None
+
+    response = client.post("/api/behaviour/" + name, json={"structured": structured})
+    assert response.status_code == 400
+    assert any("Y" in error for error in response.get_json()["errors"])
 
 
 def test_behaviour_path_traversal_is_rejected(context):

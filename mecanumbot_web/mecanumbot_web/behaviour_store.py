@@ -24,6 +24,18 @@ Two consumers matter:
     are simply never read, which is the current state of both shipped
     files.
 
+A number's *type* is part of that contract, not a detail of how it is
+written.  Several of these values are assigned straight into a ROS
+message field, and those fields are strictly typed: ``parse_checkpoint``
+does ``point.z = coordinates["Z"]`` into a ``float64``, so an ``int``
+there is ``AssertionError: The 'z' field must be of type 'float'`` at
+``setup()``, and ``parse_led`` does the mirror image into ``int8`` fields,
+where a float is the error.  The browser cannot express the difference --
+JSON sends ``0`` and ``0.0`` identically, and ``JSON.stringify`` drops the
+decimal point off every whole number -- so the type is decided here, from
+what the tree does with each key, rather than taken from the request.
+See :data:`CHECKPOINT_AXES` and the constants beside it.
+
 Note the ROS-parameter route is vestigial: the launch file passes these
 files to nodes named ``doglike_leading_bt_node`` and friends while the
 document is rooted at ``bottom_up_tree_node``, so ROS discards every key.
@@ -32,6 +44,7 @@ time -- an edit therefore applies on the next tree start, not live.
 """
 
 import ast
+import math
 import textwrap
 from typing import Dict, List, Optional, Tuple
 
@@ -86,6 +99,44 @@ MODE_NAMES = led_enums.MODE_NAMES
 NECK_RANGE = (2.0, 8.6)
 GRIPPER_RANGE = (1.6, 8.54)
 
+# ── what type each value has to be written as ────────────────────────────
+#
+# Two things decide this, and neither is what the browser sent:
+#
+# * A value the tree assigns into a ROS message field has to match that
+#   field, because the assignment is unchecked -- the message class does
+#   the checking, by raising.
+# * A value the tree casts itself (``float(params[key])`` for the
+#   thresholds, ``int()`` or ``float()`` for the tunables) cannot break
+#   either way, but is still written in the shape it is read in, so that
+#   the file says what kind of quantity it holds.
+
+#: Checkpoint axes. ``parse_checkpoint`` assigns each into a
+#: ``geometry_msgs/Point``, whose fields are ``float64`` -- so a whole
+#: number written as ``0`` rather than ``0.0`` crashes the tree at setup.
+CHECKPOINT_AXES = ("X", "Y", "Z")
+
+#: Accessory positions. ``parse_gesture`` casts these to ``float`` before
+#: they reach ``AccessMotorCmd``, so an int survives; written as floats
+#: anyway, since they are travel positions rather than counts.
+GESTURE_FIELDS = ("n_pos", "gl_pos", "gr_pos")
+
+#: LED corner fields, the mirror image of the checkpoints: ``parse_led``
+#: assigns them uncast into ``SetLedStatus``, whose fields are ``int8``.
+LED_FIELDS = ("mode", "color")
+
+#: The range an ``int8`` message field accepts.
+INT8_RANGE = (-128, 127)
+
+#: Scalars that are counts rather than measurements. Everything else in
+#: :data:`SCALAR_PARAMS` is a distance or a duration and is a float.
+INTEGER_SCALARS = frozenset({"Dog_max_wander_allowed"})
+
+#: Tunables the tree casts with ``int()``. Mirrors
+#: ``behaviours/constants.py``'s ``INTEGER_TUNABLES``; a tunable this
+#: module has never heard of keeps whichever shape the file gave it.
+INTEGER_TUNABLES = frozenset({"turn_corrections", "recover_retries"})
+
 
 def _script_keys() -> frozenset:
     """Return every key the structured editor renders as a sequence."""
@@ -112,21 +163,53 @@ class BehaviourStoreError(Exception):
     """Raised when a behaviour file cannot be read or parsed at all."""
 
 
-# ── number formatting ────────────────────────────────────────────────────
-
-def _number(value):
-    """Render a number the way the source files do, without float noise."""
-    if isinstance(value, bool):
-        raise BehaviourStoreError("boolean where a number was expected")
-    if isinstance(value, int):
-        return str(value)
-    text = repr(float(value))
-    return text
-
+# ── numbers: coercion and formatting ─────────────────────────────────────
 
 def _is_number(value) -> bool:
     """Report whether a value is a real number, excluding bool."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def as_float(name: str, value) -> float:
+    """Return ``value`` as a float, or raise naming the field."""
+    if not _is_number(value):
+        raise BehaviourStoreError("{}: must be a number, got {}".format(
+            name, type(value).__name__))
+    number = float(value)
+    if not math.isfinite(number):
+        raise BehaviourStoreError("{}: must be a finite number".format(name))
+    return number
+
+
+def as_int(name: str, value, limits: Optional[Tuple[int, int]] = None) -> int:
+    """
+    Return ``value`` as an int, or raise naming the field.
+
+    A fractional value is refused rather than rounded: these are message
+    fields and enum codes, so the nearest whole number is a different
+    setting, not an approximation of the one asked for.
+    """
+    if not _is_number(value):
+        raise BehaviourStoreError("{}: must be a whole number, got {}".format(
+            name, type(value).__name__))
+    if not math.isfinite(float(value)) or float(value) != int(value):
+        raise BehaviourStoreError("{}: must be a whole number, got {}".format(
+            name, value))
+    number = int(value)
+    if limits and not limits[0] <= number <= limits[1]:
+        raise BehaviourStoreError("{}: {} is outside {}..{}".format(
+            name, number, limits[0], limits[1]))
+    return number
+
+
+def _float_text(value: float) -> str:
+    """Render a float so it reads back as a float, without float noise."""
+    return repr(float(value))
+
+
+def _int_text(value: int) -> str:
+    """Render an int so it reads back as an int."""
+    return str(int(value))
 
 
 # ── literal entries: parse and emit ──────────────────────────────────────
@@ -139,28 +222,45 @@ def parse_entry(entry):
     return ast.literal_eval(entry)
 
 
+def _field(entry: Dict, key: str, field: str):
+    """Return one field of a literal, or raise naming what is missing."""
+    if not isinstance(entry, dict) or field not in entry:
+        raise BehaviourStoreError("{}: missing '{}'".format(key, field))
+    return entry[field]
+
+
 def format_led(corners: Dict) -> str:
     """Emit an LED pattern as the quoted dict literal the tree expects."""
     parts = []
     for corner in LED_CORNERS:
-        entry = corners[corner]
+        entry = _field(corners, "LED pattern", corner)
+        values = [as_int("LED {}.{}".format(corner, field),
+                         _field(entry, "LED " + corner, field), INT8_RANGE)
+                  for field in LED_FIELDS]
         parts.append("'{}':{{'mode':{}, 'color':{}}}".format(
-            corner, int(entry["mode"]), int(entry["color"])))
+            corner, _int_text(values[0]), _int_text(values[1])))
     return "{" + ",".join(parts) + "}"
 
 
 def format_gesture(positions: Dict) -> str:
     """Emit an accessory pose as the quoted dict literal the tree expects."""
-    return "{{'n_pos':{},'gl_pos':{},'gr_pos':{}}}".format(
-        _number(positions["n_pos"]),
-        _number(positions["gl_pos"]),
-        _number(positions["gr_pos"]))
+    values = [_float_text(as_float("pose " + field,
+                                   _field(positions, "pose", field)))
+              for field in GESTURE_FIELDS]
+    return "{{'n_pos':{},'gl_pos':{},'gr_pos':{}}}".format(*values)
 
 
 def format_checkpoint(point: Dict) -> str:
-    """Emit a route checkpoint as the quoted dict literal the tree expects."""
-    return "{{'X':{}, 'Y':{}, 'Z':{}}}".format(
-        _number(point["X"]), _number(point["Y"]), _number(point["Z"]))
+    """
+    Emit a route checkpoint as the quoted dict literal the tree expects.
+
+    Always as floats: the tree puts these into a ``Point``, which refuses
+    an int, and a whole coordinate arrives from the browser as one.
+    """
+    values = [_float_text(as_float("checkpoint " + axis,
+                                   _field(point, "checkpoint", axis)))
+              for axis in CHECKPOINT_AXES]
+    return "{{'X':{}, 'Y':{}, 'Z':{}}}".format(*values)
 
 
 #: Describe an LED pattern in words, for the regenerated comment.
@@ -339,10 +439,105 @@ def params_from_structured(structured: Dict) -> Dict:
             format_gesture(entry) for entry in block.get("seq") or ()]
         params["{}_times".format(script)] = list(block.get("times") or ())
 
-    return params
+    return normalize(params)
+
+
+def _renormalized(entries, formatter) -> List:
+    """
+    Rewrite each literal entry in the types the tree needs.
+
+    Best effort by design: an entry that cannot be parsed, or whose
+    fields cannot be typed at all, is handed back exactly as it came in
+    so that :func:`validate` is the one place a problem is reported.
+    """
+    rewritten = []
+    for entry in entries or ():
+        try:
+            rewritten.append(formatter(parse_entry(entry)))
+        except (BehaviourStoreError, ValueError, SyntaxError, TypeError):
+            rewritten.append(entry)
+    return rewritten
+
+
+def normalize(params: Dict) -> Dict:
+    """
+    Return ``params`` with every value written in the type the tree needs.
+
+    This is what stops the editor writing a file it cannot itself load:
+    the page sends whatever JSON makes of a number, and a coordinate the
+    operator left at zero arrives as ``0``, which the tree cannot assign
+    to ``Point.z``.  Rather than refuse the save, the type is restored
+    from the key -- the operator typed a coordinate, not an integer.
+
+    Never raises.  A value that cannot be typed is left exactly as found
+    for :func:`validate` to report; nothing here decides what is a valid
+    document.
+    """
+    if not isinstance(params, dict):
+        return params
+
+    result = dict(params)
+
+    for name in SCALAR_NAMES:
+        if name not in result:
+            continue
+        try:
+            result[name] = (as_int(name, result[name])
+                            if name in INTEGER_SCALARS
+                            else as_float(name, result[name]))
+        except BehaviourStoreError:
+            pass
+
+    for key, formatter in [("Dog_checkpoints", format_checkpoint),
+                           ("LED_start_setting", format_led)]:
+        if isinstance(result.get(key), list):
+            result[key] = _renormalized(result[key], formatter)
+
+    for group, formatter in ((LED_SCRIPTS, format_led),
+                             (GESTURE_SCRIPTS, format_gesture)):
+        for script in group:
+            seq_key = "{}_seq".format(script)
+            times_key = "{}_times".format(script)
+            if isinstance(result.get(seq_key), list):
+                result[seq_key] = _renormalized(result[seq_key], formatter)
+            if isinstance(result.get(times_key), list):
+                # Delays reach rclpy as Duration(seconds=float(...)), so an
+                # int is harmless -- but a delay is a duration, and the file
+                # should not have to be read twice to see that.
+                result[times_key] = [
+                    float(value) if _is_number(value) and math.isfinite(value)
+                    else value
+                    for value in result[times_key]]
+
+    return result
 
 
 # ── validation ───────────────────────────────────────────────────────────
+
+def _validate_led_corners(parsed, label, errors, warnings):
+    """Check one LED pattern's four corners, as ``parse_led`` will read it."""
+    for corner in LED_CORNERS:
+        entry_corner = parsed.get(corner) if isinstance(parsed, dict) else None
+        if not isinstance(entry_corner, dict):
+            errors.append("{}: missing corner '{}'".format(label, corner))
+            continue
+        for field in LED_FIELDS:
+            value = entry_corner.get(field)
+            if not isinstance(value, int) or isinstance(value, bool):
+                # SetLedStatus' fields are int8 and parse_led assigns to
+                # them uncast, so 4.0 is as fatal here as "four".
+                errors.append("{}.{}.{}: must be an integer".format(
+                    label, corner, field))
+            elif not INT8_RANGE[0] <= value <= INT8_RANGE[1]:
+                errors.append("{}.{}.{}: outside int8 range".format(
+                    label, corner, field))
+            elif field == "mode" and value not in MODE_NAMES:
+                warnings.append("{}.{}.mode: {} is not a known mode".format(
+                    label, corner, value))
+            elif field == "color" and value not in COLOR_NAMES:
+                warnings.append("{}.{}.color: {} is not a known colour".format(
+                    label, corner, value))
+
 
 def _validate_sequence(params, script, kind, errors, warnings):
     """Check one ``_seq`` / ``_times`` pair."""
@@ -378,26 +573,8 @@ def _validate_sequence(params, script, kind, errors, warnings):
             continue
 
         if kind == "led":
-            for corner in LED_CORNERS:
-                entry_corner = parsed.get(corner)
-                if not isinstance(entry_corner, dict):
-                    errors.append("{}[{}]: missing corner '{}'".format(
-                        seq_key, index, corner))
-                    continue
-                for field in ("mode", "color"):
-                    value = entry_corner.get(field)
-                    if not isinstance(value, int) or isinstance(value, bool):
-                        errors.append("{}[{}].{}.{}: must be an integer".format(
-                            seq_key, index, corner, field))
-                    elif not -128 <= value <= 127:
-                        errors.append("{}[{}].{}.{}: outside int8 range".format(
-                            seq_key, index, corner, field))
-                    elif field == "mode" and value not in MODE_NAMES:
-                        warnings.append("{}[{}].{}.mode: {} is not a known mode".format(
-                            seq_key, index, corner, value))
-                    elif field == "color" and value not in COLOR_NAMES:
-                        warnings.append("{}[{}].{}.color: {} is not a known colour".format(
-                            seq_key, index, corner, value))
+            _validate_led_corners(
+                parsed, "{}[{}]".format(seq_key, index), errors, warnings)
         else:
             for field, limits in (("n_pos", NECK_RANGE),
                                   ("gl_pos", GRIPPER_RANGE),
@@ -449,6 +626,10 @@ def validate(params: Dict) -> Tuple[List[str], List[str]]:
             errors.append("{}: missing".format(name))
         elif not _is_number(params[name]):
             errors.append("{}: must be a number".format(name))
+        elif not math.isfinite(float(params[name])):
+            errors.append("{}: must be a finite number".format(name))
+        elif name in INTEGER_SCALARS and float(params[name]) != int(params[name]):
+            errors.append("{}: must be a whole number -- it is a count".format(name))
 
     checkpoints = params.get("Dog_checkpoints")
     if not isinstance(checkpoints, list) or not checkpoints:
@@ -463,10 +644,22 @@ def validate(params: Dict) -> Tuple[List[str], List[str]]:
                 errors.append("Dog_checkpoints[{}]: not a parseable dict literal "
                               "({})".format(index, exc))
                 continue
-            for axis in ("X", "Y", "Z"):
-                if not _is_number(point.get(axis)):
+            for axis in CHECKPOINT_AXES:
+                value = point.get(axis) if isinstance(point, dict) else None
+                if not _is_number(value):
                     errors.append("Dog_checkpoints[{}].{}: must be a number".format(
                         index, axis))
+                elif not isinstance(value, float):
+                    # parse_checkpoint assigns straight into a Point, whose
+                    # fields are float64: `Z: 0` is AssertionError at setup,
+                    # not a rounding difference. Saving from this editor
+                    # rewrites it as 0.0.
+                    errors.append(
+                        "Dog_checkpoints[{}].{}: {} is a whole number written as an "
+                        "integer; the tree assigns it to Point.{} (float64) and "
+                        "would raise at setup. Save this file to rewrite it as "
+                        "{}.".format(index, axis, value, axis.lower(),
+                                     _float_text(value)))
         if len(checkpoints) == 1:
             warnings.append(
                 "Dog_checkpoints: only one checkpoint, so the start and target "
@@ -484,10 +677,9 @@ def validate(params: Dict) -> Tuple[List[str], List[str]]:
             errors.append("LED_start_setting[0]: not a parseable dict literal "
                           "({})".format(exc))
         else:
-            for corner in LED_CORNERS:
-                if not isinstance(parsed.get(corner), dict):
-                    errors.append("LED_start_setting[0]: missing corner "
-                                  "'{}'".format(corner))
+            # Checked exactly like a sequence entry: ConstantParamsToBlackboard
+            # sends this one through parse_led too, at initialise().
+            _validate_led_corners(parsed, "LED_start_setting[0]", errors, warnings)
 
     for script in LED_SCRIPTS:
         _validate_sequence(params, script, "led", errors, warnings)
@@ -527,9 +719,12 @@ def _emit_scalars(lines: List[str], params: Dict) -> None:
     for name, unit, doc in SCALAR_PARAMS:
         if name not in params:
             continue
+        value = params[name]
+        text = (_int_text(as_int(name, value)) if name in INTEGER_SCALARS
+                else _float_text(as_float(name, value)))
         lines.append("    {name:<{width}} {value:<8} # {doc} [{unit}]".format(
             name=name + ":", width=width + 1,
-            value=_number(params[name]), doc=doc, unit=unit))
+            value=text, doc=doc, unit=unit))
 
 
 def annotations(text: str) -> Dict[str, Dict]:
@@ -559,6 +754,31 @@ def _emit_annotation(lines: List[str], note: Dict, section: Optional[str]) -> Op
     for line in textwrap.wrap(note.get("doc") or "", width=72):
         lines.append("    # {}".format(line))
     return section
+
+
+def _tunable_text(name: str, value, note: Dict) -> str:
+    """
+    Render one tunable in the shape it had, not the shape JSON gave it.
+
+    The tree casts every tunable itself -- ``int()`` for the counts,
+    ``float()`` for the rest -- so neither type can break a run.  What a
+    wrong type breaks is the file: ``turn_max_speed: 1`` reads as a count
+    of something, and the browser writes exactly that whenever a speed is
+    set to a whole number.  So the shape comes from the same place the
+    comments do, the file being replaced, with the two known counts
+    pinned and a measurement assumed when the file has nothing to say.
+    """
+    if isinstance(value, str):
+        return value
+    if name in INTEGER_TUNABLES:
+        return _int_text(as_int(name, value))
+    original = note.get("value")
+    if _is_number(original) and isinstance(original, int):
+        try:
+            return _int_text(as_int(name, value))
+        except BehaviourStoreError:
+            pass
+    return _float_text(as_float(name, value))
 
 
 def _emit_tunables(lines: List[str], params: Dict, notes: Dict) -> None:
@@ -592,7 +812,7 @@ def _emit_tunables(lines: List[str], params: Dict, notes: Dict) -> None:
             section = new_section
         comment = note.get("comment") or ""
         lines.append("    {}: {}{}".format(
-            name, value if isinstance(value, str) else _number(value),
+            name, _tunable_text(name, value, note),
             "  # " + comment if comment else ""))
 
 
@@ -639,7 +859,8 @@ def _emit_times(lines: List[str], key: str, times, comments=None) -> None:
             comment = "  # {}".format(comments[index])
         elif comments:
             comment = "  # (surplus, never read)"
-        lines.append("      - {}{}".format(_number(value), comment))
+        lines.append("      - {}{}".format(
+            _float_text(as_float("{}[{}]".format(key, index), value)), comment))
 
 
 def dump(params: Dict, notes: Optional[Dict] = None) -> str:
@@ -755,10 +976,12 @@ def _self_check(text: str, params: Dict) -> None:
             "internal error: {} would be dropped from the file".format(
                 ", ".join(missing)))
 
-    literal_keys = ["Dog_checkpoints", "LED_start_setting"]
-    literal_keys += ["{}_seq".format(name) for name in LED_SCRIPTS + GESTURE_SCRIPTS]
+    literal_keys = [("Dog_checkpoints", "checkpoint"),
+                    ("LED_start_setting", "led")]
+    literal_keys += [("{}_seq".format(name), "led") for name in LED_SCRIPTS]
+    literal_keys += [("{}_seq".format(name), "gesture") for name in GESTURE_SCRIPTS]
 
-    for key in literal_keys:
+    for key, kind in literal_keys:
         original = params.get(key)
         if original is None:
             continue
@@ -772,11 +995,42 @@ def _self_check(text: str, params: Dict) -> None:
                     "internal error: {}[{}] was emitted as a YAML mapping instead "
                     "of a quoted literal".format(key, index))
             try:
-                ast.literal_eval(entry)
+                parsed = ast.literal_eval(entry)
             except (ValueError, SyntaxError) as exc:
                 raise BehaviourStoreError(
                     "internal error: {}[{}] is not literal_eval-able after "
                     "emission ({})".format(key, index, exc))
+            _check_literal_types(parsed, kind, "{}[{}]".format(key, index))
+
+
+def _check_literal_types(parsed, kind: str, label: str) -> None:
+    """
+    Confirm one emitted literal reads back as the types the tree assigns.
+
+    The other half of the self-check, and the half that catches a whole
+    number losing its decimal point: ``0`` and ``0.0`` are the same YAML
+    document to every check above this one, and only one of them can be
+    written into ``Point.z``.
+    """
+    if kind == "led":
+        for corner in LED_CORNERS:
+            entry = (parsed or {}).get(corner) or {}
+            for field in LED_FIELDS:
+                value = entry.get(field)
+                if not isinstance(value, int) or isinstance(value, bool):
+                    raise BehaviourStoreError(
+                        "internal error: {}.{}.{} was emitted as {!r}, which the "
+                        "tree cannot assign to an int8 field".format(
+                            label, corner, field, value))
+        return
+
+    fields = CHECKPOINT_AXES if kind == "checkpoint" else GESTURE_FIELDS
+    for field in fields:
+        value = (parsed or {}).get(field)
+        if not isinstance(value, float):
+            raise BehaviourStoreError(
+                "internal error: {}.{} was emitted as {!r}, which the tree cannot "
+                "assign to a float64 field".format(label, field, value))
 
 
 # ── saving ───────────────────────────────────────────────────────────────
@@ -787,7 +1041,13 @@ def save(path: str, params: Dict, backup_root=yaml_io.DEFAULT_BACKUP_ROOT):
 
     Returns ``(ok, errors, warnings, backup_path)``.  Nothing is written
     when ``errors`` is non-empty.
+
+    Types are restored before validation, not after, so that a save also
+    repairs a file that already carries the wrong ones -- which is how a
+    document written before this editor typed its numbers gets fixed:
+    open it and press save.
     """
+    params = normalize(params)
     errors, warnings = validate(params)
     if errors:
         return False, errors, warnings, None

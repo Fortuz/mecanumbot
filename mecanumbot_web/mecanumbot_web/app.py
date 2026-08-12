@@ -493,9 +493,12 @@ class WebApp:
 
             if "structured" in payload:
                 try:
+                    # Raises on a value no type can be made of -- an empty
+                    # field arrives as null, a fractional LED code as 1.5.
                     params = behaviour_store.params_from_structured(
                         payload["structured"])
-                except (KeyError, TypeError, ValueError) as exc:
+                except (behaviour_store.BehaviourStoreError,
+                        KeyError, TypeError, ValueError) as exc:
                     return jsonify({
                         "ok": False,
                         "errors": ["Malformed edit: {}".format(exc)],

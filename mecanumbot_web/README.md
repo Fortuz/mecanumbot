@@ -221,6 +221,26 @@ them by hand rather than through a YAML dumper — turning one into a real YAML
 mapping breaks `ast.literal_eval` and the tree throws at setup. `dump()`
 self-checks by reparsing before returning.
 
+**A number's type is part of that contract.** The tree assigns several of these
+values straight into ROS message fields, which are strictly typed:
+`parse_checkpoint` puts `X`/`Y`/`Z` into a `geometry_msgs/Point` (`float64`), so
+`'Z':0` is `AssertionError: The 'z' field must be of type 'float'` at `setup()`,
+and `parse_led` does the mirror image into `SetLedStatus`' `int8` fields, where
+a float is the error. The browser cannot express the difference — JSON has one
+number type and `JSON.stringify` drops the decimal point off every whole number
+— so `behaviour_store` decides the type from the key rather than from the
+request: coordinates, poses and delays are always written as floats, LED codes
+and counts as whole numbers, and a tunable keeps whichever shape the file it
+replaces gave it. A value that fits no type (an emptied field arriving as
+`null`, a fractional LED mode) is refused by name instead of being rounded.
+`_self_check` verifies the types of the emitted literals too, since every other
+check reads `0` and `0.0` as the same document.
+
+A file that already carries the wrong type says so when it is opened, and
+**saving repairs it** — types are restored before validation, so a document
+written by an older version of this editor is fixed by loading it and pressing
+Save.
+
 Inline comments on the LED and gesture entries are **regenerated from the
 values** rather than preserved, which is an upgrade: several comments in the
 shipped files contradict what they annotate (`'color':6` is labelled "white"
