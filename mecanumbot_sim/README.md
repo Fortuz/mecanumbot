@@ -207,10 +207,20 @@ detections, commanded speed and the relevant distances.
 ## Node: mecanumbot_sim_nav_shim_node
 
 Stands in for Nav2 so a behaviour tree can be exercised without bringing up
-localisation, costmaps and planners. It accepts `/goal_pose`, drives toward it
-with a proportional controller on `/cmd_vel`, publishes `/amcl_pose` from
-odometry and emits `/navigate_to_pose/_action/status` so the trees' goal
-monitor sees goals succeed and fail as it expects.
+localisation, costmaps and planners. It publishes `/amcl_pose` from odometry and
+serves Nav2's two navigation actions for real, driving each goal with a
+proportional controller on `/cmd_vel`:
+
+| Action | Behaviour |
+| --- | --- |
+| `navigate_to_pose` | Drives to the goal pose and takes up its heading. |
+| `navigate_through_poses` | Drives the run of waypoints in order, passing each within `waypoint_tolerance` without stopping and finishing on the last one properly. Feedback carries `number_of_poses_remaining`, which is what a waypoint run is followed by. |
+
+They are rclpy action servers, so goal ids, results, cancellation and the
+`_action/status` topics the trees watch all come from rclpy rather than being
+imitated. `/goal_pose` is still accepted the way Nav2's own navigator accepts
+it — the pose is forwarded into `navigate_to_pose` rather than driven
+separately, so there is one path through the node however a goal arrives.
 
 | Parameter | Default | Function |
 | --- | --- | --- |
@@ -219,9 +229,16 @@ monitor sees goals succeed and fail as it expects.
 | `max_angular_speed` | `0.75` | Yaw rate cap. |
 | `linear_gain` / `angular_gain` | `0.7` / `1.6` | Proportional gains. |
 | `position_tolerance` / `yaw_tolerance` | `0.08` / `0.12` | Goal acceptance thresholds. |
+| `waypoint_tolerance` | `0.35` | How near counts as having passed a waypoint on the way through a route. |
+| `navigate_to_pose_action` / `navigate_through_poses_action` | `navigate_to_pose` / `navigate_through_poses` | Action names to serve. |
 | `enable_dummy_led_service` | `true` | Serve `set_led_status` so the LED tree does not block on a robot-only service. |
 
-This is a shim, not a navigator: it drives straight at the goal and does not
+The node holds `/cmd_vel` only while it is driving, and stops the robot once
+when a goal ends. Nav2 does not sit on the topic while it is idle and neither
+may this: the trees turn in place by publishing `/cmd_vel` themselves, and a
+shim repeating zeroes at 20 Hz cancels every one of those turns out.
+
+This is a shim, not a navigator: it drives straight at each pose and does not
 avoid obstacles. It exists to test tree logic, not navigation.
 
 ## Running

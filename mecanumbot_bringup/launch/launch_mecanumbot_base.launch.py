@@ -137,7 +137,7 @@ def generate_launch_description():
 
     lidar_detect_yaml = os.path.join(
         get_package_share_directory("mecanumbot_sensorprocess_smart"),
-        "param",
+        "config",
         "lidar_peopledetect_config.yaml",
     )
 

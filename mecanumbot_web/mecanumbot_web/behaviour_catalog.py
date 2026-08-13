@@ -258,7 +258,8 @@ LEADING = BehaviourSpec(
     target="launch_wifi_condition_sequence.launch.py",
     editor="leading",
     requires=(
-        "Nav2 running and AMCL localized -- the tree navigates by /goal_pose",
+        "Nav2 running and AMCL localized -- the tree navigates by the "
+        "navigate_to_pose and navigate_through_poses actions",
         "The people-detection pipeline, for people_fusion and subject_pose",
     ),
     default_file="behaviour_setting_constants.yaml",

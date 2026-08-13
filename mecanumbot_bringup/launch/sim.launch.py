@@ -202,7 +202,7 @@ def launch_setup(context, *args, **kwargs):
     if mode in DETECTOR_MODES:
         detector_yaml = os.path.join(
             get_package_share_directory("mecanumbot_sensorprocess_smart"),
-            "param",
+            "config",
             "lidar_peopledetect_config.yaml",
         )
         actions.append(
@@ -347,7 +347,8 @@ def launch_setup(context, *args, **kwargs):
                         "goal_topic": "/goal_pose",
                         "cmd_vel_topic": "/cmd_vel",
                         "amcl_pose_topic": "/amcl_pose",
-                        "nav_status_topic": "/navigate_to_pose/_action/status",
+                        "navigate_to_pose_action": "navigate_to_pose",
+                        "navigate_through_poses_action": "navigate_through_poses",
                     }
                 ],
             )

@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     yaml_file = os.path.join(
         get_package_share_directory("mecanumbot_sensorprocess_smart"),
-        "param",
+        "config",
         "lidar_peopledetect_config.yaml",
     )
     actions = [
@@ -76,7 +76,7 @@ def generate_launch_description():
     rviz_config_dir = os.path.join(get_package_share_directory('mecanumbot_description'),'rviz','model.rviz')
     detected_ssid = get_wifi_ssid()
     map_name, map_file, keepout_file, nav2_params_file, _ = choose_launch_profile(detected_ssid)
-    yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'param','lidar_peopledetect_config.yaml')
+    yaml_file = os.path.join(get_package_share_directory('mecanumbot_sensorprocess_smart'),'config','lidar_peopledetect_config.yaml')
     launch_actions = [
         LogInfo(msg=f"[launch_external] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"),
         LogInfo(msg=f"[launch_external] Chosen map setting: {map_name} ({map_file})"),
