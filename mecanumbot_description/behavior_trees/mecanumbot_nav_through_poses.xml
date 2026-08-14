@@ -11,7 +11,19 @@
         <RateController hz="2.0">
           <RecoveryNode number_of_retries="2" name="ComputePathThroughPoses">
             <ReactiveSequence name="ComputePathThroughPoses">
-              <RemovePassedGoals input_goals="{goals}" output_goals="{goals}" radius="0.6"/>
+              <!--
+                The frames are not optional here. RemovePassedGoals takes them
+                as BT ports defaulting to "map" and "base_link", and does not
+                read bt_navigator's robot_base_frame parameter the way Spin and
+                BackUp do. This robot's frame is mecanumbot/base_link, so on the
+                default the lookup from map fails, the node returns FAILURE, and
+                the ReactiveSequence never reaches ComputePathThroughPoses at
+                all: navigate_through_poses burns its recoveries without ever
+                planning once. navigate_to_pose has no such node, which is why
+                only the route goals were affected.
+              -->
+              <RemovePassedGoals input_goals="{goals}" output_goals="{goals}" radius="0.6"
+                                 global_frame="map" robot_base_frame="mecanumbot/base_link"/>
               <ComputePathThroughPoses goals="{goals}" path="{path}" planner_id="GridBased"/>
             </ReactiveSequence>
             <ClearCostmapExceptRegion name="ClearGlobalCostmap-Context"
