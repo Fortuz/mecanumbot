@@ -14,6 +14,7 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 
 mecanumbot_description_pkg_share = get_package_share_directory("mecanumbot_description")
@@ -128,6 +129,22 @@ def generate_launch_description():
         description="Joystick profile stem, or 'auto' to detect from the pad",
     )
 
+    declare_yolo_imgsz = DeclareLaunchArgument(
+        "yolo_imgsz",
+        default_value="1280",
+        description=(
+            "Input size the DeepStream pose model expects. Selects "
+            "mecanumbot_sensorprocess_smart models/imgsz_<n>/, so the size has to "
+            "be one the model was exported at (640 or 1280 are shipped)"
+        ),
+    )
+
+    declare_yolo_model = DeclareLaunchArgument(
+        "yolo_model",
+        default_value="yolo26m-pose",
+        description="Pose model stem inside models/imgsz_<yolo_imgsz>/",
+    )
+
     # --- File Paths ---
     core_yaml = os.path.join(
         get_package_share_directory("mecanumbot_core"),
@@ -187,6 +204,8 @@ def generate_launch_description():
         declare_use_joy,
         declare_use_web,
         declare_joystick_profile,
+        declare_yolo_imgsz,
+        declare_yolo_model,
         LogInfo(
             msg=f"[onboard_bringup] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"
         ),
@@ -305,9 +324,24 @@ def generate_launch_description():
             namespace=namespace,
             package="mecanumbot_sensorprocess_smart",
             executable="mecanumbot_onboard_cam_detect_people",
-            name="mecanumbot_onboard_cam_detect_people",
+            # Must match the YAML top-level key, which is the name the node
+            # registers for itself -- naming it after the executable instead
+            # silently dropped every parameter in the file.
+            name="mecanumbot_cam_detect_people_ds",
             output="screen",
-            parameters=[{"from_topic": False}],
+            parameters=[
+                lidar_detect_yaml,
+                {
+                    "from_topic": False,
+                    # The ONNX exports live one folder per input size; this
+                    # picks the folder, and the node rewrites infer-dims and
+                    # the model/engine paths in the nvinfer config to match.
+                    "model_params.imgsz": ParameterValue(
+                        LaunchConfiguration("yolo_imgsz"), value_type=int
+                    ),
+                    "model_params.model_name": LaunchConfiguration("yolo_model"),
+                },
+            ],
         ),
     ]
 

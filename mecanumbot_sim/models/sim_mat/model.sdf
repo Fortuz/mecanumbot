@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<!--
+  Scenario prop: a thin square mat, the Gazebo twin of the `sim_mat_*` mocap
+  bodies in the MJCF. It is a floor marking, so it is static and collision-free:
+  the robot drives straight over it, and at 16 mm it is far below the lidar plane
+  either way.
+
+  The footprint is fixed here at the yoga-mat default, 1.73 x 0.61 m with the long
+  axis along the model's x. A scenario's `size` override is honoured on MuJoCo,
+  where geom_size is rewritten at load, but not here - `ros_gz_sim create` spawns
+  the file as written.
+-->
+<sdf version="1.9">
+  <model name="sim_mat">
+    <static>true</static>
+    <link name="surface">
+      <visual name="surface_visual">
+        <pose>0 0 0.003 0 0 0</pose>
+        <geometry><box><size>1.73 0.61 0.006</size></box></geometry>
+        <material><ambient>0.16 0.45 0.55 1</ambient><diffuse>0.16 0.45 0.55 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

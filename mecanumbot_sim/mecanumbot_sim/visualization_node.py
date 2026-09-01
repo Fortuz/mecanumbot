@@ -12,6 +12,26 @@ from mecanumbot_msgs.msg import (
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 
+from mecanumbot_sim.sim_scenarios import (
+    ARM_LENGTH,
+    HIP_Z,
+    LEG_LATERAL_OFFSET,
+    LEG_LENGTH,
+    SHOULDER_LATERAL,
+    SHOULDER_LOCAL_Z,
+    SPINE_BASE_Z,
+    TORSO_LOWER_LENGTH,
+    TORSO_UPPER_LENGTH,
+    YOGA_MAT_LENGTH,
+    YOGA_MAT_WIDTH,
+    load_sim_scenario,
+)
+
+#: Fallback prop extents, used when no scenario path is given. Props carry no size
+#: on the wire, so the marker sizes come from the scenario file the backend loaded.
+DEFAULT_CUBE_EDGE = 0.07
+MAT_THICKNESS = 0.006
+
 
 class MecanumbotSimVisualizationNode(Node):
     def __init__(self):
@@ -20,11 +40,14 @@ class MecanumbotSimVisualizationNode(Node):
             namespace="",
             parameters=[
                 ("actors_topic", "/sim/actors"),
+                ("props_topic", "/sim/props"),
                 ("detections_topic", "dr_spaam/dets"),
                 ("subject_pose_topic", "subject_pose"),
                 ("detection_evaluation_topic", "/sim/detection_evaluation"),
                 ("behavior_evaluation_topic", "/sim/behavior_evaluation"),
                 ("actor_markers_topic", "/sim/actor_markers"),
+                ("prop_markers_topic", "/sim/prop_markers"),
+                ("scenario_path", ""),
                 ("detection_markers_topic", "/sim/detection_markers"),
                 ("evaluation_markers_topic", "/sim/evaluation_markers"),
                 ("publish_rate_hz", 4.0),
@@ -35,7 +58,11 @@ class MecanumbotSimVisualizationNode(Node):
         self.show_detection_markers = bool(
             self.get_parameter("show_detection_markers").value
         )
+        self.prop_geometry = self.load_prop_geometry(
+            str(self.get_parameter("scenario_path").value)
+        )
         self.latest_actors = None
+        self.latest_props = None
         self.latest_detections = None
         self.latest_subject_pose = None
         self.latest_detection_evaluation = None
@@ -45,6 +72,12 @@ class MecanumbotSimVisualizationNode(Node):
             SimActorArray,
             str(self.get_parameter("actors_topic").value),
             self.actors_callback,
+            10,
+        )
+        self.create_subscription(
+            SimActorArray,
+            str(self.get_parameter("props_topic").value),
+            self.props_callback,
             10,
         )
         self.create_subscription(
@@ -77,6 +110,11 @@ class MecanumbotSimVisualizationNode(Node):
             str(self.get_parameter("actor_markers_topic").value),
             10,
         )
+        self.prop_marker_publisher = self.create_publisher(
+            MarkerArray,
+            str(self.get_parameter("prop_markers_topic").value),
+            10,
+        )
         self.detection_marker_publisher = self.create_publisher(
             MarkerArray,
             str(self.get_parameter("detection_markers_topic").value),
@@ -94,8 +132,28 @@ class MecanumbotSimVisualizationNode(Node):
         )
         self.get_logger().info("Simulation visualization labels started.")
 
+    def load_prop_geometry(self, scenario_path: str) -> dict:
+        """
+        Map prop name -> (body_name, size) from the scenario the backend loaded.
+
+        `/sim/props` carries poses only, so without the scenario the markers would
+        have to guess how big a mat or a brick is. A missing or unreadable path is
+        not fatal: the defaults above still draw something recognisable.
+        """
+        if not scenario_path:
+            return {}
+        try:
+            scenario = load_sim_scenario(scenario_path)
+        except (OSError, ValueError) as error:
+            self.get_logger().warning(f"Prop marker sizes unavailable: {error}")
+            return {}
+        return {prop.name: prop for prop in scenario.props}
+
     def actors_callback(self, msg: SimActorArray) -> None:
         self.latest_actors = msg
+
+    def props_callback(self, msg: SimActorArray) -> None:
+        self.latest_props = msg
 
     def detections_callback(self, msg: PoseArray) -> None:
         self.latest_detections = msg
@@ -117,6 +175,10 @@ class MecanumbotSimVisualizationNode(Node):
             if self.latest_actors is not None:
                 self.actor_marker_publisher.publish(
                     self.build_actor_markers(self.latest_actors)
+                )
+            if self.latest_props is not None:
+                self.prop_marker_publisher.publish(
+                    self.build_prop_markers(self.latest_props)
                 )
             if self.show_detection_markers and self.latest_detections is not None:
                 self.detection_marker_publisher.publish(
@@ -148,6 +210,59 @@ class MecanumbotSimVisualizationNode(Node):
                 )
                 marker_id += 1
         return MarkerArray(markers=markers)
+
+    def build_prop_markers(self, props_msg: SimActorArray) -> MarkerArray:
+        markers = [
+            self.delete_all_marker(props_msg.header, "sim_props"),
+            self.delete_all_marker(props_msg.header, "sim_prop_labels"),
+        ]
+        marker_id = 1
+        for prop in props_msg.actors:
+            markers.append(self.prop_body_marker(props_msg.header, prop, marker_id))
+            marker_id += 1
+            markers.append(self.prop_label_marker(props_msg.header, prop, marker_id))
+            marker_id += 1
+        return MarkerArray(markers=markers)
+
+    def prop_body_marker(self, header, prop: SimActor, marker_id: int) -> Marker:
+        config = self.prop_geometry.get(prop.name)
+        marker = self.base_marker(header, "sim_props", marker_id)
+        marker.type = Marker.CUBE
+        marker.pose = deepcopy(prop.pose)
+
+        if prop.kind == "mat":
+            length, width = (
+                config.mat_extents()
+                if config is not None
+                else (YOGA_MAT_LENGTH, YOGA_MAT_WIDTH)
+            )
+            marker.scale.x = length
+            marker.scale.y = width
+            marker.scale.z = MAT_THICKNESS
+            marker.pose.position.z = 0.5 * MAT_THICKNESS
+            # The second mat in the pool is the drop-off pad, not the exercise mat.
+            if config is not None and config.body_name == "sim_mat_1":
+                self.set_color(marker, 0.95, 0.80, 0.15, 0.55)
+            else:
+                self.set_color(marker, 0.16, 0.45, 0.55, 0.55)
+            return marker
+
+        edge = float(config.size[0]) if config and config.size else DEFAULT_CUBE_EDGE
+        marker.scale.x = edge
+        marker.scale.y = edge
+        marker.scale.z = edge
+        self.set_color(marker, 0.72, 0.30, 0.20, 0.90)
+        return marker
+
+    def prop_label_marker(self, header, prop: SimActor, marker_id: int) -> Marker:
+        marker = self.base_marker(header, "sim_prop_labels", marker_id)
+        marker.type = Marker.TEXT_VIEW_FACING
+        marker.pose = deepcopy(prop.pose)
+        marker.pose.position.z = 0.22 if prop.kind == "cube" else 0.10
+        marker.scale.z = 0.10
+        self.set_color(marker, 0.90, 0.90, 0.90, 0.95)
+        marker.text = prop.name
+        return marker
 
     def build_detection_markers(self, detections_msg: PoseArray) -> MarkerArray:
         markers = [
@@ -235,22 +350,87 @@ class MecanumbotSimVisualizationNode(Node):
     def human_body_markers(
         self, header, actor: SimActor, marker_id: int
     ) -> list[Marker]:
-        markers = []
-        torso = self.human_part_marker(
-            header, actor, marker_id, "torso", 0.0, 0.0, 0.80, 0.32, 0.70
-        )
-        self.set_color(torso, 1.0, 0.42, 0.04, 0.65)
-        markers.append(torso)
+        """
+        Draw the figure in its neutral stance, at the dimensions the MJCF uses.
 
-        left_leg = self.human_part_marker(
-            header, actor, marker_id + 1, "leg_left", 0.0, 0.11, 0.30, 0.12, 0.50
+        `/sim/actors` carries the actor's ground pose and nothing else, so RViz
+        cannot show the articulation an exercise gait produces - see the README.
+        What it can do is agree with the simulator at rest, which is what the
+        segment lengths below are for.
+        """
+        # (part, local y, centre z, diameter, height, colour)
+        parts = (
+            (
+                "torso_lower",
+                0.0,
+                SPINE_BASE_Z + TORSO_LOWER_LENGTH / 2.0,
+                0.32,
+                TORSO_LOWER_LENGTH,
+                (1.00, 0.42, 0.04),
+            ),
+            (
+                "torso_upper",
+                0.0,
+                SPINE_BASE_Z + TORSO_LOWER_LENGTH + TORSO_UPPER_LENGTH / 2.0,
+                0.29,
+                TORSO_UPPER_LENGTH,
+                (1.00, 0.42, 0.04),
+            ),
+            (
+                "arm_left",
+                SHOULDER_LATERAL,
+                SPINE_BASE_Z + TORSO_LOWER_LENGTH + SHOULDER_LOCAL_Z - ARM_LENGTH / 2.0,
+                0.10,
+                ARM_LENGTH,
+                (0.95, 0.55, 0.15),
+            ),
+            (
+                "arm_right",
+                -SHOULDER_LATERAL,
+                SPINE_BASE_Z + TORSO_LOWER_LENGTH + SHOULDER_LOCAL_Z - ARM_LENGTH / 2.0,
+                0.10,
+                ARM_LENGTH,
+                (0.95, 0.55, 0.15),
+            ),
+            (
+                "leg_left",
+                LEG_LATERAL_OFFSET,
+                HIP_Z - LEG_LENGTH / 2.0,
+                0.12,
+                LEG_LENGTH,
+                (0.00, 0.80, 0.00),
+            ),
+            (
+                "leg_right",
+                -LEG_LATERAL_OFFSET,
+                HIP_Z - LEG_LENGTH / 2.0,
+                0.12,
+                LEG_LENGTH,
+                (0.00, 0.80, 0.00),
+            ),
         )
-        right_leg = self.human_part_marker(
-            header, actor, marker_id + 2, "leg_right", 0.0, -0.11, 0.30, 0.12, 0.50
+
+        markers = []
+        for offset, (_, local_y, z, diameter, height, colour) in enumerate(parts):
+            marker = self.human_part_marker(
+                header, actor, marker_id + offset, 0.0, local_y, z, diameter, height
+            )
+            self.set_color(marker, *colour, 0.70)
+            markers.append(marker)
+
+        head = self.human_part_marker(
+            header,
+            actor,
+            marker_id + len(parts),
+            0.0,
+            0.0,
+            SPINE_BASE_Z + TORSO_LOWER_LENGTH + 0.38,
+            0.17,
+            0.17,
         )
-        self.set_color(left_leg, 0.0, 0.80, 0.0, 0.75)
-        self.set_color(right_leg, 0.0, 0.80, 0.0, 0.75)
-        markers.extend([left_leg, right_leg])
+        head.type = Marker.SPHERE
+        self.set_color(head, 0.90, 0.72, 0.58, 0.85)
+        markers.append(head)
         return markers
 
     def human_part_marker(
@@ -258,7 +438,6 @@ class MecanumbotSimVisualizationNode(Node):
         header,
         actor: SimActor,
         marker_id: int,
-        suffix: str,
         local_x: float,
         local_y: float,
         z: float,

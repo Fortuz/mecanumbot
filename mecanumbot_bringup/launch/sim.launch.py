@@ -18,7 +18,9 @@ every mode works with either simulator.
   perception  base + the real DR-SPAAM detector + detection/behaviour evaluators
   truth_twin  base + oracle subject tracking instead of the detector, so behaviour
               can be evaluated without detector error in the loop
-  behaviour   truth_twin + the Nav2 shim + one behaviour tree (see `condition`)
+  behaviour   truth_twin + the Nav2 shim + one behaviour tree (see `condition`;
+              `condition:=none` leaves the tree out and lets something
+              out-of-tree drive through the shim)
 
 Examples:
   ros2 launch mecanumbot_bringup sim.launch.py
@@ -73,9 +75,13 @@ def launch_setup(context, *args, **kwargs):
             "mode must be base, mapping, perception, truth_twin or behaviour, "
             f'got "{mode}"'
         )
-    if mode == "behaviour" and condition not in BT_EXECUTABLES:
+    # `none` brings up the Nav2 shim and the evaluators without a tree, so an
+    # out-of-tree controller (a policy under test, a bridge) can drive the robot.
+    run_behaviour_tree = condition.lower() != "none"
+    if mode == "behaviour" and run_behaviour_tree and condition not in BT_EXECUTABLES:
         raise RuntimeError(
-            f'condition must be one of {sorted(BT_EXECUTABLES)}, got "{condition}"'
+            f"condition must be none or one of {sorted(BT_EXECUTABLES)}, "
+            f'got "{condition}"'
         )
 
     bringup_share = get_package_share_directory("mecanumbot_bringup")
@@ -279,6 +285,10 @@ def launch_setup(context, *args, **kwargs):
             "behavior_evaluation_topic": "/sim/behavior_evaluation",
             "actor_markers_topic": "/sim/actor_markers",
             "evaluation_markers_topic": "/sim/evaluation_markers",
+            # Props carry no size on the wire; the markers read it from the scenario.
+            "props_topic": "/sim/props",
+            "prop_markers_topic": "/sim/prop_markers",
+            "scenario_path": scenario_path,
         }
         if mode in DETECTOR_MODES:
             visualization_params["detections_topic"] = "dr_spaam/dets"
@@ -353,6 +363,7 @@ def launch_setup(context, *args, **kwargs):
                 ],
             )
         )
+    if mode == "behaviour" and run_behaviour_tree:
         actions.append(
             Node(
                 package="mecanumbot_leading_behaviour",
@@ -412,7 +423,11 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "condition",
                 default_value="Doglike",
-                description="Behaviour condition when mode:=behaviour: Doglike | Control | LED",
+                description=(
+                    "Behaviour condition when mode:=behaviour: "
+                    "Doglike | Control | LED | none. `none` starts the Nav2 shim "
+                    "and the evaluators without a tree."
+                ),
             ),
             DeclareLaunchArgument(
                 "use_rviz",

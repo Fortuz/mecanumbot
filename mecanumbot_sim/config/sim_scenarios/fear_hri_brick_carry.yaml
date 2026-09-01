@@ -1,0 +1,121 @@
+# Fear HRI V1: the robot carries bricks while a person works out nearby.
+#
+# Grown from the draft in `fear_mecanumbot/sim_draft/` (Fahrad Namazov) into the
+# full V1 scene, so the fear pipeline can be exercised without hardware.
+#
+#   west  x=-1.35        four bricks (`sim_cube_*`), the robot's pickup pile
+#   north (0.55, 1.45)   yoga mat, 1.73 x 0.61 m, where the person works out
+#   south (1.30,-1.15)   goal pad, where bricks are meant to end up
+#
+# The carry corridor runs pickup -> goal. The person spends most of the loop doing
+# aerobics on their mat - the `pause` on the two mat waypoints is what holds them
+# there - and then walks one leg of the patrol around the east side, across that
+# corridor, and back. That approach -> linger -> retreat is the profile the fear
+# dynamics are built around: risk rises as they close, spikes if they get inside
+# the hit distance, and then has to decay slowly once they are back on the mat. A
+# proximity-only slowdown would recover the instant they step away; a residual fear
+# level does not.
+#
+# Measured over the patrol loop: the person spends 72% of it on the mat, comes
+# within 0.32 m of the pickup -> goal line at the crossing, and keeps 0.36 m from
+# `box_obstacle_a` and 0.40 m from the walls, so they never walk through the arena
+# furniture. That 0.32 m is between `HIT_DISTANCE_M` (0.25) and `SAFE_DISTANCE_M`
+# (1.0) in `fear_mecanumbot/constants.py`, so risk peaks near 0.9 at the crossing
+# and whether a near-collision spike fires depends on how the robot actually paths
+# and on when it arrives - the interesting case rather than a scripted one.
+#
+# The mat and the goal pad are floor markings: thin, non-colliding, and below the
+# lidar plane. The bricks are physical, and at 0.07 m they are sized for the
+# grabbers - see `mecanumbot_sim/README.md` on gripping. They also sit under the
+# 0.13 m lidar plane, exactly as real bricks would on the hardware, so they are
+# ground truth on `/sim/props` and invisible in `scan`.
+scenario:
+  name: fear_hri_brick_carry
+  actors:
+    - id: 1
+      name: exercising_person
+      kind: human
+      body_name: sim_human_0
+      is_subject: true
+      visible_to_lidar: true
+      pose:
+        x: 0.55
+        y: 1.45
+        z: 0.0
+        yaw: -1.5707963267948966
+      motion:
+        mode: patrol
+        speed: 0.30
+        loop: true
+        start_delay: 2.0
+        waypoints:
+          # Work out at one end of the mat, then the other.
+          - {x: 0.55, y: 1.45, z: 0.0, pause: 26.0}
+          - {x: 1.20, y: 1.45, z: 0.0, pause: 12.0}
+          # Out around the east side of box_obstacle_a...
+          - {x: 1.55, y: 0.85, z: 0.0}
+          - {x: 1.55, y: 0.30, z: 0.0}
+          - {x: 1.15, y: -0.35, z: 0.0}
+          # ...across the carry corridor, linger...
+          - {x: 0.45, y: -0.22, z: 0.0, pause: 5.0}
+          # ...then retreat the same way, so fear has to decay on its own.
+          - {x: 1.15, y: -0.35, z: 0.0}
+          - {x: 1.55, y: 0.30, z: 0.0}
+          - {x: 1.55, y: 0.85, z: 0.0}
+      gait:
+        mode: routine
+        period: 1.3
+        routine: [jacks, march, side_bend]
+        routine_reps: 6
+        leg_spread_deg: 28
+        leg_swing_deg: 32
+        arm_raise_deg: 95
+        arm_swing_deg: 55
+        torso_bend_deg: 18
+
+  props:
+    - id: 1
+      name: exercise_mat
+      kind: mat
+      body_name: sim_mat_0
+      pose: {x: 0.55, y: 1.45, z: 0.0, yaw: 0.0}
+      size: [1.73, 0.61]
+
+    - id: 2
+      name: goal_pad
+      kind: mat
+      body_name: sim_mat_1
+      pose: {x: 1.30, y: -1.15, z: 0.0, yaw: 0.0}
+      size: 0.70
+
+    - id: 3
+      name: brick_a
+      kind: cube
+      body_name: sim_cube_0
+      pose: {x: -1.35, y: 0.55, yaw: 0.0}
+      size: 0.07
+      mass: 0.15
+
+    - id: 4
+      name: brick_b
+      kind: cube
+      body_name: sim_cube_1
+      pose: {x: -1.35, y: 0.25, yaw: 0.0}
+      size: 0.07
+      mass: 0.15
+
+    - id: 5
+      name: brick_c
+      kind: cube
+      body_name: sim_cube_2
+      pose: {x: -1.35, y: -0.05, yaw: 0.0}
+      size: 0.07
+      mass: 0.15
+
+    - id: 6
+      name: brick_d
+      kind: cube
+      body_name: sim_cube_3
+      pose: {x: -1.35, y: -0.35, yaw: 0.0}
+      size: 0.07
+      mass: 0.15

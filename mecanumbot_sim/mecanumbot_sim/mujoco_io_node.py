@@ -29,8 +29,22 @@ from mecanumbot_sim.kinematics import (
     accessory_ticks_to_angle,
     joint_angle_to_ticks,
 )
-from mecanumbot_sim.sim_actor_runtime import SimActorRuntime
-from mecanumbot_sim.sim_scenarios import SUPPORTED_ACTOR_BODIES, load_sim_scenario
+from mecanumbot_sim.sim_actor_runtime import (
+    SimActorRuntime,
+    quat_about_z,
+    quat_multiply,
+    quat_rotate,
+)
+from mecanumbot_sim.sim_scenarios import (
+    SEGMENT_NAMES,
+    SUPPORTED_ACTOR_BODIES,
+    SUPPORTED_PROP_BODIES,
+    load_sim_scenario,
+)
+
+#: Half-thickness of a mat geom. Mats are floor markings, so the scenario sizes
+#: their footprint but never their thickness. 6 mm, like a yoga mat.
+MAT_HALF_THICKNESS = 0.003
 
 
 class MecanumbotMujocoIONode(Node):
@@ -161,10 +175,12 @@ class MecanumbotMujocoIONode(Node):
         self.last_scan_time = -1.0
         self.geomgroup = np.array([1, 0, 0, 0, 0, 0], dtype=np.uint8)
         self.actor_instances = []
+        self.prop_instances = []
         self.scenario = None
 
         self.set_accessory_pose_from_ticks()
         self.load_scenario()
+        self.load_props()
         mujoco.mj_forward(self.model, self.data)
         self.viewer = None
         if self.show_viewer:
@@ -176,6 +192,7 @@ class MecanumbotMujocoIONode(Node):
             self.create_publisher(Clock, "/clock", 10) if self.publish_clock else None
         )
         self.actor_publisher = self.create_publisher(SimActorArray, "/sim/actors", 10)
+        self.prop_publisher = self.create_publisher(SimActorArray, "/sim/props", 10)
         self.subject_gt_publisher = self.create_publisher(
             PoseStamped, "/sim/subject_pose_ground_truth", 10
         )
@@ -230,34 +247,155 @@ class MecanumbotMujocoIONode(Node):
                     f"Scenario actor body {actor.body_name} is not mocap-enabled in the MuJoCo model"
                 )
 
+            runtime = SimActorRuntime(actor)
+            actor_instance = {
+                "config": actor,
+                "runtime": runtime,
+                "body_id": body_id,
+                "mocap_id": mocap_id,
+                "segment_mocap_ids": self.actor_segment_mocap_ids(actor.body_name),
+            }
             self.set_actor_pose(mocap_id, actor.x, actor.y, actor.z, actor.yaw)
-            self.actor_instances.append(
+            self.set_actor_segment_poses(actor_instance, runtime)
+            self.actor_instances.append(actor_instance)
+
+    def actor_segment_mocap_ids(self, body_name: str) -> dict:
+        """
+        Return the mocap id of every figure segment this actor has.
+
+        Wall panels have none, so the dict comes back empty and they are posed by
+        their root body alone. A person's segments are separate mocap bodies
+        precisely so the exercise moves can articulate them.
+        """
+        ids = {}
+        for segment_name in SEGMENT_NAMES:
+            segment_body_id = mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_BODY, f"{body_name}_{segment_name}"
+            )
+            if segment_body_id < 0:
+                continue
+            mocap_id = self.model.body_mocapid[segment_body_id]
+            if mocap_id >= 0:
+                ids[segment_name] = int(mocap_id)
+        return ids
+
+    def hide_supported_actor_bodies(self) -> None:
+        """Park every pooled mocap body well outside the arena floor."""
+        for index, body_name in enumerate(SUPPORTED_ACTOR_BODIES):
+            park_x = 25.0 + 3.0 * float(index)
+            self.park_mocap_body(body_name, park_x, 25.0)
+            for segment_name in SEGMENT_NAMES:
+                self.park_mocap_body(f"{body_name}_{segment_name}", park_x, 25.0)
+
+        for index, body_name in enumerate(SUPPORTED_PROP_BODIES):
+            if body_name.startswith("sim_mat"):
+                self.park_mocap_body(body_name, 30.0 + 2.0 * float(index), 25.0)
+
+    def park_mocap_body(self, body_name: str, x: float, y: float) -> None:
+        body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+        if body_id < 0:
+            return
+        mocap_id = self.model.body_mocapid[body_id]
+        if mocap_id < 0:
+            return
+        self.set_actor_pose(mocap_id, x, y, 0.0, 0.0)
+
+    def load_props(self) -> None:
+        """
+        Place the mats and cubes a scenario names.
+
+        Mats are mocap bodies (kinematic, non-colliding floor markings); cubes are
+        free bodies, so they are placed through their free joint and can then be
+        shoved around by the robot. `size` and `mass` rewrite the model in place,
+        which is what makes a brick tunable per scenario rather than per MJCF.
+        """
+        if self.scenario is None or not self.scenario.props:
+            return
+
+        for prop in self.scenario.props:
+            body_id = mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_BODY, prop.body_name
+            )
+            geom_id = mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_GEOM, f"{prop.body_name}_geom"
+            )
+            if body_id < 0 or geom_id < 0:
+                raise RuntimeError(
+                    f"Scenario prop body {prop.body_name} was not found in the MuJoCo model"
+                )
+
+            if prop.body_name.startswith("sim_mat"):
+                half_extent = self.place_mat(prop, body_id, geom_id)
+            else:
+                half_extent = self.place_cube(prop, body_id, geom_id)
+
+            self.prop_instances.append(
                 {
-                    "config": actor,
-                    "runtime": SimActorRuntime(actor),
+                    "config": prop,
                     "body_id": body_id,
-                    "mocap_id": mocap_id,
+                    "half_extent": half_extent,
                 }
             )
 
-    def hide_supported_actor_bodies(self) -> None:
-        for index, body_name in enumerate(SUPPORTED_ACTOR_BODIES):
-            body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
-            if body_id < 0:
-                continue
-            mocap_id = self.model.body_mocapid[body_id]
-            if mocap_id < 0:
-                continue
-            self.set_actor_pose(mocap_id, 25.0 + float(index), 25.0, 0.0, 0.0)
+        # geom_size / body_mass were edited after the model was compiled, so the
+        # derived constants need recomputing. mj_setConst resets whatever MjData it
+        # is handed to qpos0, hence the scratch instance: self.data already carries
+        # the actor and prop placement.
+        mujoco.mj_setConst(self.model, mujoco.MjData(self.model))
+
+    def place_mat(self, prop, body_id: int, geom_id: int) -> float:
+        """Size and place a mat; returns its half-length along the long axis."""
+        mocap_id = self.model.body_mocapid[body_id]
+        if mocap_id < 0:
+            raise RuntimeError(f"Mat body {prop.body_name} is not mocap-enabled")
+
+        length, width = prop.mat_extents()
+        self.model.geom_size[geom_id] = np.array(
+            [0.5 * length, 0.5 * width, MAT_HALF_THICKNESS], dtype=np.float64
+        )
+        self.model.geom_pos[geom_id][2] = MAT_HALF_THICKNESS
+        self.set_actor_pose(mocap_id, prop.x, prop.y, prop.z, prop.yaw)
+        return 0.5 * length
+
+    def place_cube(self, prop, body_id: int, geom_id: int) -> float:
+        half_edge = (
+            0.5 * float(prop.size[0])
+            if prop.size
+            else float(self.model.geom_size[geom_id][0])
+        )
+        self.model.geom_size[geom_id] = np.array(
+            [half_edge, half_edge, half_edge], dtype=np.float64
+        )
+
+        mass = float(prop.mass) if prop.mass else float(self.model.body_mass[body_id])
+        self.model.body_mass[body_id] = mass
+        edge = 2.0 * half_edge
+        self.model.body_inertia[body_id] = np.full(3, mass * edge * edge / 6.0)
+
+        # A cube with no z given rests on the floor rather than at the origin.
+        z = prop.z if prop.z > 0.0 else half_edge
+        joint_id = self.model.body_jntadr[body_id]
+        qpos_adr = self.model.jnt_qposadr[joint_id]
+        self.data.qpos[qpos_adr : qpos_adr + 3] = np.array(
+            [prop.x, prop.y, z], dtype=np.float64
+        )
+        self.data.qpos[qpos_adr + 3 : qpos_adr + 7] = np.array(
+            [math.cos(prop.yaw / 2.0), 0.0, 0.0, math.sin(prop.yaw / 2.0)],
+            dtype=np.float64,
+        )
+        self.data.qvel[
+            self.model.body_dofadr[body_id] : self.model.body_dofadr[body_id] + 6
+        ] = 0.0
+        return half_edge
 
     def set_actor_pose(
         self, mocap_id: int, x: float, y: float, z: float, yaw: float
     ) -> None:
-        self.data.mocap_pos[mocap_id] = np.array([x, y, z], dtype=np.float64)
-        self.data.mocap_quat[mocap_id] = np.array(
-            [math.cos(yaw / 2.0), 0.0, 0.0, math.sin(yaw / 2.0)],
-            dtype=np.float64,
-        )
+        self.set_mocap_pose(mocap_id, (x, y, z), quat_about_z(yaw))
+
+    def set_mocap_pose(self, mocap_id: int, position, quat) -> None:
+        self.data.mocap_pos[mocap_id] = np.array(position, dtype=np.float64)
+        self.data.mocap_quat[mocap_id] = np.array(quat, dtype=np.float64)
 
     def publish_actor_state(self) -> None:
         actors_msg = SimActorArray()
@@ -317,6 +455,69 @@ class MecanumbotMujocoIONode(Node):
                 runtime.state.z,
                 runtime.state.yaw,
             )
+            self.set_actor_segment_poses(actor_instance, runtime)
+
+    def set_actor_segment_poses(self, actor_instance, runtime) -> None:
+        """Lift the runtime's actor-frame segment poses into the world."""
+        segment_mocap_ids = actor_instance["segment_mocap_ids"]
+        if not segment_mocap_ids:
+            return
+
+        state = runtime.state
+        yaw_quat = quat_about_z(state.yaw)
+        origin = (state.x, state.y, state.z)
+        for segment in runtime.segment_poses():
+            mocap_id = segment_mocap_ids.get(segment.name)
+            if mocap_id is None:
+                continue
+            offset = quat_rotate(yaw_quat, (segment.x, segment.y, segment.z))
+            self.set_mocap_pose(
+                mocap_id,
+                tuple(a + b for a, b in zip(origin, offset)),
+                quat_multiply(yaw_quat, segment.quat),
+            )
+
+    def publish_prop_state(self) -> None:
+        if not self.prop_instances:
+            return
+
+        props_msg = SimActorArray()
+        props_msg.header.stamp = self.current_sim_time_msg()
+        props_msg.header.frame_id = "map"
+        props_msg.scenario_name = (
+            self.scenario.name if self.scenario is not None else "empty"
+        )
+
+        for prop_instance in self.prop_instances:
+            prop = prop_instance["config"]
+            body_id = prop_instance["body_id"]
+            pose = self.data.xpos[body_id]
+            quat = self.data.xquat[body_id]
+
+            prop_msg = SimActor()
+            prop_msg.id = prop.prop_id
+            prop_msg.name = prop.name
+            prop_msg.kind = prop.kind
+            prop_msg.is_subject = False
+            # Both prop kinds sit below the lidar plane, so neither shows up in `scan`.
+            prop_msg.visible_to_lidar = False
+            prop_msg.pose.position.x = float(pose[0])
+            prop_msg.pose.position.y = float(pose[1])
+            prop_msg.pose.position.z = float(pose[2])
+            prop_msg.pose.orientation.w = float(quat[0])
+            prop_msg.pose.orientation.x = float(quat[1])
+            prop_msg.pose.orientation.y = float(quat[2])
+            prop_msg.pose.orientation.z = float(quat[3])
+
+            dof_adr = self.model.body_dofadr[body_id]
+            if self.model.body_dofnum[body_id] >= 6 and dof_adr >= 0:
+                prop_msg.twist.linear.x = float(self.data.qvel[dof_adr])
+                prop_msg.twist.linear.y = float(self.data.qvel[dof_adr + 1])
+                prop_msg.twist.linear.z = float(self.data.qvel[dof_adr + 2])
+                prop_msg.twist.angular.z = float(self.data.qvel[dof_adr + 5])
+            props_msg.actors.append(prop_msg)
+
+        self.prop_publisher.publish(props_msg)
 
     def apply_controls(self) -> None:
         for key, actuator_id in self.wheel_actuator_ids.items():
@@ -492,6 +693,7 @@ class MecanumbotMujocoIONode(Node):
         self.publish_clock_msg()
         self.publish_scan()
         self.publish_actor_state()
+        self.publish_prop_state()
         self.opencr_publisher.publish(self.build_opencr_state())
 
     def destroy_node(self):

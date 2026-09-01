@@ -34,7 +34,7 @@ will rotate the twist by the current yaw before forwarding it.
 import math
 
 import rclpy
-from geometry_msgs.msg import PoseStamped, Twist
+from geometry_msgs.msg import Pose, PoseStamped, Twist
 from mecanumbot_msgs.msg import AccessMotorCmd, OpenCRState, SimActor, SimActorArray
 from rclpy.node import Node
 from sensor_msgs.msg import Imu, JointState, LaserScan
@@ -138,6 +138,7 @@ class MecanumbotGzIONode(Node):
         self.opencr_publisher = self.create_publisher(OpenCRState, "opencr_state", 10)
         self.scan_publisher = self.create_publisher(LaserScan, "scan", 10)
         self.actor_publisher = self.create_publisher(SimActorArray, "/sim/actors", 10)
+        self.prop_publisher = self.create_publisher(SimActorArray, "/sim/props", 10)
         self.subject_gt_publisher = self.create_publisher(
             PoseStamped, "/sim/subject_pose_ground_truth", 10
         )
@@ -165,6 +166,7 @@ class MecanumbotGzIONode(Node):
 
         self.scenario = None
         self.actor_instances = []
+        self.prop_instances = []
         self.load_scenario()
         self.publish_accessory_commands()
 
@@ -196,6 +198,27 @@ class MecanumbotGzIONode(Node):
                     ),
                 }
             )
+
+        for prop in self.scenario.props:
+            prop_instance = {"config": prop, "pose": None}
+            if prop.body_name.startswith("sim_cube"):
+                # Physics moves the cubes, so unlike the actors their pose is read
+                # back out of Gazebo rather than dead-reckoned. `gz_backend.launch.py`
+                # bridges this topic for every cube the scenario names.
+                prop_instance["subscription"] = self.create_subscription(
+                    Pose,
+                    f"/model/{prop.body_name}/pose",
+                    self.make_prop_pose_callback(prop_instance),
+                    10,
+                )
+            self.prop_instances.append(prop_instance)
+
+    @staticmethod
+    def make_prop_pose_callback(prop_instance):
+        def callback(msg: Pose) -> None:
+            prop_instance["pose"] = msg
+
+        return callback
 
     # ------------------------------------------------------------------ commands
 
@@ -386,9 +409,50 @@ class MecanumbotGzIONode(Node):
             subject_msg.pose = subject_actor.pose
             self.subject_gt_publisher.publish(subject_msg)
 
+    def publish_prop_state(self) -> None:
+        """
+        Republish the scenario props as ground truth.
+
+        Mats never move, so their configured pose is the truth. Cubes report the
+        pose bridged out of Gazebo; until the first message arrives, the spawn pose
+        stands in for it.
+        """
+        if not self.prop_instances:
+            return
+
+        props_msg = SimActorArray()
+        props_msg.header.stamp = self.get_clock().now().to_msg()
+        props_msg.header.frame_id = "map"
+        props_msg.scenario_name = (
+            self.scenario.name if self.scenario is not None else "empty"
+        )
+
+        for prop_instance in self.prop_instances:
+            prop = prop_instance["config"]
+            prop_msg = SimActor()
+            prop_msg.id = prop.prop_id
+            prop_msg.name = prop.name
+            prop_msg.kind = prop.kind
+            prop_msg.is_subject = False
+            # Both prop kinds sit below the lidar plane, so neither shows up in `scan`.
+            prop_msg.visible_to_lidar = False
+
+            if prop_instance["pose"] is not None:
+                prop_msg.pose = prop_instance["pose"]
+            else:
+                prop_msg.pose.position.x = float(prop.x)
+                prop_msg.pose.position.y = float(prop.y)
+                prop_msg.pose.position.z = float(prop.z)
+                prop_msg.pose.orientation.w = float(math.cos(prop.yaw / 2.0))
+                prop_msg.pose.orientation.z = float(math.sin(prop.yaw / 2.0))
+            props_msg.actors.append(prop_msg)
+
+        self.prop_publisher.publish(props_msg)
+
     def timer_callback(self) -> None:
         self.update_actor_states()
         self.publish_actor_state()
+        self.publish_prop_state()
         self.opencr_publisher.publish(self.build_opencr_state())
 
 

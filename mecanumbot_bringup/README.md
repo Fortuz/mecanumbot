@@ -19,6 +19,22 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 | `launch/camera.launch.py`                     | Includes `mecanumbot_camera_stream/camera_compressed.launch.py` (JPEG compressed stream). Replaces the earlier raw `v4l2_camera_node` setup. |
 | `launch/sim.launch.py`                        | The single entry point for every simulated run, intended for a development machine and not the Jetson. Two orthogonal arguments: `backend` (`mujoco` \| `gazebo`) picks the simulator, `mode` (`base` \| `mapping` \| `perception` \| `truth_twin` \| `behaviour`) picks what runs on top. Replaces the five `launch_mecanumbot_sim*` / `launch_mecanumbot_truth_twin` files, which were layered includes of one another. Everything it starts lives in `mecanumbot_sim`. |
 
+## Base launch arguments
+
+| Argument           | Default        | Function                                                                                                     |
+| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| `namespace`        | `mecanumbot`   | Robot namespace.                                                                                             |
+| `use_sim_time`     | `false`        | Use the simulation clock.                                                                                    |
+| `use_joy`          | `true`         | Start `joy_node` and the onboard joystick node.                                                              |
+| `use_web`          | `true`         | Start the robot-hosted web GUI on port 8080.                                                                 |
+| `joystick_profile` | `auto`         | Joystick profile stem, or `auto` to detect from the pad.                                                     |
+| `yolo_imgsz`       | `1280`         | Input size the DeepStream pose model expects. Selects `mecanumbot_sensorprocess_smart` `models/imgsz_<n>/`, so it has to be a size the model was exported at — 640 and 1280 are shipped. |
+| `yolo_model`       | `yolo26m-pose` | Pose model stem inside that folder.                                                                          |
+
+`yolo_imgsz` is the whole of the model-size choice: the detector rewrites the model,
+engine and `infer-dims` lines of the nvinfer config to match it, so nothing has to be
+edited by hand to switch sizes. See `mecanumbot_sensorprocess_smart/README.md`.
+
 ## Additional notes
 
 - This package is a coordinator: node logic lives in packages such as `mecanumbot_core`, `mecanumbot_led`, and external dependencies.
