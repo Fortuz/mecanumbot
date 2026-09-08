@@ -347,20 +347,46 @@ rather than a socket in front of nothing.
 No `--phase` argument: `config/server.yaml` already starts in `t1`. Model load
 plus warm-up is about 25 s — wait for the bind line before starting the robot.
 
-### 2. The robot
+### 2. The robot — one terminal
 
 ```bash
 ./netcheck.sh          # first: can the robot reach the rendezvous at all?
+ros2 launch mecanumbot_custom_nav2 t1.launch.py
+```
 
-# drivers and camera, but NOT nav2 -- this launch brings its own
+`t1.launch.py` starts the drivers, the Deep3R client and this package's
+exploration stack in that order, with delays so the logs read in the order the
+subsystems came up. One Ctrl-C stops all of it. Useful arguments:
+
+```bash
+ros2 launch mecanumbot_custom_nav2 t1.launch.py require_cloud:=false use_deep3r:=false
+ros2 launch mecanumbot_custom_nav2 t1.launch.py deep3r_delay:=15.0 explorer_delay:=25.0
+```
+
+The trade is that three stacks share one terminal. When something is wrong and
+the noise is in the way, use the three-terminal form below instead — it is the
+same three launch files and the same ordering.
+
+### 2b. The robot — three terminals
+
+```bash
+# drivers and camera, but NOT nav2 -- autoslam brings its own
 ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py use_nav2:=false
 ros2 launch mecanumbot_deep3r deep3r.launch.py        # needs the tunnel up
 ros2 launch mecanumbot_custom_nav2 autoslam.launch.py
 ```
 
-`use_nav2:=false` is not optional. The base launch starts nav2 against the
-*study* parameters with AMCL and a saved map; that stack and this one both
+`use_nav2:=false` is not optional. The base launch otherwise starts nav2 against
+the *study* parameters with AMCL and a saved map; that stack and this one both
 publish `map -> odom` and both serve `navigate_to_pose`.
+
+> **`use_nav2` did not exist until 2026-09-08.** It was documented here, in this
+> package's launch file and in the workspace `CLAUDE.md`, but was never declared
+> in `launch_mecanumbot_base.launch.py` — nav2 came up unconditionally in both
+> SSID branches, and passing the argument did nothing but emit a warning. Every
+> T1 run started before that date had two nav2 stacks and two things publishing
+> `map -> odom`. `t1.launch.py` passes it for you, so this is one fewer thing to
+> get right by hand.
 
 `deep3r.launch.py` defaults to `enable_map_loop:=true`, which is what sends the
 pose, the grid and the scan **up** and republishes the server's verdict back

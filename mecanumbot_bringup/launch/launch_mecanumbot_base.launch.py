@@ -117,6 +117,20 @@ def generate_launch_description():
         description="Launch joy_node and the onboard joystick node",
     )
 
+    declare_use_nav2 = DeclareLaunchArgument(
+        "use_nav2",
+        default_value="true",
+        description=(
+            "Bring up nav2 against the STUDY parameters, with AMCL and a saved "
+            "map. Set false for T1: mecanumbot_custom_nav2's autoslam.launch.py "
+            "brings its own nav2 without AMCL, because slam_toolbox owns "
+            "map -> odom during exploration and two things estimating the same "
+            "transform is the most confusing way for a run to fail. This "
+            "argument was documented for months before it existed -- passing it "
+            "did nothing and nav2 came up anyway."
+        ),
+    )
+
     declare_use_web = DeclareLaunchArgument(
         "use_web",
         default_value="true",
@@ -192,6 +206,7 @@ def generate_launch_description():
 
     # --- Network & Profile Logic ---
     detected_ssid = get_wifi_ssid()
+    use_nav2 = LaunchConfiguration("use_nav2")
     map_name, map_file, keepout_file, nav2_params_file, _ = choose_launch_profile(
         detected_ssid
     )
@@ -209,6 +224,7 @@ def generate_launch_description():
         declare_namespace,
         declare_sim_time,
         declare_use_joy,
+        declare_use_nav2,
         declare_use_web,
         declare_joystick_profile,
         declare_yolo_imgsz,
@@ -357,7 +373,8 @@ def generate_launch_description():
         launch_actions.extend(
             [
                 GroupAction(
-                    [
+                    condition=IfCondition(use_nav2),
+                    actions=[
                         IncludeLaunchDescription(
                             PythonLaunchDescriptionSource(
                                 os.path.join(
@@ -377,6 +394,9 @@ def generate_launch_description():
                         ),
                     ]
                 ),
+                GroupAction(
+                    condition=IfCondition(use_nav2),
+                    actions=[
                 Node(
                     package="nav2_map_server",
                     executable="map_server",
@@ -420,6 +440,8 @@ def generate_launch_description():
                         },
                     ],
                 ),
+                    ],
+                ),
             ]
         )
     else:
@@ -427,7 +449,8 @@ def generate_launch_description():
         launch_actions.extend(
             [
                 GroupAction(
-                    [
+                    condition=IfCondition(use_nav2),
+                    actions=[
                         IncludeLaunchDescription(
                             PythonLaunchDescriptionSource(
                                 os.path.join(
