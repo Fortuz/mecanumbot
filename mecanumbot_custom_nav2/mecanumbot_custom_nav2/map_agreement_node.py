@@ -176,7 +176,30 @@ class MapAgreementHandler(Node):
         # Only the geometry is kept. The mask has to be the same shape, origin
         # and resolution as the map nav2 is planning on, or the filter places
         # every keepout somewhere else entirely.
+        resized = (self.grid_info is None
+                   or msg.info.width != self.grid_info.width
+                   or msg.info.height != self.grid_info.height
+                   or msg.info.origin.position.x != self.grid_info.origin.position.x
+                   or msg.info.origin.position.y != self.grid_info.origin.position.y)
         self.grid_info = msg.info
+
+        # Publish an empty mask as soon as there is a map to shape it to, before
+        # any verdict has arrived. Two reasons, and neither is cosmetic:
+        #
+        #  * `KeepoutFilter: Filter mask was not received` otherwise repeats for
+        #    the whole run whenever the server is absent -- which is the normal
+        #    state of a `require_cloud:=false` mapping pass -- and a warning that
+        #    is always there is one nobody reads when it starts meaning
+        #    something.
+        #  * the filter is then initialised and correctly shaped before the
+        #    first real mask, rather than changing shape under nav2 mid-run.
+        #
+        # An all-free mask is exactly "no keepouts", which is the truth until
+        # the server says otherwise. It is republished on a resize because a
+        # mask whose geometry no longer matches the map is worse than none.
+        if resized:
+            self._last_mask = None
+            self._publish_mask()
 
     def _on_agreement(self, msg):
         self.verdicts += 1
@@ -270,10 +293,12 @@ class MapAgreementHandler(Node):
         # costs one memcmp and removes the whole failure mode.
         if mask.data == self._last_mask:
             return
+        first = self._last_mask is None
         self._last_mask = mask.data
         self.mask_publisher.publish(mask)
         self.get_logger().info(
-            f"keepout mask changed: {len(keepouts)} region(s) lethal")
+            f"keepout mask {'initialised' if first else 'changed'}: "
+            f"{len(keepouts)} region(s) lethal")
         # Re-announced with every mask: a filter that came up before this node
         # did would otherwise never learn the topic.
         self._publish_filter_info()

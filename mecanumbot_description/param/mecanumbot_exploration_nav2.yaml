@@ -235,9 +235,22 @@ global_costmap:
       #robot_radius: 0.26 #either-or with footprint, footprint is more accurate
       resolution: 0.05
       track_unknown_space: true
-      # No static_layer: /map is being built by slam_toolbox and republished
-      # whole on every update, so the obstacle layer is the only source.
-      plugins: ["obstacle_layer", "denoise_layer", "inflation_layer"]
+      # The static_layer is what gives this costmap its SIZE and ORIGIN. Without
+      # it there is no map to take them from, so nav2 falls back to its own
+      # defaults -- a 5 x 5 m grid anchored at (0, 0) -- and the first time the
+      # robot drives to a negative coordinate it is outside its own global
+      # costmap. That surfaces as
+      #
+      #   Robot is out of bounds of the costmap!
+      #   Sensor origin at (-0.05, -0.18) is out of map bounds (0.00, 0.00) to (4.98, 4.98)
+      #
+      # and the robot stops. It was removed here on the grounds that
+      # slam_toolbox republishes /map whole on every update and the obstacle
+      # layer is the only source that matters, which is true about the *content*
+      # and wrong about the *geometry*: the layer is also how the costmap learns
+      # how big the world is and where its corner sits, and it resizes as SLAM
+      # extends the map. This is what nav2's own SLAM configuration does.
+      plugins: ["static_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       filters: ["keepout_filter"]
       keepout_filter:
         plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -262,9 +275,12 @@ global_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 8.0
           obstacle_min_range: 0.0
-      # The static_layer stanza the study files carry here is gone with the
-      # plugin: nothing would configure, and leaving it reads as if the map were
-      # still being loaded from disk.
+      # Subscribed transient-local because slam_toolbox latches /map: a costmap
+      # that came up after the last publish would otherwise wait for the next
+      # one before it had any geometry at all.
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
       denoise_layer:
         plugin: "nav2_costmap_2d::DenoiseLayer"
         enabled: True
