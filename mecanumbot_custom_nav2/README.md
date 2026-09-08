@@ -323,21 +323,58 @@ it, or go and tell somebody. `mecanumbot_seek`'s alert behaviour is built on
 exactly that, and it is the clearest single reason the reconstruction earns its
 place rather than being a nice picture.
 
-## Running
+## Starting T1
+
+T1 spans **two machines**, and the order matters: the robot dials a tunnel that
+must already have a live server behind it. This is the canonical sequence —
+`mecanumbot_deep3r` and `mecanumbot_seek` point here rather than repeating it.
+
+### 1. The cluster, from `nipg1`
 
 ```bash
-# on the robot: drivers and camera, but NOT nav2 -- this launch brings its own
+cd ~/mecanumbot_repos/RoboCamStreamProcessing
+salloc --no-shell --gres=gpu:1 -c 8 --mem=24G -t 08:00:00
+srun --jobid=<id> --overlap ./scripts/run_deep3r_bridged.sh
+```
+
+Allocate **from `nipg1`** — Slurm does not work from the `nipg36` container,
+which cannot resolve the compute-node names. The job can land on any node with a
+free GPU; prefer Ampere or newer (nipg10's 3090s are sm_86 and much faster than
+nipg36's TITAN RTX). `run_deep3r_bridged.sh` starts the server and only then
+opens the reverse tunnel to `nipg1:5555`, so a live tunnel implies a live server
+rather than a socket in front of nothing.
+
+No `--phase` argument: `config/server.yaml` already starts in `t1`. Model load
+plus warm-up is about 25 s — wait for the bind line before starting the robot.
+
+### 2. The robot
+
+```bash
+./netcheck.sh          # first: can the robot reach the rendezvous at all?
+
+# drivers and camera, but NOT nav2 -- this launch brings its own
 ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py use_nav2:=false
 ros2 launch mecanumbot_deep3r deep3r.launch.py        # needs the tunnel up
-
 ros2 launch mecanumbot_custom_nav2 autoslam.launch.py
+```
 
-# no server, mapping only -- otherwise the exit criteria are never satisfied
-ros2 launch mecanumbot_custom_nav2 autoslam.launch.py require_cloud:=false
+`use_nav2:=false` is not optional. The base launch starts nav2 against the
+*study* parameters with AMCL and a saved map; that stack and this one both
+publish `map -> odom` and both serve `navigate_to_pose`.
 
-# watch it think
-ros2 topic echo /mecanumbot/exploration/state
-ros2 topic echo /mecanumbot/exploration/finished
+`deep3r.launch.py` defaults to `enable_map_loop:=true`, which is what sends the
+pose, the grid and the scan **up** and republishes the server's verdict back
+down. Without it the node is a frame pump, the server has nothing to place the
+cloud against, and the `CLOUD` criterion below can never be satisfied — so T1
+would never finish, with nothing in the logs pointing at why.
+
+### 3. Watching it
+
+```bash
+ros2 topic hz   /mecanumbot/deep3r/points          # ~6 Hz on a 3090
+ros2 topic echo /mecanumbot/deep3r/map_agreement   # the server's verdict
+ros2 topic echo /mecanumbot/exploration/state      # every criterion, with its reason
+ros2 topic echo /mecanumbot/exploration/finished   # latches true when T1 is over
 
 # what the comparison is telling it
 ros2 topic echo /mecanumbot/deep3r/revisit_regions
@@ -346,17 +383,51 @@ ros2 topic hz   /mecanumbot/deep3r/keepout_mask
 #   red cylinders are keepouts, amber ones places to go and look
 ```
 
-`use_nav2:=false` is not optional. The base launch starts nav2 against the
-*study* parameters with AMCL and a saved map; that stack and this one both
-publish `map -> odom` and both serve `navigate_to_pose`.
+**The number to read first is `agreement`.** In a mapped room it should be
+clearly above zero within a minute. Near zero means the reconstruction is not
+placed where the map is — a wrong `compare.camera_z`, a wrong mount, or a pose
+in the wrong frame — and none of those announce themselves any other way. T1
+will now refuse to finish on it rather than handing T2 a cloud that does not
+line up with the room.
 
-Saving the map is deliberately manual — the map T2 localizes against is worth
-looking at before it is written over:
+### Without a server
+
+```bash
+ros2 launch mecanumbot_custom_nav2 autoslam.launch.py require_cloud:=false
+```
+
+Mapping only, and the exit criteria fall back to the 2D ones. The right thing
+for a dry run and the wrong thing during a trial: it drops `placed`, which is
+the test that catches a failed T1 that looks exactly like a successful one.
+
+### Handing over to T2
+
+Nothing to do by hand any more. The explorer latches
+`/mecanumbot/exploration/finished`, `mecanumbot_deep3r` sees the latch and sends
+the server a `phase` message, and the server's decision stage starts looking for
+the target. That link did not exist before 2026-09-08, and without it the two
+ends spent the rest of the run in different phases.
+
+Saving the map is still deliberately manual — the map T2 localizes against is
+worth looking at before it is written over:
 
 ```bash
 ros2 run nav2_map_server map_saver_cli \
   -f ~/Documents/mecanumbot_ws/src/mecanumbot/mecanumbot_description/maps/AI_dept/AI_dept
 ```
+
+Then T2, which is `mecanumbot_seek` — see its README:
+
+```bash
+ros2 topic pub --once /mecanumbot/seek/request std_msgs/String \
+  "{data: 'the red mug on the desk'}"     # free text, not a class label
+ros2 launch mecanumbot_seek launch_seek.launch.py
+```
+
+> **Not yet run against the real robot and server.** As of 2026-09-08 the loop
+> is green on tests and builds only. The first live run is where the camera
+> height and the camera mount get checked, and `agreement` is the number that
+> tells you whether they are right.
 
 ## The nav2 parameter file
 
