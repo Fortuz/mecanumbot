@@ -1,0 +1,88 @@
+# Constants for the 2D/3D comparison handler.
+#
+# The node name has to match the key: it registers as
+# `mecanumbot_map_agreement`, and a renamed node silently gets none of this.
+#
+# This node runs in **both** phases. In T1 it makes the server's verdict affect
+# where the explorer drives and what nav2 will plan through; in T2 the explorer
+# is gone but the keepouts still apply, because a table the lidar cannot see is
+# still there when the robot is fetching something across the room.
+
+mecanumbot_map_agreement:
+  ros__parameters:
+
+    # ----- Topics -------------------------------------------------------------
+    agreement_topic: /mecanumbot/deep3r/map_agreement
+    # The map the mask has to be aligned to. Must be the same map nav2 plans on
+    # -- a mask with a different origin or resolution puts every keepout
+    # somewhere else entirely, and nothing reports an error.
+    map_topic: /map
+    mask_topic: /mecanumbot/deep3r/keepout_mask
+    filter_info_topic: /mecanumbot/deep3r/costmap_filter_info
+    revisit_topic: /mecanumbot/deep3r/revisit_regions
+    marker_topic: /mecanumbot/deep3r/agreement_markers
+
+    # ----- The robot's vertical envelope [m] -----------------------------------
+    # This is the whole decision. The lidar is one horizontal plane, so the 2D
+    # map is blind to anything the beam passes over or under, and a `cloud_only`
+    # region is usually the map being wrong in that one systematic way rather
+    # than the reconstruction being noisy.
+    #
+    #   above robot_height          an overhang -- the robot drives under it
+    #   clearance .. robot_height   the robot would hit it        -> KEEPOUT
+    #   below clearance             the robot rolls over it
+    #
+    # `lidar_height` does not change the keepout decision; it splits the keepouts
+    # into the ones the lidar could have seen and missed (worth investigating as
+    # a sensor or alignment problem) and the ones it structurally cannot see
+    # (worth nothing but the keepout). That count is logged per verdict.
+
+    # Ground clearance. Below this the robot rolls over it: a cable, a threshold
+    # strip, a lip of carpet.
+    robot_clearance: 0.03
+
+    # Height of the LDS-02 scan plane above the floor.
+    lidar_height: 0.20
+
+    # Tallest point of the robot, including the neck at its highest. Structure
+    # above this is an overhang and is not a keepout -- marking every doorframe
+    # and ceiling fitting lethal would close most of the building.
+    robot_height: 0.45
+
+    # ----- What is worth acting on ---------------------------------------------
+    # Confidence below which a disagreement is not turned into a lethal cell.
+    # Lower than the revisit threshold on purpose: being wrong about a keepout
+    # costs a detour, and being wrong about driving into a table costs a table.
+    min_keepout_score: 0.4
+
+    # Confidence below which a region is not worth the detour to go and look at.
+    min_revisit_score: 0.5
+
+    # ----- Housekeeping ---------------------------------------------------------
+    # Regions closer together than this are the same thing reported twice.
+    merge_radius: 0.5
+
+    # How long a region survives without the server mentioning it again [s].
+    # A verdict is a snapshot rather than a diff, so a region that stops being
+    # reported has usually been resolved -- but dropping it the instant it
+    # leaves a verdict makes the costmap flicker at the comparison rate, and a
+    # flickering costmap is one nav2 replans through.
+    forget_after: 120.0
+
+    # How close the robot has to get for a region to count as looked at [m].
+    serviced_radius: 1.0
+
+    # How often the robot's position is checked against the regions [Hz], and
+    # the frames to read it between. TF rather than a goal outcome, so a region
+    # counts as looked at however the robot got there -- an explorer goal, the
+    # seek tree, or somebody driving it with the joystick.
+    service_check_rate: 2.0
+    map_frame: map
+    base_frame: mecanumbot/base_link
+
+    # ----- The mask -------------------------------------------------------------
+    # Set false to run the handler for its markers and revisit list alone,
+    # without letting it add anything to the costmap. Useful the first time a
+    # room is scanned, when it is not yet clear whether the server's heights are
+    # trustworthy -- the markers show what *would* have been marked.
+    publish_mask: true

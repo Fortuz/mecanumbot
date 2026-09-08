@@ -1,0 +1,470 @@
+# Nav2 for T2 of the Deep3R seeking system: localized, plus the cloud's keepouts.
+#
+# Identical to `mecanumbot_custom_nav2_no_keepout.yaml` -- AMCL against the map
+# T1 saved, the same controller and costmap tuning a study run uses -- with one
+# addition: a keepout filter fed by `mecanumbot_map_agreement`.
+#
+# That filter is how the point cloud's knowledge reaches the planner. The lidar
+# is one horizontal plane, so the 2D map says "free" for a table top, a low step
+# or a cable tray; the cloud sees them, and the handler turns the ones inside the
+# robot's vertical envelope into lethal cells. Nothing is ever subtracted -- see
+# `mecanumbot_custom_nav2/agreement.py`.
+#
+# The study files are deliberately left alone. The leading and ostensive
+# experiments run on them, and adding a filter to their configuration -- even an
+# inert one -- is a change to apparatus those trials are already calibrated
+# against. Select this file instead:
+#
+#     NAV2_PARAMS_FILE=<this file> ros2 launch mecanumbot_bringup \
+#         launch_mecanumbot_base.launch.py
+#
+# With `mecanumbot_map_agreement` not running, no `costmap_filter_info` is
+# published, the filter stays inactive and this behaves exactly like the file it
+# was derived from.
+
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    alpha1: 0.2 # noise in rot from rot
+    alpha2: 0.2 # noise in rot from trans
+    alpha3: 0.2 # noise in trans from trans 
+    alpha4: 0.2 # noise in trans from rot
+    alpha5: 0.2 # translation noise
+    base_frame_id: "mecanumbot/base_link"
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    # Ignore beams that disagree with the map for most particles, rather than
+    # letting movable obstacles collapse the whole particle set.
+    do_beamskip: true
+    global_frame_id: "map"
+    lambda_short: 0.1
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 12.0
+    laser_min_range: 0.15
+    laser_model_type: "likelihood_field"
+    max_beams: 60
+    max_particles: 2000 
+    min_particles: 800 
+    odom_frame_id: "mecanumbot/odom"
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
+    resample_interval: 1
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    save_pose_rate: 0.5
+    sigma_hit: 0.1  
+    tf_broadcast: true
+    transform_tolerance: 0.5 
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.8  
+    z_max: 0.05
+    z_rand: 0.2  
+    z_short: 0.05
+    scan_topic: /mecanumbot/scan
+
+amcl_map_client:
+  ros__parameters:
+    use_sim_time: False
+
+amcl_rclcpp_node:
+  ros__parameters:
+    use_sim_time: False
+
+map_server:
+  ros__parameters:
+    use_sim_time: False
+    yaml_filename: "map.yaml"
+
+bt_navigator:
+  ros__parameters:
+    global_frame: map
+    robot_base_frame: mecanumbot/base_link
+    odom_topic: /mecanumbot/odom
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    action_server_result_timeout: 900.0
+    navigators: ["navigate_to_pose", "navigate_through_poses"]
+    navigate_to_pose:
+      plugin: "nav2_bt_navigator/NavigateToPoseNavigator"
+    navigate_through_poses:
+      plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"
+
+    # Overwritten at launch time (RewrittenYaml) with the installed
+    # mecanumbot_description/behavior_trees/*.xml. The stock nav2 trees below are
+    # the fallback if that rewrite is not applied.
+    default_nav_to_pose_bt_xml: "/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
+    default_nav_through_poses_bt_xml: "/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
+
+    error_code_names:
+      - compute_path_error_code
+      - follow_path_error_code
+
+controller_server:
+  ros__parameters:
+    odom_topic: /mecanumbot/odom
+    controller_frequency: 6.0
+    costmap_update_timeout: 0.30
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    # Seconds of failed trajectory generation tolerated before aborting the goal.
+    failure_tolerance: 2.0
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
+    controller_plugins: ["FollowPath"]
+    use_realtime_priority: false
+
+    # Progress checker parameters
+    # PoseProgressChecker counts in-place rotation as progress, so the
+    # RotationShim turning toward the path no longer trips a recovery.
+    progress_checker:
+      plugin: "nav2_controller::PoseProgressChecker"
+      required_movement_radius: 0.10
+      required_movement_angle: 0.4
+      movement_time_allowance: 10.0
+
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.30  #prev 0.3 [m]
+      yaw_goal_tolerance: 0.3 # prev 0.3 [rad] 15deg
+
+    
+    FollowPath:
+      plugin: "nav2_rotation_shim_controller::RotationShimController"
+      primary_controller: "dwb_core::DWBLocalPlanner" 
+
+      # Rotation shim parameters
+      angular_dist_threshold: 0.785
+      forward_sampling_distance: 0.5 
+      angular_disengage_threshold: 0.3925
+      rotate_to_heading_angular_vel: 0.7
+      max_angular_accel: 0.5
+      simulate_ahead_time: 1.0
+      rotate_to_goal_heading: true
+      closed_loop: true # true - vel estim from odom, false - vel estim from last cmd 
+      
+      # DWB parameters
+      debug_trajectory_details: false # publish debug info to the terminal
+      min_vel_x: -0.24
+      min_vel_y: -0.24
+      max_vel_x: 0.24
+      max_vel_y: 0.24
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.24
+      min_speed_theta: 0.0
+      acc_lim_x: 2.0
+      acc_lim_y: 2.0
+      acc_lim_theta: 2.0
+      decel_lim_x: -2.0
+      decel_lim_y: -2.0
+      decel_lim_theta: -2.0
+      # Odd counts so zero velocity is always sampled. Fewer samples over a
+      # shorter horizon with a coarser angular step pays for the 6 Hz rate.
+      vx_samples: 13
+      vy_samples: 9
+      vtheta_samples: 13
+      sim_time: 2.0
+      linear_granularity: 0.05
+      angular_granularity: 0.05
+      transform_tolerance: 0.5
+      xy_goal_tolerance: 0.30
+      trans_stopped_velocity: 0.1 # below this, the velocity is considered being stopped 
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      critics: ["RotateToGoal","Oscillation", "ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "Twirling","PreferForward"]
+      ObstacleFootprint.scale: 0.5
+      PathAlign.scale: 0.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.scale: 0.0
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      # penalisation of unnecessary turns
+      Twirling.scale: 1.0
+      # penalisation of oscillation behaviour (going back and forth or turning left to right slightly to match goal)
+      Oscillation.scale: 20.0
+      Oscillation.oscillation_reset_dist: 0.5
+      Oscillation.oscillation_reset_angle: 1.0
+      Oscillation.oscillation_reset_time: -1.0
+      RotateToGoal.scale: 30.0
+      RotateToGoal.slowing_factor: 2.0 # how slowly the robot should rot to goal
+      RotateToGoal.lookahead_time: 1.0
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      # Must stay >= controller_frequency or DWB scores stale cells.
+      update_frequency: 8.0
+      publish_frequency: 2.0
+      global_frame: mecanumbot/odom
+      robot_base_frame: mecanumbot/base_link
+      rolling_window: true
+      width: 3
+      height: 3
+      resolution: 0.05
+      footprint: "[[0.2875,  0.08],[0.2875, -0.08],[0.05,   -0.153],[-0.1405, -0.153],[-0.1405,  0.153],[0.05,    0.153]]"
+      #robot_radius: 0.26 #either-or with footprint, footprint is more accurate
+      plugins: ["voxel_layer", "denoise_layer", "inflation_layer"]
+      filters: ["deep3r_filter"]
+      deep3r_filter:
+        plugin: "nav2_costmap_2d::KeepoutFilter"
+        enabled: True
+        # Published by mecanumbot_map_agreement, rebuilt from the server's
+        # comparison verdict as it arrives -- not a mask loaded from disk.
+        filter_info_topic: "/mecanumbot/deep3r/costmap_filter_info"
+      # Drops isolated lethal cells from the flickering returns that thin,
+      # partly IR-transparent plastic gives, without touching the contiguous
+      # footprint of a real panel. Must sit after the obstacle source and
+      # before inflation.
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: True
+        minimal_group_size: 2
+        group_connectivity_type: 8
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 5.0 #exponential scaling factor for decay of inflation penalty
+        inflation_radius: 0.66
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
+        enabled: True
+        publish_voxel_map: True
+        origin_z: 0.0
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          topic: /mecanumbot/scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      always_send_full_costmap: True
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      # The BT replans at 2 Hz; the map it plans on has to be at least that fresh.
+      update_frequency: 2.0
+      publish_frequency: 2.0
+      global_frame: map
+      robot_base_frame: mecanumbot/base_link
+      footprint: "[[0.2875,  0.08],[0.2875, -0.08],[0.05,   -0.153],[-0.1405, -0.153],[-0.1405,  0.153],[0.05,    0.153]]"
+      #robot_radius: 0.26 #either-or with footprint, footprint is more accurate
+      resolution: 0.05
+      track_unknown_space: true
+      plugins: ["static_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
+      filters: ["deep3r_filter"]
+      deep3r_filter:
+        plugin: "nav2_costmap_2d::KeepoutFilter"
+        enabled: True
+        # Published by mecanumbot_map_agreement, rebuilt from the server's
+        # comparison verdict as it arrives -- not a mask loaded from disk.
+        filter_info_topic: "/mecanumbot/deep3r/costmap_filter_info"
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /mecanumbot/scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          # Let the global planner see obstacles across the room instead of
+          # discovering them at 2.5 m and swerving late. The long raytrace also
+          # clears cells that an obstacle has been moved away from.
+          raytrace_max_range: 10.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 8.0
+          obstacle_min_range: 0.0
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: True
+        minimal_group_size: 2
+        group_connectivity_type: 8
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 5.0 #exponential scaling factor for decay of inflation penalty
+        inflation_radius: 0.66
+      always_send_full_costmap: True
+
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 20.0
+    planner_plugins: ["GridBased"]
+    costmap_update_timeout: 1.0
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      tolerance: 0.5
+      use_astar: false
+      allow_unknown: true
+
+
+smoother_server:
+  ros__parameters:
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+behavior_server:
+  ros__parameters:
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    assisted_teleop:
+      plugin: "nav2_behaviors/AssistedTeleop"
+    local_frame: mecanumbot/odom
+    global_frame: map
+    robot_base_frame: mecanumbot/base_link
+    transform_tolerance: 0.2
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 2.0
+waypoint_follower:
+  ros__parameters:
+    loop_rate: 20
+    stop_on_failure: false
+    action_server_result_timeout: 900.0
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower/WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+
+velocity_smoother:
+  ros__parameters:
+    # Output rate to the base. Kept in step with mecanumbot_custom_nav2.yaml so
+    # the dev site and the study site move the same way.
+    smoothing_frequency: 10.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.5, 0.5, 0.7]
+    min_velocity: [-0.5, -0.5, -0.7]
+    max_accel: [2.0, 2.0, 1.0]
+    max_decel: [-2.0, -2.0, -1.0]
+    odom_topic: "/mecanumbot/odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+
+
+collision_monitor:
+  ros__parameters:
+    base_frame_id: "mecanumbot/base_footprint"
+    odom_frame_id: "mecanumbot/odom"
+    cmd_vel_in_topic: "/mecanumbot/cmd_vel_smoothed"
+    cmd_vel_out_topic: "/mecanumbot/cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 0.5
+    source_timeout: 1.0
+    base_shift_correction: True
+    stop_pub_timeout: 2.0
+    polygons: ["FootprintApproach"]
+    FootprintApproach:
+      type: "polygon"
+      action_type: "approach"
+      footprint_topic: "/local_costmap/published_footprint"
+      time_before_collision: 1.2
+      simulation_time_step: 0.1
+      min_points: 6
+      visualize: False
+      enabled: True
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/mecanumbot/scan"
+      min_height: 0.15
+      max_height: 2.0
+      enabled: True
+
+docking_server:
+  ros__parameters:
+    controller_frequency: 50.0
+    initial_perception_timeout: 5.0
+    wait_charge_timeout: 5.0
+    dock_approach_timeout: 30.0
+    undock_linear_tolerance: 0.05
+    undock_angular_tolerance: 0.1
+    max_retries: 3
+    base_frame: "mecanumbot/base_link"
+    fixed_frame: "mecanumbot/odom"
+    dock_backwards: false
+    dock_prestaging_tolerance: 0.5
+
+    # Types of docks
+    dock_plugins: ['simple_charging_dock']
+    simple_charging_dock:
+      plugin: 'opennav_docking/SimpleChargingDock'
+      docking_threshold: 0.05
+      staging_x_offset: -0.7
+      use_external_detection_pose: true
+      use_battery_status: false # true
+      use_stall_detection: false # true
+
+      external_detection_timeout: 1.0
+      external_detection_translation_x: -0.18
+      external_detection_translation_y: 0.0
+      external_detection_rotation_roll: -1.57
+      external_detection_rotation_pitch: -1.57
+      external_detection_rotation_yaw: 0.0
+      filter_coef: 0.1
+
+    controller:
+      k_phi: 3.0
+      k_delta: 2.0
+      v_linear_min: 0.15
+      v_linear_max: 0.15
+
+lifecycle_manager_localization:
+  ros__parameters:
+    autostart: true
+    node_names:
+      - map_server
+      - amcl
+
+lifecycle_manager_navigation:
+  ros__parameters:
+    autostart: true
+    node_names:
+      - controller_server
+      - smoother_server
+      - planner_server
+      - behavior_server
+      - bt_navigator
+      - velocity_smoother
+      - global_costmap
+      - local_costmap

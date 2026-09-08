@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mecanumbot_custom_nav2</name>
+  <version>0.0.0</version>
+  <description>
+    Autonomous exploration for Mecanumbot, and the robot's end of the 2D/3D
+    comparison. The frontier explorer is the T1 pass -- RRT-based frontier
+    detection over slam_toolbox's occupancy grid, driven through nav2's
+    NavigateToPose action, ending on exit criteria that include the Deep3R
+    server's verdict on the reconstruction. The agreement handler runs in both
+    phases and turns that verdict into a nav2 keepout mask, a revisit list and
+    markers, so the point cloud's knowledge of what the lidar plane cannot see
+    reaches the navigation stack. The nav2 tuning itself is not here: it is a
+    parameter file in mecanumbot_description, because it needed no code.
+  </description>
+  <maintainer email="csengehubay@gmail.com">Csenge Hubay</maintainer>
+  <license>Apache License 2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>mecanumbot_msgs</exec_depend>
+  <exec_depend>mecanumbot_description</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <!-- Launched by autoslam.launch.py, not imported. -->
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

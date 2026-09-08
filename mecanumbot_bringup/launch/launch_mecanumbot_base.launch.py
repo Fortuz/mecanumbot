@@ -195,6 +195,13 @@ def generate_launch_description():
     map_name, map_file, keepout_file, nav2_params_file, _ = choose_launch_profile(
         detected_ssid
     )
+
+    # An override, because the SSID picks the file for a *study* run and not
+    # every run is one. T2 of the Deep3R seeking system wants
+    # `mecanumbot_seek_nav2.yaml`, which is the same configuration plus the
+    # keepout filter that carries the point cloud's view of what the lidar plane
+    # cannot see. Left unset, nothing changes for anybody.
+    nav2_params_file = os.environ.get("NAV2_PARAMS_FILE") or nav2_params_file
     nav2_params = with_mecanumbot_behavior_trees(nav2_params_file)
 
     # --- Build Launch Actions ---
