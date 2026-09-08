@@ -81,6 +81,11 @@ class MapAgreementHandler(Node):
 
         self.grid_info = None
         self.verdicts = 0
+        #: Last mask actually published, so an unchanged one is not republished.
+        #: See `_publish_mask` -- this is what keeps nav2's costmap still.
+        self._last_mask = None
+        #: Last revisit list published, as rounded positions. Same reasoning.
+        self._last_revisits = None
 
         self.model = AgreementModel(
             clearance=self._get("robot_clearance"),
@@ -253,13 +258,37 @@ class MapAgreementHandler(Node):
             self.grid_info.origin.position.y,
             keepouts,
         )
+        # Only when it actually changed. The mask is latched and nav2's
+        # KeepoutFilter re-reads and re-inflates the costmap on every publish;
+        # republishing an identical mask at the verdict rate makes the costmap
+        # flicker, and a flickering costmap is one the planner replans through
+        # -- which on the robot looks like driving in short bursts with stops
+        # between them, not like a costmap problem at all.
+        #
+        # Regions accumulate and change slowly, so the great majority of
+        # verdicts produce a byte-identical mask. Comparing before publishing
+        # costs one memcmp and removes the whole failure mode.
+        if mask.data == self._last_mask:
+            return
+        self._last_mask = mask.data
         self.mask_publisher.publish(mask)
+        self.get_logger().info(
+            f"keepout mask changed: {len(keepouts)} region(s) lethal")
         # Re-announced with every mask: a filter that came up before this node
         # did would otherwise never learn the topic.
         self._publish_filter_info()
 
     def _publish_revisits(self):
-        """Publish the regions still worth a look, best first."""
+        """
+        Publish the regions still worth a look, best first.
+
+        Only when the list changed, for the same reason the mask is: the
+        explorer interleaves these with its frontier goals, so a list that
+        churns at the verdict rate churns the robot's goal with it -- start,
+        cancel, re-decide, start -- which reads as stuttering rather than as
+        indecision. Comparing positions is enough; the scores move continuously
+        and are not what the explorer picks on.
+        """
         poses = PoseArray()
         poses.header.frame_id = self._get("map_frame")
         poses.header.stamp = self.get_clock().now().to_msg()
@@ -272,6 +301,15 @@ class MapAgreementHandler(Node):
             pose.position.z = region.height or 0.0
             pose.orientation.w = 1.0
             poses.poses.append(pose)
+
+        # Rounded to the merge radius' worth of precision: a region centre that
+        # drifts a millimetre between verdicts is the same place, and treating
+        # it as a new list would defeat the point of the check.
+        signature = tuple(sorted((round(p.position.x, 2), round(p.position.y, 2))
+                                 for p in poses.poses))
+        if signature == self._last_revisits:
+            return
+        self._last_revisits = signature
         self.revisit_publisher.publish(poses)
 
     def _report(self):

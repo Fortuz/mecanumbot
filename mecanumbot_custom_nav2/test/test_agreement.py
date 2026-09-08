@@ -378,3 +378,38 @@ def test_the_same_kind_still_merges():
     model.update(0.1, [(1.1, 1.0)], [0.9], kinds=["cloud_only"], heights=[0.32],
                  map_id="m")
     assert len(model.regions) == 1
+
+
+class TestTheMaskDoesNotChurn:
+    """
+    An unchanged keepout mask must not be republished.
+
+    The mask is latched and nav2's KeepoutFilter re-inflates the costmap on
+    every publish. Republishing an identical one at the verdict rate makes the
+    costmap flicker, and the planner replans through a flickering costmap --
+    which on the robot reads as driving in short bursts with stops between
+    them, and looks nothing like a costmap problem. These tests are on the
+    model rather than the node because the node needs a ROS graph; what they
+    pin is the property the node's check depends on: that a repeated verdict
+    produces a byte-identical set of keepouts.
+    """
+
+    def a_table(self, model, now, x=1.0):
+        model.update(now, [(x, 1.0)], [0.9], kinds=["cloud_only"],
+                     heights=[0.30], radii=[0.4], map_id="m")
+
+    def test_a_repeated_verdict_leaves_the_keepouts_identical(self):
+        model = AgreementModel()
+        self.a_table(model, 0.0)
+        first = [(r.x, r.y, r.height) for r in model.keepouts()]
+        self.a_table(model, 1.0)
+        self.a_table(model, 2.0)
+        assert [(r.x, r.y, r.height) for r in model.keepouts()] == first
+
+    def test_a_new_obstacle_does_change_them(self):
+        """The check must not be so eager that a real change is swallowed."""
+        model = AgreementModel()
+        self.a_table(model, 0.0)
+        before = len(model.keepouts())
+        self.a_table(model, 1.0, x=5.0)
+        assert len(model.keepouts()) == before + 1
