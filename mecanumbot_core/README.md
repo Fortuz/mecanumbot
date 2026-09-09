@@ -24,6 +24,25 @@ Runs on the robot's NVIDIA Jetson Orin Nano. The nodes read `/proc/device-tree/m
 | Parameter          | Default | Function                                                                              |
 | ------------------ | ------- | --------------------------------------------------------------------------------------- |
 | `dev_params.tx_hz` | `50.0`  | Rate at which the current command set is written to the board. See *Command transmission*. |
+| `robot_params.wheel.max_cmd_ticks` | `300` | Ceiling on a single wheel command, in board ticks. Also the lever for peak current draw: four wheels accelerating to this at once is the worst case the supply sees. |
+
+### Holding the wheels when the bus goes silent
+
+The board reports `err_* = -1` when it could not read a wheel, which means every
+other wheel field in the packet is a stale sample rather than a reading (see
+`Mecanumbot_OpenCR/README.md` in the microcontroller repo). While that is true the
+tx timer sends zero wheel velocities: commanding the wheels while the board cannot
+hear them is driving blind, and on this robot a silent bus has meant a sagging
+supply. It recovers on its own as soon as reads come back — there is no latch and
+nothing to reset.
+
+Only the wheels are held. Accessory positions pass through unchanged, because
+zeroing a *position* command would slam the neck to 0, and the zeroed stop frame on
+shutdown always goes out.
+
+A latched Input Voltage Error (`err_* & 1`) is warned about but **not** acted on.
+The motors keep driving with it set, the flag stays until they are power-cycled, and
+stopping a trial on a latched flag would cost more than it saves.
 
 ### Command transmission
 
@@ -67,6 +86,12 @@ The timer stays silent until the first command arrives, so merely starting the n
 ## Node: `mecanumbot_battery_alert`
 
 Watches battery voltages and raises a visible alert when one drops below the threshold (`battery_threshold`, default `9.7` V).
+
+The alarm needs `ALERT_AFTER_SAMPLES` (5) **consecutive** readings below the
+threshold, and clears the LEDs when the voltage recovers. It clears them to off
+rather than restoring whatever a trial had set — the node does not know that, and
+the alarm itself already overwrites it. Worth remembering for the LED condition of
+the leading experiment: a low battery will take the lights over mid-trial.
 
 | Topic / Service      | Direction  | Function                                                                                                    |
 | -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------- |

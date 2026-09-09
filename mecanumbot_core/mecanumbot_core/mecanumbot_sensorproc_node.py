@@ -348,8 +348,22 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.odom.pose.pose.position.z = 0.0
         # self.get_logger().info(f'Publishing: dx: {dx}, dy: {dy}, dtheta: {dtheta}')
         # self.get_logger().info(f'Current Odom: x: {self.odom.pose.pose.position.x}, y: {self.odom.pose.pose.position.y}, theta: {self.odom.pose.pose.orientation.z}')
-        if self.odom_from_imu:  # TODO
-            # Orientation from IMU
+        if self.odom_from_imu:
+            # Yaw from the OpenCR's fused IMU rather than from the wheels.
+            #
+            # Worth knowing which one is running: mecanum rollers slip most
+            # under yaw, and the wheel branch below cannot see it -- it
+            # integrates the commanded rotation and reports it as fact, so a
+            # spin in place is where wheel odometry lies hardest and where
+            # anything downstream that trusts it (slam_toolbox's scan-match
+            # prior, above all) is misled. The IMU drifts instead of slipping,
+            # which is the slower and more forgiving error of the two.
+            #
+            # The quaternion is absolute in the IMU's own zero, so `odom` is
+            # not the pose at start-up but a frame rotated by whatever yaw the
+            # board woke up believing. Nothing downstream cares -- odom is a
+            # frame, not a place -- but it does mean the two branches are not
+            # interchangeable mid-run.
             self.odom.pose.pose.orientation.x = self.cr_state.imu_orientation_x
             self.odom.pose.pose.orientation.y = self.cr_state.imu_orientation_y
             self.odom.pose.pose.orientation.z = self.cr_state.imu_orientation_z
@@ -373,20 +387,25 @@ class Mecanumbot_Sensorproc_Node(Node):
             self.odom.pose.pose.orientation.x = quaternion[1]
             self.odom.pose.pose.orientation.y = quaternion[2]
             self.odom.pose.pose.orientation.z = quaternion[3]
-            # Orientation from odometry integration (not implemented)
 
-            self.transform.header.stamp = self.current_time.to_msg()
-            self.transform.header.frame_id = self.odom_frame_id
-            self.transform.child_frame_id = self.odom_child_frame_id
-            self.transform.transform.translation.x = self.odom.pose.pose.position.x
-            self.transform.transform.translation.y = self.odom.pose.pose.position.y
-            self.transform.transform.translation.z = 0.0
-            self.transform.transform.rotation = self.odom.pose.pose.orientation
-            try:
-                self.tf_broadcaster.sendTransform(self.transform)
-            except Exception:
-                if rclpy.ok():
-                    raise
+        # Outside the branch, deliberately. This used to sit inside the `else`,
+        # so `odom_params.from_imu: true` published an /odom topic and NO
+        # `odom -> base_footprint` transform at all -- which is not a degraded
+        # robot, it is a TF tree with a hole in it and no SLAM, no costmaps and
+        # no nav2. That made the IMU branch untestable, which is most of why it
+        # was still marked TODO.
+        self.transform.header.stamp = self.current_time.to_msg()
+        self.transform.header.frame_id = self.odom_frame_id
+        self.transform.child_frame_id = self.odom_child_frame_id
+        self.transform.transform.translation.x = self.odom.pose.pose.position.x
+        self.transform.transform.translation.y = self.odom.pose.pose.position.y
+        self.transform.transform.translation.z = 0.0
+        self.transform.transform.rotation = self.odom.pose.pose.orientation
+        try:
+            self.tf_broadcaster.sendTransform(self.transform)
+        except Exception:
+            if rclpy.ok():
+                raise
 
     def set_imu(self):
 

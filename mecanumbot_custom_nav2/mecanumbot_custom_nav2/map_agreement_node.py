@@ -404,8 +404,19 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.destroy_node()
-        rclpy.try_shutdown()
+        # The teardown is guarded as well as the spin. `ros2 launch` sends
+        # SIGINT to the whole process group, so the second one lands *inside*
+        # destroy_node() -- which was printing a KeyboardInterrupt traceback
+        # out of rclpy on every Ctrl-C, from a node that had already stopped
+        # cleanly. Nothing was wrong; it just read like something was.
+        try:
+            node.destroy_node()
+        except KeyboardInterrupt:
+            pass
+        try:
+            rclpy.try_shutdown()
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == "__main__":

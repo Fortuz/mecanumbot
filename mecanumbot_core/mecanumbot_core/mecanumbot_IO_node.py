@@ -55,6 +55,10 @@ class Mecanumbot_IO_Node(Node):
                 ("robot_params.wheel.separation_x", 0.129),
                 ("robot_params.wheel.separation_y", 0.300),
                 ("robot_params.wheel.vel_tick", 0.229),
+                # Ceiling on a single wheel command, in board ticks. Also the
+                # lever for peak current draw: four wheels accelerating to this
+                # at once is the worst case the supply sees.
+                ("robot_params.wheel.max_cmd_ticks", 300),
                 ("robot_params.accessory.neck_default", 850),
                 ("robot_params.accessory.grabber_default", 512),
                 # Packet parameters
@@ -81,6 +85,9 @@ class Mecanumbot_IO_Node(Node):
         self.wheel_separation_y = self.get_parameter(
             "robot_params.wheel.separation_y"
         ).value
+        self.max_cmd_ticks = abs(
+            int(self.get_parameter("robot_params.wheel.max_cmd_ticks").value)
+        )
 
         self.payload_fmt = self.get_parameter("packet_params.payload_fmt").value
         self.seq_size = self.get_parameter("packet_params.seq_size").value
@@ -288,6 +295,27 @@ class Mecanumbot_IO_Node(Node):
         self.opencr_state.err_br = shorts[24]
         self.opencr_state.err_fl = shorts[25]
         self.opencr_state.err_fr = shorts[26]
+        # A negative err_* is the board's "this wheel did not answer" sentinel,
+        # not a Dynamixel hardware error code. Everything else it reports about
+        # the wheels is then the last good sample, so say so: a silent Dynamixel
+        # bus otherwise looks exactly like a robot ignoring its own feedback,
+        # because cmd_vel_* is the command echoed back rather than a read.
+        if min(shorts[23:27]) < 0:
+            self.get_logger().warn(
+                "OpenCR cannot read the Dynamixel bus: wheel velocity, position, "
+                "current and error state are stale. Check DXL power and cabling.",
+                throttle_duration_sec=5.0,
+            )
+        elif any(e & 1 for e in shorts[23:27]):
+            # Bit 0 of the XM430 Hardware Error Status. Reported, not acted on:
+            # the motors keep driving with it set, the flag latches until they
+            # are power-cycled, and stopping a trial on a latched flag would
+            # cost more than it saves.
+            self.get_logger().warn(
+                "Wheels report Input Voltage Error: the motor supply is out of "
+                "range. Latches until the motors are power-cycled.",
+                throttle_duration_sec=10.0,
+            )
         self.opencr_state.dms = floats[0]
         self.opencr_state.battery_voltage = floats[1]
         self.opencr_state.imu_angular_vel_x = floats[2]
@@ -319,10 +347,11 @@ class Mecanumbot_IO_Node(Node):
 
         # Only update the command set; the tx timer owns the serial write.
         with self.cmd_lock:
-            self.cmd_outputs["BL_vel"] = max(min(bl_raw, 300), -300)
-            self.cmd_outputs["FL_vel"] = max(min(fl_raw, 300), -300)
-            self.cmd_outputs["BR_vel"] = max(min(br_raw, 300), -300)
-            self.cmd_outputs["FR_vel"] = max(min(fr_raw, 300), -300)
+            limit = self.max_cmd_ticks
+            self.cmd_outputs["BL_vel"] = max(min(bl_raw, limit), -limit)
+            self.cmd_outputs["FL_vel"] = max(min(fl_raw, limit), -limit)
+            self.cmd_outputs["BR_vel"] = max(min(br_raw, limit), -limit)
+            self.cmd_outputs["FR_vel"] = max(min(fr_raw, limit), -limit)
             self._have_command = True
 
     def access_motor_cmd_callback(self, msg):
@@ -332,6 +361,20 @@ class Mecanumbot_IO_Node(Node):
             self.cmd_outputs["GL_pos"] = msg.gl_pos * 100
             self.cmd_outputs["GR_pos"] = msg.gr_pos * 100
             self._have_command = True
+
+    def wheel_feedback_lost(self):
+        """
+        Report whether the board says it cannot read the wheels.
+
+        A negative ``err_*`` is the board's DXL_UNREADABLE sentinel, which means
+        every other wheel field in the packet is a stale sample rather than a
+        reading.
+        """
+        with self.rx_lock:
+            vals = self.vals
+        if vals is None:
+            return False
+        return min(vals[23:27]) < 0
 
     def update_motor_cmds_out(self, force=False):
         """
@@ -349,15 +392,35 @@ class Mecanumbot_IO_Node(Node):
         if not (self._have_command or force):
             return
 
+        # Driving the wheels while the board cannot hear them is driving blind:
+        # the feedback that would show it going wrong is exactly what is
+        # missing, and on this robot a silent bus has meant a sagging supply.
+        # Hold them at zero until reads come back -- it recovers on its own, no
+        # latch. Only the wheels: zeroing a position command would slam the neck
+        # to 0, and the shutdown stop frame (force) must always go out.
+        hold_wheels = not force and self.wheel_feedback_lost()
+        if hold_wheels:
+            self.get_logger().warn(
+                "Holding the wheels at zero: OpenCR cannot read the Dynamixel bus.",
+                throttle_duration_sec=5.0,
+            )
+
         fmt = "<7h"
         with self.cmd_lock:
-            try:
-                message_bytes = struct.pack(
-                    fmt,
+            wheels = (
+                (0, 0, 0, 0)
+                if hold_wheels
+                else (
                     int(self.cmd_outputs["BL_vel"]),
                     int(self.cmd_outputs["BR_vel"]),
                     int(self.cmd_outputs["FL_vel"]),
                     int(self.cmd_outputs["FR_vel"]),
+                )
+            )
+            try:
+                message_bytes = struct.pack(
+                    fmt,
+                    *wheels,
                     int(self.cmd_outputs["N_pos"]),
                     int(self.cmd_outputs["GL_pos"]),
                     int(self.cmd_outputs["GR_pos"]),
@@ -439,8 +502,10 @@ class Mecanumbot_IO_Node(Node):
                 # Bad CRC → discard only magic byte and keep scanning
                 if computed_crc != recv_crc:
                     del self.rx_buffer[start : start + 1]
-                    self.get_logger.warning(
-                        f"Magic byte wrong, computed: {computed_crc}, recieved: {recv_crc}"
+                    self.get_logger().warning(
+                        f"Packet CRC mismatch, computed: {computed_crc}, "
+                        f"received: {recv_crc}",
+                        throttle_duration_sec=1.0,
                     )
                     continue
 

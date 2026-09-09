@@ -36,9 +36,29 @@
     # on the Orin Nano and the main reason long sessions fell behind real time.
     map_update_interval: 5.0
     resolution: 0.05
-    min_laser_range: 0.0
-    max_laser_range: 10.0
-    minimum_time_interval: 0.5
+    # The LDS-02's own limits, not the driver's. ld08_driver advertises
+    # 0.02 .. 12.0 m, which is the protocol's range and not the sensor's, and
+    # Karto believes it: any beam longer than `max_laser_range` is raytraced as
+    # FREE out to that distance without marking an endpoint, so at 10.0 every
+    # no-return beam painted a 10 m free ray. That is the starburst of dashed
+    # rays through the walls in a bad T1 map, and it is not only cosmetic --
+    # the same clipped readings build the correlation grid the scan matcher
+    # runs on, so junk beyond the sensor's useful range degrades every match.
+    # 8.0 is what `mecanumbot_lds.lua` already caps this lidar at for the same
+    # arena; 0.16 is its minimum, below which the returns are the robot's own
+    # body. Drop max to 6.0 if long free rays still cross mapped walls.
+    min_laser_range: 0.16
+    max_laser_range: 8.0
+    # A floor on graph-node spacing, and only a floor: nothing here ever
+    # *forces* a node. Karto's own HasMovedEnough treats this as an OR ("enough
+    # time has passed" admits a scan on its own), but slam_toolbox's
+    # shouldProcessScan runs first and rejects the scan before Karto sees it --
+    # see minimum_travel_distance below. Lowered from 0.5 so that the distance
+    # gate is the one that binds while driving; at 0.24 m/s and 0.5 s this was
+    # spacing nodes 0.12 m apart rather than the 0.09 m asked for. Raise it
+    # back towards 0.5 if a long pass falls behind real time -- node count is
+    # what scales cost with session length.
+    minimum_time_interval: 0.25
     transform_timeout: 0.5
     tf_buffer_duration: 30.0
     # A deep queue does NOT prevent dropped scans here - it defers them. Once the
@@ -56,25 +76,59 @@
     # General Parameters
     use_scan_matching: true
     use_scan_barycenter: true
-    # 0.1 m / 0.1 rad gives 5x the pose-graph node density of the slam_toolbox
-    # default. Kept for map detail, but note this is the remaining term that
-    # scales cost with session length (map rasterisation and loop-closure search
-    # both grow with node count). Raise towards 0.25 if long sessions still lag.
+    # KEEP THIS SMALL, and know why before raising it.
+    #
+    # slam_toolbox's own `shouldProcessScan` (slam_toolbox_common.cpp) gates on
+    # TRANSLATION ONLY -- `dist2 < 0.8 * minimum_travel_distance^2` and the
+    # scan is dropped, with no heading term anywhere in it. Karto's
+    # `HasMovedEnough` does check heading, but it never gets the scan. So while
+    # the robot turns in place, THIS NODE PROCESSES NO SCANS AT ALL: the pose
+    # graph learns nothing about the turn and the only account of it is wheel
+    # odometry, which on mecanum is at its least trustworthy under yaw. The
+    # first scan after the turn is matched against a prior carrying the whole
+    # spin's accumulated error, and `coarse_search_angle_offset` (20 deg) is
+    # how much of that the matcher can absorb before it locks onto the wrong
+    # alignment and the map jumps.
+    #
+    # Which makes this the distance the robot must translate before the map is
+    # allowed to look again -- 0.8^0.5 * 0.1 = 0.089 m. It is the recovery
+    # latency after every turn, so it stays at 0.1.
+    #
+    # The real fix for the same failure is upstream and not here: turn less,
+    # and turn slower. `mecanumbot_exploration_nav2.yaml` caps yaw at
+    # 0.6 rad/s, and `mecanumbot_autoslam` no longer ends every leg with a
+    # turn to face map-east.
     minimum_travel_distance: 0.1
+    # Reaches Karto, but only for scans that already passed the distance gate
+    # above, so it is not the rotation control it looks like.
     minimum_travel_heading: 0.1
-    # Running scan buffer used for local matching. At 0.1 m node spacing 30 scans
-    # already span ~3 m, well beyond link_scan_maximum_distance (1.5 m); 100 was
-    # 10x the default and paid on every scan match.
-    scan_buffer_size: 30
+    # Running scan buffer used for local matching. At 0.1 m node spacing 20
+    # scans span ~2 m, already beyond link_scan_maximum_distance (1.5 m); the
+    # shipped 100 was 10x the default and paid on every scan match.
+    scan_buffer_size: 20
     scan_buffer_maximum_scan_distance: 10.0
     link_match_minimum_response_fine: 0.1  
     link_scan_maximum_distance: 1.5
     loop_search_maximum_distance: 3.0
-    do_loop_closing: true 
-    loop_match_minimum_chain_size: 10           
-    loop_match_maximum_variance_coarse: 3.0  
-    loop_match_minimum_response_coarse: 0.35    
-    loop_match_minimum_response_fine: 0.45
+    do_loop_closing: true
+    # These four are the "the whole map suddenly changed" knobs, and they were
+    # all at the slam_toolbox defaults. A loop closure re-optimises the entire
+    # pose graph and slam_toolbox re-rasterises the whole grid from it, so a
+    # FALSE closure does not degrade the map, it rewrites it -- which is
+    # exactly the failure being tuned out here. A MISSED closure only lets
+    # drift accumulate, and in a ~10 x 9 m arena over a 900 s pass that is
+    # bounded. So the trade is deliberately asymmetric: make closures rarer
+    # and require them to be better.
+    #
+    # The chain size is the load-bearing one in a corridor. At the default 10
+    # nodes and 0.1 m spacing, a candidate chain was ~1 m of travel -- and one
+    # metre of corridor wall matches any other metre of corridor wall. 25 nodes
+    # is ~2.5 m of geometry, long enough to have to be somewhere in particular
+    # and still short enough to fit inside loop_search_maximum_distance (3.0).
+    loop_match_minimum_chain_size: 25
+    loop_match_maximum_variance_coarse: 2.0
+    loop_match_minimum_response_coarse: 0.45
+    loop_match_minimum_response_fine: 0.55
 
     # Correlation Parameters
     correlation_search_space_dimension: 0.5

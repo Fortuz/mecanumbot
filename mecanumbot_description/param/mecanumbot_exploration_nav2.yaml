@@ -41,9 +41,31 @@
 #     exploration there is no participant watching and a spin is genuinely
 #     useful -- it is free lidar coverage.
 #
-# Everything else -- footprint, inflation, DWB tuning, the velocity smoother --
-# is deliberately identical to the study configuration, so that a path driven
-# during exploration is driven the same way as a path during a trial.
+#  6. **Yaw rate is capped well below the study's, and that is the one place
+#     this file no longer drives a path the way a trial does.** During a trial
+#     the map is fixed and a fast turn costs nothing; during T1 the map is
+#     being built out of the turn. The LDS-02 sweeps for 100 ms and the driver
+#     does not deskew it, so at the study's 1.0 rad/s every scan is smeared
+#     ~6 deg -- and mecanum rollers slip most under yaw, so wheel odometry
+#     reports the commanded rotation while the robot has done less of it. That
+#     is the "the robot disorients itself" failure.
+#
+#     And there is no correction while it happens: slam_toolbox's
+#     `shouldProcessScan` gates incoming scans on TRANSLATION only, with no
+#     heading term, so a robot turning in place adds no pose-graph nodes at
+#     all. A turn is time the mapper spends blind, trusting the estimate that
+#     is least trustworthy during it, and the first scan afterwards has to
+#     absorb the whole spin's accumulated yaw error inside
+#     `coarse_search_angle_offset` (20 deg) or lock onto the wrong alignment.
+#     Halving the rate halves both the in-scan smear and the error accrued
+#     across a turn of a given size; `mecanumbot_slam_mapping.yaml` documents
+#     the gate itself. Legs are a little slower; `max_duration` in the autoslam
+#     constants is the budget to watch if that starts to bite.
+#
+# Everything else -- footprint, inflation, the DWB translation limits, the
+# velocity smoother's linear terms -- is deliberately identical to the study
+# configuration, so that a path driven during exploration is driven the same
+# way as a path during a trial.
 
 bt_navigator:
   ros__parameters:
@@ -109,7 +131,10 @@ controller_server:
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5 
       angular_disengage_threshold: 0.3925
-      rotate_to_heading_angular_vel: 0.7
+      # See difference 6 in the header: half the study file's 0.7. This is the
+      # rate the shim turns the robot onto the path at the start of every leg,
+      # so it is the single most frequent rotation in a T1 pass.
+      rotate_to_heading_angular_vel: 0.4
       max_angular_accel: 0.5
       simulate_ahead_time: 1.0
       rotate_to_goal_heading: true
@@ -121,16 +146,20 @@ controller_server:
       min_vel_y: -0.24
       max_vel_x: 0.24
       max_vel_y: 0.24
-      max_vel_theta: 1.0
+      # Difference 6. Translation limits are the study file's; only yaw is cut.
+      max_vel_theta: 0.6
       min_speed_xy: 0.0
       max_speed_xy: 0.24
       min_speed_theta: 0.0
       acc_lim_x: 2.0
       acc_lim_y: 2.0
-      acc_lim_theta: 2.0
+      # Yaw acceleration is where mecanum rollers break traction, and a slipped
+      # wheel is a lie the odometry cannot detect. Halved for the same reason
+      # the rate above is.
+      acc_lim_theta: 1.0
       decel_lim_x: -2.0
       decel_lim_y: -2.0
-      decel_lim_theta: -2.0
+      decel_lim_theta: -1.0
       # Odd counts so zero velocity is always sampled. Fewer samples over a
       # shorter horizon with a coarser angular step pays for the 6 Hz rate.
       vx_samples: 13
@@ -340,9 +369,13 @@ behavior_server:
     robot_base_frame: mecanumbot/base_link
     transform_tolerance: 0.2
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
+    # The stock spin recovery is kept (difference 5 in the header -- during
+    # exploration a spin is free lidar coverage), but it is the longest
+    # uninterrupted rotation in the pass, so it gets the same cap as the
+    # controller's. Difference 6.
+    max_rotational_vel: 0.6
     min_rotational_vel: 0.4
-    rotational_acc_lim: 2.0
+    rotational_acc_lim: 1.0
 waypoint_follower:
   ros__parameters:
     loop_rate: 20
@@ -361,10 +394,13 @@ velocity_smoother:
     smoothing_frequency: 10.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.5, 0.7]
-    min_velocity: [-0.5, -0.5, -0.7]
-    max_accel: [2.0, 2.0, 1.0]
-    max_decel: [-2.0, -2.0, -1.0]
+    # Linear terms are the study file's; the yaw term is the ceiling under
+    # difference 6, and has to sit at or above the controller's 0.6 or the
+    # smoother clips every commanded turn.
+    max_velocity: [0.5, 0.5, 0.6]
+    min_velocity: [-0.5, -0.5, -0.6]
+    max_accel: [2.0, 2.0, 0.8]
+    max_decel: [-2.0, -2.0, -0.8]
     odom_topic: "/mecanumbot/odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
