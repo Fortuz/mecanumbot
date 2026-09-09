@@ -8,26 +8,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-from nav2_common.launch import RewrittenYaml
 
 mecanumbot_description_pkg_share = get_package_share_directory("mecanumbot_description")
-
-
-def with_exploration_bt(nav2_params_file):
-    """Point bt_navigator at the exploration BT that adds a 360° spin after
-    each frontier approach, ensuring full camera coverage before the next
-    frontier is requested."""
-    bt_dir = os.path.join(mecanumbot_description_pkg_share, "behavior_trees")
-    return RewrittenYaml(
-        source_file=nav2_params_file,
-        root_key="",
-        param_rewrites={
-            "default_nav_to_pose_bt_xml": os.path.join(
-                bt_dir, "exploration_nav_to_pose.xml"
-            ),
-        },
-        convert_types=True,
-    )
 
 
 def generate_launch_description():
@@ -60,9 +42,11 @@ def generate_launch_description():
     slam_mapping_yaml = os.path.join(
         mecanumbot_description_pkg_share, "param", "mecanumbot_slam_mapping.yaml"
     )
-    nav2_params_file = with_exploration_bt(os.path.join(
+    # Pass the params file directly; navigation_launch.py applies its own RewrittenYaml
+    # internally and double-wrapping loses the DWB critics parameters.
+    nav2_params_file = os.path.join(
         mecanumbot_description_pkg_share, "param", "mecanumbot_custom_nav2_no_keepout.yaml"
-    ))
+    )
     state_publisher_path = os.path.join(
         get_package_share_directory("mecanumbot_bringup"), "launch", "mecanumbot_state_publisher.launch.py"
     )
