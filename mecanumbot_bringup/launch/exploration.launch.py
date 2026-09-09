@@ -165,20 +165,21 @@ def generate_launch_description():
             parameters=[{
                 "use_sim_time": use_sim_time,
                 "robot_base_frame": "mecanumbot/base_link",
-                "costmap_topic": "global_costmap/costmap",
-                "costmap_updates_topic": "global_costmap/costmap_updates",
+                "costmap_topic": "/global_costmap/costmap",
+                "costmap_updates_topic": "/global_costmap/costmap_updates",
                 "visualize": True,
-                "planner_frequency": 0.5,   # új frontier keresés 2 másodpercenként
-                "progress_timeout": 30.0,   # ha 30s alatt nem halad, új frontier
+                "planner_frequency": 0.5,   # replan frontier every 2 s
+                "progress_timeout": 30.0,   # pick new frontier if no progress within 30 s
                 "potential_scale": 3.0,
                 "gain_scale": 1.0,
                 "transform_tolerance": 0.5,
-                "min_frontier_size": 0.3,   # legalább 30 cm széles frontier kell
+                "min_frontier_size": 0.3,   # ignore frontiers narrower than 30 cm
             }],
             output="screen",
         ),
 
-        # --- Uncertainty monitor: ha a lokalizációs bizonytalanság nő, visszatér az origóhoz ---
+        # --- Uncertainty monitor: pauses explore_lite and navigates back to origin when
+        #     localization covariance grows too large, forcing a loop closure. ---
         Node(
             package="mecanumbot_monitor",
             executable="exploration_uncertainty_monitor",
@@ -188,8 +189,8 @@ def generate_launch_description():
                 "uncertainty_threshold": ParameterValue(
                     LaunchConfiguration("uncertainty_threshold"), value_type=float
                 ),
-                "check_period": 5.0,        # másodpercenként ellenőriz
-                "revisit_x": 0.0,           # origóra tér vissza (indulási pont)
+                "check_period": 5.0,        # seconds between covariance checks
+                "revisit_x": 0.0,           # return to map origin (start pose)
                 "revisit_y": 0.0,
             }],
         ),
