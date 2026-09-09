@@ -32,6 +32,7 @@ setup(
             "playback_stepper = mecanumbot_monitor.rosbag_stepper:main",
             "metric_eval = mecanumbot_monitor.metric_eval:main",
             "metric_logger = mecanumbot_monitor.metric_eval:main",
+            "exploration_uncertainty_monitor = mecanumbot_monitor.exploration_uncertainty_monitor:main",
         ],
     },
 )

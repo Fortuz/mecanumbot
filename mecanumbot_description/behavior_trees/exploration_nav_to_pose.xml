@@ -1,0 +1,62 @@
+<!--
+  Exploration variant of the nav-to-pose tree.
+
+  Adds a full 360-degree Spin after every successful frontier approach so that
+  the camera captures all wall surfaces before m-explore-ros2 requests the
+  next frontier.  Without this, the 360-degree LiDAR marks a frontier as
+  explored while the forward-facing camera may never have pointed at the
+  corresponding surface.
+
+  Spin parameters:
+    spin_dist="6.28"  -- 2π rad = full rotation
+    time_allowance="10" -- abort if the spin takes more than 10 s (stuck)
+
+  Recovery actions are identical to mecanumbot_nav_to_pose.xml except the
+  Spin recovery is retained here (unlike the leading-behaviour tree where it
+  was removed to avoid confusing human subjects).
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="NavigateThenScan">
+
+      <!-- 1. Navigate to the frontier pose (same logic as normal nav tree) -->
+      <RecoveryNode number_of_retries="4" name="NavigateRecovery">
+        <PipelineSequence name="NavigateWithReplanning">
+          <RateController hz="2.0">
+            <RecoveryNode number_of_retries="2" name="ComputePathToPose">
+              <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+              <ClearCostmapExceptRegion name="ClearGlobalCostmap-Context"
+                                        service_name="global_costmap/clear_except_global_costmap"
+                                        reset_distance="2.0"/>
+            </RecoveryNode>
+          </RateController>
+          <RecoveryNode number_of_retries="2" name="FollowPath">
+            <FollowPath path="{path}" controller_id="FollowPath"/>
+            <ClearCostmapExceptRegion name="ClearLocalCostmap-Context"
+                                      service_name="local_costmap/clear_except_local_costmap"
+                                      reset_distance="1.0"/>
+          </RecoveryNode>
+        </PipelineSequence>
+        <ReactiveFallback name="RecoveryFallback">
+          <GoalUpdated/>
+          <RoundRobin name="RecoveryActions">
+            <Sequence name="ClearingActions">
+              <ClearCostmapExceptRegion name="ClearLocalCostmap-Subtree"
+                                        service_name="local_costmap/clear_except_local_costmap"
+                                        reset_distance="0.8"/>
+              <ClearCostmapExceptRegion name="ClearGlobalCostmap-Subtree"
+                                        service_name="global_costmap/clear_except_global_costmap"
+                                        reset_distance="2.0"/>
+            </Sequence>
+            <Wait wait_duration="1"/>
+            <BackUp backup_dist="0.20" backup_speed="0.10"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- 2. Full 360° scan so the camera sees all surfaces at this location -->
+      <Spin spin_dist="6.28" time_allowance="10" is_recovery="false"/>
+
+    </Sequence>
+  </BehaviorTree>
+</root>
