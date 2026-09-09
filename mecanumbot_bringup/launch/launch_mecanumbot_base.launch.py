@@ -14,7 +14,6 @@ from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 
 mecanumbot_description_pkg_share = get_package_share_directory("mecanumbot_description")
@@ -122,7 +121,7 @@ def generate_launch_description():
         default_value="true",
         description=(
             "Bring up nav2 against the STUDY parameters, with AMCL and a saved "
-            "map. Set false for T1: mecanumbot_custom_nav2's autoslam.launch.py "
+            "map. Set false for T1: mecanumbot_autoslam's launch_autoslam "
             "brings its own nav2 without AMCL, because slam_toolbox owns "
             "map -> odom during exploration and two things estimating the same "
             "transform is the most confusing way for a run to fail. This "
@@ -143,33 +142,11 @@ def generate_launch_description():
         description="Joystick profile stem, or 'auto' to detect from the pad",
     )
 
-    declare_yolo_imgsz = DeclareLaunchArgument(
-        "yolo_imgsz",
-        default_value="1280",
-        description=(
-            "Input size the DeepStream pose model expects. Selects "
-            "mecanumbot_sensorprocess_smart models/imgsz_<n>/, so the size has to "
-            "be one the model was exported at (640 or 1280 are shipped)"
-        ),
-    )
-
-    declare_yolo_model = DeclareLaunchArgument(
-        "yolo_model",
-        default_value="yolo26m-pose",
-        description="Pose model stem inside models/imgsz_<yolo_imgsz>/",
-    )
-
     # --- File Paths ---
     core_yaml = os.path.join(
         get_package_share_directory("mecanumbot_core"),
         "param",
         "mecanumbot_core_parameters.yaml",
-    )
-
-    lidar_detect_yaml = os.path.join(
-        get_package_share_directory("mecanumbot_sensorprocess_smart"),
-        "config",
-        "lidar_peopledetect_config.yaml",
     )
 
     state_publisher_path = os.path.join(
@@ -227,8 +204,6 @@ def generate_launch_description():
         declare_use_nav2,
         declare_use_web,
         declare_joystick_profile,
-        declare_yolo_imgsz,
-        declare_yolo_model,
         LogInfo(
             msg=f"[onboard_bringup] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"
         ),
@@ -325,47 +300,23 @@ def generate_launch_description():
                 "namespace": namespace,
             }.items(),
         ),
-        # Onboard people detection nodes
-        Node(
-            namespace=namespace,
-            package="mecanumbot_sensorprocess_smart",
-            executable="mecanumbot_lidar_detect_people",
-            name="mecanumbot_lidar_detect_people",
-            output="screen",
-            parameters=[lidar_detect_yaml],
-            remappings=[("map", "/map")],
-        ),
-        Node(
-            namespace=namespace,
-            package="mecanumbot_sensorprocess_smart",
-            executable="mecanumbot_locate_detections",
-            name="mecanumbot_locate_detections",
-            output="screen",
-            parameters=[lidar_detect_yaml],
-        ),
-        Node(
-            namespace=namespace,
-            package="mecanumbot_sensorprocess_smart",
-            executable="mecanumbot_onboard_cam_detect_people",
-            # Must match the YAML top-level key, which is the name the node
-            # registers for itself -- naming it after the executable instead
-            # silently dropped every parameter in the file.
-            name="mecanumbot_cam_detect_people_ds",
-            output="screen",
-            parameters=[
-                lidar_detect_yaml,
-                {
-                    "from_topic": False,
-                    # The ONNX exports live one folder per input size; this
-                    # picks the folder, and the node rewrites infer-dims and
-                    # the model/engine paths in the nvinfer config to match.
-                    "model_params.imgsz": ParameterValue(
-                        LaunchConfiguration("yolo_imgsz"), value_type=int
-                    ),
-                    "model_params.model_name": LaunchConfiguration("yolo_model"),
-                },
-            ],
-        ),
+        # Perception is NOT started here. It used to be, so every run of the
+        # robot -- a teleop session, a mapping run, T1 exploration -- carried a
+        # DR-SPAAM detector, a DeepStream network and the fusion node whether or
+        # not anything subscribed to them. On an Orin Nano that is not free: the
+        # network is most of the GPU, and it holds the camera open so nothing
+        # else can have it, which is why there was no
+        # /camera/image_raw/compressed to record a trial from.
+        #
+        # It is started by the behaviour that needs it instead, with the
+        # detector that behaviour needs:
+        #
+        #   ros2 launch mecanumbot_sensorprocess_smart perception.launch.py \
+        #       detector:=pose|fetch|none use_camera:=true|false
+        #
+        # which is what the leading, ostensive, seek and fetch launch files
+        # include. `mecanumbot_peopledetect.launch.py` is the same thing under
+        # its older name, for a run with no tree.
     ]
 
     # --- Conditional Navigation & Vision Nodes ---

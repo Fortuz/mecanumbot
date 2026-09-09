@@ -369,8 +369,146 @@ DEMO = BehaviourSpec(
     ),
 )
 
+SEEK = BehaviourSpec(
+    key="seek",
+    label="Seek (T2)",
+    summary="The robot is told what to find and where the Deep3R server last "
+            "saw it, then searches for it -- and if it cannot have it, goes "
+            "and tells somebody.",
+    mode="launch",
+    package="mecanumbot_seek",
+    target="launch_seek.launch.py",
+    editor="flat",
+    requires=(
+        "T1 finished and its map saved -- this tree localizes against the "
+        "saved map with AMCL, so the base launch's nav2 is the right one here",
+        "A target: ros2 topic pub --once /mecanumbot/seek/request "
+        "std_msgs/String \"{data: 'the red mug on the desk'}\" -- free text, "
+        "not a class label",
+        "The launch file starts the pose detector and the map-agreement "
+        "handler itself; use_perception:=false if they are already up",
+    ),
+    default_file="seek_setting_constants.yaml",
+    ssid_files={"MecanumetoNet": "Eto_seek_setting_constants.yaml"},
+    node_names=("seek_bt_node",),
+    arguments=(
+        Argument(
+            name="params_file",
+            label="Constants file",
+            kind=KIND_FILE,
+            default="seek_setting_constants.yaml",
+            emit=("params:={}", "yaml_path:={}"),
+            doc="The constants the tree loads at setup, including the SEEKING "
+                "circuit itself. This is the file edited below.",
+        ),
+        _NAMESPACE_LAUNCH,
+    ),
+)
+
+FETCH = BehaviourSpec(
+    key="fetch",
+    label="Fetch",
+    summary="The robot circles and sweeps its head to find a tennis ball, "
+            "grips it, and takes it to the first person it can see.",
+    mode="launch",
+    package="mecanumbot_fetch_behaviour",
+    target="launch_fetch.launch.py",
+    editor="flat",
+    requires=(
+        "Nav2 running and AMCL localized",
+        "The FETCH detector, which the launch file starts for itself. It "
+        "REPLACES the pose detector: a pose network has one class, so no "
+        "threshold makes it find tennis balls, and two networks on one camera "
+        "stream is most of the Orin Nano",
+    ),
+    default_file="fetch_setting_constants.yaml",
+    ssid_files={"MecanumetoNet": "Eto_fetch_setting_constants.yaml"},
+    node_names=("fetch_bt_node",),
+    arguments=(
+        Argument(
+            name="params_file",
+            label="Constants file",
+            kind=KIND_FILE,
+            default="fetch_setting_constants.yaml",
+            emit=("params:={}", "yaml_path:={}"),
+            doc="The constants the tree loads at setup, including the grasp "
+                "height band -- which is hardware, not taste. This is the file "
+                "edited below.",
+        ),
+        _NAMESPACE_LAUNCH,
+    ),
+)
+
+AUTOSLAM = BehaviourSpec(
+    key="autoslam",
+    label="Autoslam (T1)",
+    summary="Explore a place that has never been mapped: drive to the best "
+            "frontier until the map and the Deep3R reconstruction have both "
+            "stopped improving, then latch exploration/finished for T2.",
+    mode="launch",
+    package="mecanumbot_autoslam",
+    target="launch_autoslam.launch.py",
+    editor="flat",
+    requires=(
+        "The drivers, ideally started with use_nav2:=false -- this launch "
+        "brings up its own nav2 and slam_toolbox",
+        "The Deep3R client and a live tunnel, unless require_cloud is false. "
+        "Without a verdict from the server the exit criteria can never be "
+        "satisfied and the pass will not finish",
+    ),
+    default_file="autoslam_setting_constants.yaml",
+    # No Eto_ file: the only room-dependent constant is max_duration, so both
+    # Wi-Fi profiles load the same one. See the file's header.
+    ssid_files={},
+    note="Starts by SHUTTING DOWN what contradicts an exploration pass -- the "
+         "study nav2 stack, AMCL, the map server, and any behaviour tree "
+         "sending its own nav2 goals, including one started from this page. "
+         "The joystick is deliberately left alone. use_preflight:=false to "
+         "skip it.",
+    node_names=("autoslam_node",),
+    arguments=(
+        Argument(
+            name="params_file",
+            label="Constants file",
+            kind=KIND_FILE,
+            default="autoslam_setting_constants.yaml",
+            # One emit, not two: this pass has no blackboard. The constants
+            # are read as ordinary ROS parameters, so there is no second path
+            # for a loader to open.
+            emit=("params:={}",),
+            doc="The constants the pass runs on: the RRT, the goal scoring "
+                "and every exit criterion. This is the file edited below.",
+        ),
+        Argument(
+            name="require_cloud",
+            label="Require the reconstruction",
+            kind=KIND_CHOICE,
+            default="true",
+            choices=("true", "false"),
+            emit=("require_cloud:={}",),
+            doc="Whether the pass may only end once the server says the "
+                "reconstruction is good enough. false is right for a mapping "
+                "dry run and wrong during a trial: it drops the test that "
+                "catches a failed T1 that looks exactly like a successful one.",
+        ),
+        Argument(
+            name="use_preflight",
+            label="Clear the graph first",
+            kind=KIND_CHOICE,
+            default="true",
+            choices=("true", "false"),
+            emit=("use_preflight:={}",),
+            doc="Shut down the study nav2 stack, AMCL and any running tree "
+                "before starting. false starts straight away, and then they "
+                "fight this pass for map -> odom and for navigate_to_pose.",
+        ),
+        _NAMESPACE_LAUNCH,
+    ),
+)
+
 #: Every behaviour the GUI can start, in the order the page shows them.
-CATALOG: Tuple[BehaviourSpec, ...] = (LEADING, OSTENSIVE, DEMO)
+CATALOG: Tuple[BehaviourSpec, ...] = (
+    LEADING, OSTENSIVE, SEEK, FETCH, AUTOSLAM, DEMO)
 
 #: The behaviour whose files the un-scoped config routes address.
 DEFAULT_BEHAVIOUR = LEADING.key

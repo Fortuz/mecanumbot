@@ -20,6 +20,8 @@
   <exec_depend>mecanumbot_core</exec_depend>
   <exec_depend>mecanumbot_sim</exec_depend>
   <exec_depend>mecanumbot_camera_stream</exec_depend>
+  <!-- sim.launch.py and launch_external.launch.py start its nodes. -->
+  <exec_depend>mecanumbot_sensorprocess_smart</exec_depend>
   <exec_depend>mecanumbot_audio</exec_depend>
   <exec_depend>mecanumbot_joy</exec_depend>
   <exec_depend>mecanumbot_web</exec_depend>

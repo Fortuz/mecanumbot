@@ -86,6 +86,15 @@ class _ParamReader(Node):
             "demo_config_dir",
             _share("mecanumbot_demo_behaviours", "config"))
         self.declare_parameter(
+            "seek_config_dir",
+            _share("mecanumbot_seek", "config"))
+        self.declare_parameter(
+            "fetch_config_dir",
+            _share("mecanumbot_fetch_behaviour", "config"))
+        self.declare_parameter(
+            "autoslam_config_dir",
+            _share("mecanumbot_autoslam", "config"))
+        self.declare_parameter(
             "diagnostics_config",
             _share("mecanumbot_web", "config", "diagnostics_topics.yaml"))
         self.declare_parameter("joy_node", "/mecanumbot/mecanumbot_joy_node")
@@ -106,7 +115,8 @@ class _ParamReader(Node):
             name: self.get_parameter(name).value
             for name in (
                 "host", "port", "joystick_config_dir", "behaviour_config_dir",
-                "ostensive_config_dir", "demo_config_dir",
+                "ostensive_config_dir", "demo_config_dir", "seek_config_dir",
+                "fetch_config_dir", "autoslam_config_dir",
                 "diagnostics_config", "joy_node", "joy_topic", "backup_root",
                 "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
             )
@@ -136,9 +146,15 @@ def main(args=None):
             odom_topic=settings["odom_topic"],
         )
 
+        # One entry per catalog key. A package missing from the checkout
+        # leaves its directory empty, and the page shows that behaviour as
+        # unavailable rather than the GUI failing to start.
         behaviour_dirs = {
             "leading": settings["behaviour_config_dir"],
             "ostensive": settings["ostensive_config_dir"],
+            "seek": settings["seek_config_dir"],
+            "fetch": settings["fetch_config_dir"],
+            "autoslam": settings["autoslam_config_dir"],
             "demo": settings["demo_config_dir"],
         }
         for key, path in sorted(behaviour_dirs.items()):

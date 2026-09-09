@@ -177,3 +177,79 @@ def test_every_behaviour_names_the_nodes_it_puts_on_the_graph():
     for spec in bc.CATALOG:
         assert spec.node_names
     assert "bottom_up_tree_node" in bc.all_node_names()
+
+
+# ── the experiments added after the page was written ─────────────────────
+
+def test_every_experiment_in_the_workspace_is_startable():
+    """
+    The page and a shell have to be able to start the same runs.
+
+    Seek, fetch and autoslam existed for months before the page could start
+    them, so a trial run from the browser and one run from a terminal were
+    not the same set of experiments.
+    """
+    assert set(bc.keys()) == {
+        "leading", "ostensive", "seek", "fetch", "autoslam", "demo"}
+
+
+@pytest.mark.parametrize("spec,expected", [
+    (bc.SEEK, ["ros2", "launch", "mecanumbot_seek", "launch_seek.launch.py"]),
+    (bc.FETCH, ["ros2", "launch", "mecanumbot_fetch_behaviour",
+                "launch_fetch.launch.py"]),
+    (bc.AUTOSLAM, ["ros2", "launch", "mecanumbot_autoslam",
+                   "launch_autoslam.launch.py"]),
+])
+def test_each_new_behaviour_starts_its_own_launch_file(spec, expected, tmp_path):
+    """The command is the one the package's README documents."""
+    (tmp_path / spec.default_file).write_text("x:\n")
+    assert spec.build_command({}, str(tmp_path))[:4] == expected
+
+
+def test_autoslam_passes_its_constants_once(tmp_path):
+    """
+    Autoslam takes `params` and not also `yaml_path`.
+
+    Unlike the trees, this pass has no blackboard: its constants are ordinary
+    ROS parameters, so there is no second path for a loader to open, and
+    emitting one would be an argument its launch file does not declare.
+    """
+    (tmp_path / "autoslam_setting_constants.yaml").write_text("/**:\n")
+    argv = bc.AUTOSLAM.build_command({}, str(tmp_path))
+    assert len([part for part in argv if part.startswith("params")]) == 1
+    assert not any(part.startswith("yaml_path") for part in argv)
+
+
+def test_autoslam_offers_the_two_choices_that_can_ruin_a_pass(tmp_path):
+    """`require_cloud` and `use_preflight` are both on by default."""
+    (tmp_path / "autoslam_setting_constants.yaml").write_text("/**:\n")
+    argv = bc.AUTOSLAM.build_command({}, str(tmp_path))
+    assert "require_cloud:=true" in argv
+    assert "use_preflight:=true" in argv
+
+
+def test_autoslam_says_that_it_stops_other_behaviours():
+    """
+    The page must warn about it: a pass started here stops the tree next to it.
+
+    That is the point of the preflight, but a person clicking Start on one row
+    should not discover it by watching another row's tree die.
+    """
+    assert "SHUTTING DOWN" in bc.AUTOSLAM.note
+
+
+def test_the_new_experiments_use_the_flat_editor():
+    """Their constants are one block of scalars, like the ostensive file."""
+    for spec in (bc.SEEK, bc.FETCH, bc.AUTOSLAM):
+        assert spec.editor == "flat"
+
+
+def test_autoslam_loads_one_file_whatever_the_ssid():
+    """
+    Unlike the trees, the pass has no room-specific constants file.
+
+    Everything in it describes the lidar, the robot and the reconstruction
+    rather than the building; only `max_duration` is room-dependent.
+    """
+    for ssid in ("MecanumNet", "MecanumetoNet", None):
+        assert bc.AUTOSLAM.file_for_ssid(ssid) == "autoslam_setting_constants.yaml"

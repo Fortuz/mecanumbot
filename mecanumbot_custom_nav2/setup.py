@@ -11,7 +11,6 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/launch", glob("launch/*")),
         ("share/" + package_name + "/config", glob("config/*")),
     ],
     install_requires=["setuptools"],
@@ -19,15 +18,18 @@ setup(
     maintainer="Csenge Hubay",
     maintainer_email="csengehubay@gmail.com",
     description=(
-        "RRT frontier exploration for Mecanumbot's autoslam pass, "
-        "with the Deep3R reconstruction in the exit criteria."
+        "Map analysis for Mecanumbot's seeking system: the RRT frontier "
+        "detector, the occupancy model, the T1 exit criteria, and the handler "
+        "that turns the Deep3R server's 2D/3D verdict into a nav2 keepout "
+        "mask. No node here commands motion."
     ),
     license="Apache License 2.0",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "mecanumbot_frontier_explorer_node = "
-            "mecanumbot_custom_nav2.frontier_explorer_node:main",
+            # The one node in this package. The explorer that used to live here
+            # moved to mecanumbot_autoslam in mecanumbot_behaviours: it sends
+            # the robot places, and this package no longer commands motion.
             "mecanumbot_map_agreement_node = "
             "mecanumbot_custom_nav2.map_agreement_node:main",
         ],

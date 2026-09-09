@@ -439,7 +439,8 @@ docking_server:
       v_linear_max: 0.15
 
 # No lifecycle_manager_localization: there is nothing to localize against yet.
-# slam_toolbox is its own lifecycle and is started by autoslam.launch.py.
+# slam_toolbox is its own lifecycle and is started by
+# mecanumbot_autoslam's launch_autoslam.launch.py.
 
 lifecycle_manager_navigation:
   ros__parameters:

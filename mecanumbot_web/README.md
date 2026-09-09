@@ -3,6 +3,17 @@
 The robot-hosted web GUI. A normal rclpy node that also serves Flask, reachable
 at `http://<robot>:8080` once the onboard stack is up.
 
+**Off the lab WiFi, use `robot web`.** The node binds `0.0.0.0:8080` and starts
+with the base launch — `use_web` defaults true, and nothing in the Deep3R / T1
+path turns it off — but the robot↔cluster link in
+`mecanumbot_directories/RoboCamStreamProcessing/link/` forwards only two ports,
+22 and 5555. nipg1 has no route to the robot's LAN, so from there the page does
+not answer, which looks exactly like the node having failed to start. `robot
+web` forwards it over the control tunnel that already exists and prints the URL;
+`MECANUMBOT_SSH_HOST=mecanumbot-jump robot web` does the same from a laptop.
+Deliberately on demand and bound to your own loopback: this GUI has no login and
+can drive the robot. See that directory's README.
+
 It replaces a Flask app that ran in a Docker container **on the operator PC**,
 paired with two ROS packages on the robot, sharing a SQLite schema that existed
 in two copies — one per machine. That arrangement is what produced the "host
@@ -145,7 +156,21 @@ constants it will load, start it, watch its console, stop it.
 | --- | --- | --- |
 | Leading | `ros2 launch mecanumbot_leading_behaviour launch_wifi_condition_sequence.launch.py` | **condition** (`Doglike` / `Control` / `LED`), constants file, namespace |
 | Ostensive | `ros2 launch mecanumbot_ostensive_behaviour launch_ostensive.launch.py` | constants file, namespace |
+| Seek (T2) | `ros2 launch mecanumbot_seek launch_seek.launch.py` | constants file, namespace |
+| Fetch | `ros2 launch mecanumbot_fetch_behaviour launch_fetch.launch.py` | constants file, namespace |
+| Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, constants file, namespace |
 | Demo: wander between people | `ros2 run mecanumbot_demo_behaviours wander_between_people_node` | constants file, namespace |
+
+Seek, fetch and autoslam were startable from a terminal for months before they
+were startable from here, which meant a trial run from the browser and one run
+from a shell were not the same set of experiments. They are now.
+
+**Autoslam is the one row that stops the others.** T1 replaces the navigation
+stack rather than using it, so its launch file opens by shutting down the study
+nav2 stack, AMCL, the map server and any behaviour tree it finds on the graph —
+including one started from this page. That is the point of it, but it is worth
+knowing before clicking Start, which is why the row carries the warning.
+`use_preflight:=false` skips it, and then the two stacks fight.
 
 The catalog is `behaviour_catalog.py`, and every entry is the command the
 workspace documents for that tree — so a run started here and a run typed at a
@@ -195,7 +220,7 @@ Two schemas, two editors, for a reason:
   and poses that used to be constructor defaults in the behaviour library. Those
   carry the reasoning for their numbers in prose, which cannot be regenerated,
   so it is read off the outgoing file and written back around the same keys.
-- **Ostensive** (`flat_store.py`) — a flat block of scalars whose comments *are*
+- **Ostensive, seek, fetch and autoslam** (`flat_store.py`) — a flat block of scalars whose comments *are*
   the documentation. Nothing is rewritten there: only the value on each
   parameter's own line changes, then the result is reparsed and checked that
   exactly the intended keys moved. Parameters cannot be added or removed, since
@@ -298,6 +323,9 @@ complete.
 | `behaviour_config_dir` | `mecanumbot_leading_behaviour/config` |
 | `ostensive_config_dir` | `mecanumbot_ostensive_behaviour/config` |
 | `demo_config_dir` | `mecanumbot_demo_behaviours/config` |
+| `seek_config_dir` | `mecanumbot_seek/config` |
+| `fetch_config_dir` | `mecanumbot_fetch_behaviour/config` |
+| `autoslam_config_dir` | `mecanumbot_autoslam/config` |
 | `diagnostics_config` | `mecanumbot_web/config/diagnostics_topics.yaml` |
 | `joy_node` / `joy_topic` | `/mecanumbot/mecanumbot_joy_node` / `/mecanumbot/joy` |
 | `backup_root` | `~/.mecanumbot/config_backups` |
@@ -306,7 +334,7 @@ complete.
 | `cmd_vel_topic` | `/cmd_vel` |
 | `odom_topic` | `odom` — empty disables measured motion |
 
-The three config directories are resolved leniently: a behaviour whose package
+Every behaviour config directory is resolved leniently: a behaviour whose package
 is not in the checkout is shown on the page as unavailable, and cannot be edited
 or started, rather than the GUI failing to come up.
 

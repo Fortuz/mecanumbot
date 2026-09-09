@@ -1,38 +1,48 @@
 # mecanumbot_custom_nav2
 
-Two things: **autonomous exploration** (the T1 pass of the Deep3R seeking
-system) and **the robot's end of the 2D/3D comparison**.
+**Map analysis. Nothing here commands motion.**
 
-The explorer drives the robot around a place it has never seen, building a 2D
-map with slam_toolbox while the cluster builds a 3D point cloud from the same
-drive, and decides for itself when the scan is finished.
+Three things a map can be asked, and one node that answers the third out loud:
+where does the known map stop (the RRT **frontier detector**), how is the grid
+to be read at all (the **occupancy model**), when has a place been scanned (the
+T1 **exit criteria**), and — in `mecanumbot_map_agreement_node` — what does the
+Deep3R server's verdict on its own point cloud mean for where the robot may
+drive.
 
-The agreement handler takes the server's verdict on how those two disagree and
-turns it into things the robot acts on — a nav2 keepout mask, a revisit list and
-markers. It runs in **both** phases, because a table the lidar cannot see is
-still there in T2 when the robot is fetching something across the room.
+The pass that *acts* on all of this is **`mecanumbot_autoslam`**, in the
+`mecanumbot_behaviours` repository. It grew the RRTs, chose a frontier and sent
+the robot there, and it used to live in this package; sending the robot
+somewhere is a behaviour, so it moved, and the two launch files that start it
+moved with it. What is left here is imported by it, and by
+`mecanumbot_seek` in T2, and is testable without a robot.
 
-The name says `nav2` because that is what it steers. It replaces no part of the
-navigation stack: every translation goes through `NavigateToPose`, and the nav2
-tuning for this phase is a **parameter file in `mecanumbot_description`**
-(`param/mecanumbot_exploration_nav2.yaml`), not code. What could be done in YAML
-was done in YAML; this package is the part that could not be — a frontier
-detector.
+The agreement handler takes the server's verdict on how the 2D map and the 3D
+cloud disagree and turns it into things the robot acts on — a nav2 keepout mask,
+a revisit list and markers. It runs in **both** phases, because a table the
+lidar cannot see is still there in T2 when the robot is fetching something
+across the room. It publishes; it never drives.
+
+The name says `nav2` because that is what it informs. It replaces no part of the
+navigation stack, and the nav2 tuning for the exploration phase is a **parameter
+file in `mecanumbot_description`** (`param/mecanumbot_exploration_nav2.yaml`),
+not code. What could be done in YAML was done in YAML; this package is the part
+that could not be — a frontier detector and a comparison policy.
 
 ```text
                         ┌──────────────── mecanumbot_map_agreement ───────────────┐
   deep3r/map_agreement ─┤  AgreementModel  ──┬──► deep3r/keepout_mask  ──► nav2   │
         (the server)    │                    ├──► deep3r/costmap_filter_info      │
-                        │                    ├──► deep3r/revisit_regions ──┐      │
-                        │                    └──► deep3r/agreement_markers │      │
-                        └────────────────────────────────────────────────┼─┘
-                                                                          │
-  /map (slam_toolbox) ──┐                                                 │
-  map -> base_link (TF) ─┼─► RRT frontier detection ──► cluster ──► score ┤
-  deep3r/map_agreement ──┘                                                ▼
-                                                          nav2 NavigateToPose
-                                                                          │
-                    /exploration/finished ◄── exit criteria ◄─────────────┘
+                        │                    ├──► deep3r/revisit_regions          │
+                        │                    └──► deep3r/agreement_markers        │
+                        └─────────────────────────────────────────────────────────┘
+
+  libraries, imported by mecanumbot_autoslam (T1) and mecanumbot_seek (T2):
+
+    occupancy.py   the grid: free, occupied, unknown, and known_cells()
+    rrt.py         FrontierSearch — two trees, grown a budget at a time
+    frontiers.py   cluster, revalidate, score
+    exit_criteria.py  (FRONTIERS or GAIN) and STABLE and CLOUD, or BUDGET
+    agreement.py   what a cloud/map disagreement means, by height
 ```
 
 ## Why a sampling-based detector
@@ -58,48 +68,28 @@ is nav2's problem, and the straight-line steps are only how the tree grows.
 
 ## Nodes
 
-### `mecanumbot_frontier_explorer_node`
+### The explorer is not here any more
 
-Registers as `mecanumbot_frontier_explorer`. **The node name has to match the
-root key of `config/frontier_explorer.yaml`** — renaming it silently drops every
-parameter, the same trap `mecanumbot_sensorprocess_smart` documents.
+`mecanumbot_frontier_explorer_node` moved to **`mecanumbot_autoslam`** in the
+`mecanumbot_behaviours` repository, where it is a set of behaviours rather than
+one node, and its constants moved with it
+(`config/autoslam_setting_constants.yaml`). Its subscribers, publishers, nav2
+action and every constant are documented in that package's README.
 
-#### Subscribers
+The split is by what a thing *does*, not by what it is about: this package
+decides things about maps, and that package sends the robot somewhere on the
+strength of those decisions. `mecanumbot_autoslam` imports `rrt.py`,
+`frontiers.py`, `occupancy.py` and `exit_criteria.py` from here and adds nothing
+to them.
 
-| Topic | Type | Function |
-| --- | --- | --- |
-| `/map` | `nav_msgs/OccupancyGrid` | The map being built. A *shrinking* known area is read as a loop closure: slam_toolbox re-rasterises the whole grid, so both RRTs are thrown away and regrown. |
-| `/amcl_pose` | `geometry_msgs/PoseWithCovarianceStamped` | Robot pose — only with `pose_source: amcl`. |
-| `/mecanumbot/deep3r/map_agreement` | `mecanumbot_msgs/MapCloudAgreement` | The server's comparison verdict. Feeds the exit criteria and supplies revisit goals. |
-
-With `pose_source: tf` (the default) the pose is read from the `map ->
-mecanumbot/base_link` transform instead. **T1 runs under slam_toolbox, which
-publishes no `/amcl_pose`**, so `tf` is the setting this node exists for; `amcl`
-is for running it against a saved map.
-
-#### Publishers
-
-| Topic | Type | Function |
-| --- | --- | --- |
-| `exploration/finished` | `std_msgs/Bool` | Latched. `false` at start-up, `true` once T1 is over. This is how T1 hands over — whatever starts T2 waits for the latch, not for a wall-clock guess. |
-| `exploration/state` | `std_msgs/String` | One line per cycle: frontier count, distance driven, current goal source, and every exit criterion with its reason. The first thing to look at when the robot is not moving. |
-| `exploration/frontiers` | `visualization_msgs/MarkerArray` | Every scored frontier (green) and the chosen goal (red). Seeing the frontiers the robot *rejected* is most of the debugging. |
-
-#### Actions
-
-`/navigate_to_pose` (`nav2_msgs/NavigateToPose`) — one goal in flight at a time,
-cancelled and re-decided on timeout. A goal nav2 gives up on is retired rather
-than re-proposed: a frontier the planner cannot reach is behind something, and
-the detector will happily suggest it again for ever.
-
-The full parameter table is `config/frontier_explorer.yaml`, which documents
-every constant where it is set rather than duplicating it here.
+    ros2 launch mecanumbot_autoslam launch_autoslam.launch.py   # was: mecanumbot_custom_nav2 autoslam.launch.py
+    ros2 launch mecanumbot_autoslam launch_t1.launch.py         # was: mecanumbot_custom_nav2 t1.launch.py
 
 ### `mecanumbot_map_agreement_node`
 
 Registers as `mecanumbot_map_agreement`. Consumes the server's comparison
 verdict and produces what the rest of the robot acts on. **Runs in both phases**
-— it is started by `autoslam.launch.py` for T1 and by
+— it is started by `mecanumbot_autoslam`'s launch for T1 and by
 `mecanumbot_seek/launch_seek.launch.py` for T2 (`use_agreement:=false` when one
 is already running).
 
@@ -351,16 +341,16 @@ plus warm-up is about 25 s — wait for the bind line before starting the robot.
 
 ```bash
 ./netcheck.sh          # first: can the robot reach the rendezvous at all?
-ros2 launch mecanumbot_custom_nav2 t1.launch.py
+ros2 launch mecanumbot_autoslam launch_t1.launch.py
 ```
 
-`t1.launch.py` starts the drivers, the Deep3R client and this package's
-exploration stack in that order, with delays so the logs read in the order the
+`launch_t1.launch.py` (in `mecanumbot_autoslam`) starts the drivers, the
+Deep3R client and the exploration stack in that order, with delays so the logs read in the order the
 subsystems came up. One Ctrl-C stops all of it. Useful arguments:
 
 ```bash
-ros2 launch mecanumbot_custom_nav2 t1.launch.py require_cloud:=false use_deep3r:=false
-ros2 launch mecanumbot_custom_nav2 t1.launch.py deep3r_delay:=15.0 explorer_delay:=25.0
+ros2 launch mecanumbot_autoslam launch_t1.launch.py require_cloud:=false use_deep3r:=false
+ros2 launch mecanumbot_autoslam launch_t1.launch.py deep3r_delay:=15.0 explorer_delay:=25.0
 ```
 
 The trade is that three stacks share one terminal. When something is wrong and
@@ -373,20 +363,27 @@ same three launch files and the same ordering.
 # drivers and camera, but NOT nav2 -- autoslam brings its own
 ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py use_nav2:=false
 ros2 launch mecanumbot_deep3r deep3r.launch.py        # needs the tunnel up
-ros2 launch mecanumbot_custom_nav2 autoslam.launch.py
+ros2 launch mecanumbot_autoslam launch_autoslam.launch.py
 ```
 
-`use_nav2:=false` is not optional. The base launch otherwise starts nav2 against
-the *study* parameters with AMCL and a saved map; that stack and this one both
-publish `map -> odom` and both serve `navigate_to_pose`.
+`use_nav2:=false` is still what you want, though it is no longer the only thing
+standing between you and a broken run: the base launch otherwise starts nav2
+against the *study* parameters with AMCL and a saved map, and that stack and this
+one both publish `map -> odom` and both serve `navigate_to_pose`.
+`launch_autoslam.launch.py` opens with a **preflight** that shuts down the study
+nav2 stack, AMCL, the map server and any behaviour tree it finds on the graph
+before it starts anything of its own — so forgetting the argument now costs a
+restart of those nodes rather than a wasted pass. Not starting them is still
+cheaper than starting them and retiring them.
 
 > **`use_nav2` did not exist until 2026-09-08.** It was documented here, in this
 > package's launch file and in the workspace `CLAUDE.md`, but was never declared
 > in `launch_mecanumbot_base.launch.py` — nav2 came up unconditionally in both
 > SSID branches, and passing the argument did nothing but emit a warning. Every
 > T1 run started before that date had two nav2 stacks and two things publishing
-> `map -> odom`. `t1.launch.py` passes it for you, so this is one fewer thing to
-> get right by hand.
+> `map -> odom`. `launch_t1.launch.py` passes it for you, and `launch_autoslam` now
+> runs a preflight that shuts the study stack down if it is up anyway, so this
+> is one fewer thing to get right by hand.
 
 `deep3r.launch.py` defaults to `enable_map_loop:=true`, which is what sends the
 pose, the grid and the scan **up** and republishes the server's verdict back
@@ -419,7 +416,7 @@ line up with the room.
 ### Without a server
 
 ```bash
-ros2 launch mecanumbot_custom_nav2 autoslam.launch.py require_cloud:=false
+ros2 launch mecanumbot_autoslam launch_autoslam.launch.py require_cloud:=false
 ```
 
 Mapping only, and the exit criteria fall back to the 2D ones. The right thing
@@ -428,7 +425,7 @@ the test that catches a failed T1 that looks exactly like a successful one.
 
 ### Handing over to T2
 
-Nothing to do by hand any more. The explorer latches
+Nothing to do by hand any more. `mecanumbot_autoslam` latches
 `/mecanumbot/exploration/finished`, `mecanumbot_deep3r` sees the latch and sends
 the server a `phase` message, and the server's decision stage starts looking for
 the target. That link did not exist before 2026-09-08, and without it the two
@@ -488,7 +485,7 @@ PYTHONPATH=. python3 -m pytest test/ -q -p no:launch_testing \
   --ignore=test/test_flake8.py --ignore=test/test_copyright.py --ignore=test/test_pep257.py
 ```
 
-158 tests, all pure Python — no ROS graph, no map server, no GPU. Use
+173 tests, all pure Python — no ROS graph, no map server, no GPU. Use
 `/usr/bin/python3`, not the conda one.
 
 | File | Covers |
