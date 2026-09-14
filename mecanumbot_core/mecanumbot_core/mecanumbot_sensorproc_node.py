@@ -24,7 +24,12 @@ CLOCK_STEP_TOLERANCE_NS = 500_000_000
 # and the one thing in the tick that can overrun the timer period.
 ORIN_BATTERY_PERIOD_TICKS = 50
 GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618  # 150 deg diff in rads
-NECK_MIDPOINT_COMPENSATE_CONSTANT = 3.8172  # 218 deg diff in rads
+# head_joint is 0 with the head upright and the camera looking level, which is
+# the trees' neck_level_pos (6.0 board units = 600 ticks), and positive looks up.
+# The same model mecanumbot_locate_detections (ball.neck.*) and mecanumbot_deep3r
+# (camera.*) place frames with, so change all three or none. The old constant
+# (3.8172 rad) showed the head leaning back ~40 deg at level.
+NECK_LEVEL_TICKS = 600
 
 
 def get_device_model():
@@ -438,7 +443,7 @@ class Mecanumbot_Sensorproc_Node(Node):
         ]
 
         access_posis = [
-            NECK_MIDPOINT_COMPENSATE_CONSTANT + self.cr_state.pos_n * TICK_TO_RAD,
+            (self.cr_state.pos_n - NECK_LEVEL_TICKS) * TICK_TO_RAD,
             GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gl * TICK_TO_RAD,
             GRIPPER_MIDPOINT_COMPENSATE_CONSTANT - self.cr_state.pos_gr * TICK_TO_RAD,
         ]

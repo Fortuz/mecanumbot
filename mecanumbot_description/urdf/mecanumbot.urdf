@@ -272,8 +272,15 @@
     </inertial>
   </link>
 
+  <!-- head_link is x forward, y up, z to the robot's right (the mesh's axes,
+       rotated by head_joint's origin). camera_link undoes that roll so it is
+       x along the lens, y left, z up: the camera looks where the head points
+       and head_joint tilts it. It used to be rpy="0 -1.57 0", which put the
+       lens on the neck's rotation axis, looking right at every neck angle.
+       The offsets and box sizes below are the old ones re-expressed in the new
+       axes, so nothing has moved. -->
   <joint name="${namespace}/camera_joint" type="fixed">
-    <origin xyz="0.022 0.038 0.0" rpy="0 -1.57 0"/>
+    <origin xyz="0.022 0.038 0.0" rpy="-1.5708 0 0"/>
     <parent link="${namespace}/head_link"/>
     <child link="${namespace}/camera_link"/>
   </joint>
@@ -282,21 +289,21 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.015 0.030 0.027"/>
+        <box size="0.027 0.015 0.030"/>
       </geometry>
       <material name="red"/>
     </visual>
     <collision>
-      <origin xyz="0.005 0.011 0.013" rpy="0 0 0"/>
+      <origin xyz="-0.013 -0.005 0.011" rpy="0 0 0"/>
       <geometry>
-        <box size="0.015 0.030 0.027"/>
+        <box size="0.027 0.015 0.030"/>
       </geometry>
 
     </collision>
   </link>
 
   <joint name="${namespace}/camera_rgb_joint" type="fixed">
-    <origin xyz="0.003 0.011 0.009" rpy="0 0 0"/>
+    <origin xyz="-0.009 -0.003 0.011" rpy="0 0 0"/>
     <parent link="${namespace}/camera_link"/>
     <child link="${namespace}/camera_rgb_frame"/>
   </joint>
