@@ -41,6 +41,7 @@ from launch.actions import (
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 BT_EXECUTABLES = {
     "Doglike": "doglike_leading_bt_node",
@@ -173,7 +174,7 @@ def launch_setup(context, *args, **kwargs):
             name="robot_state_publisher",
             output="screen",
             parameters=[
-                {"robot_description": robot_description},
+                {"robot_description": ParameterValue(robot_description, value_type=str)},
                 {"use_sim_time": True},
             ],
             remappings=[("/joint_states", f"/{namespace}/joint_states")],

@@ -7,6 +7,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -34,7 +35,9 @@ def generate_launch_description():
     # Major refactor of the robot_state_publisher
     # Reference page: https://github.com/ros2/demos/pull/426
 
-    rsp_params = {"robot_description": robot_desc}
+    # value_type=str: launch_ros otherwise tries the xacro output as YAML
+    # first, and any ": " in a URDF comment makes that fail at launch.
+    rsp_params = {"robot_description": ParameterValue(robot_desc, value_type=str)}
 
     # print (robot_desc) # Printing urdf information.
 

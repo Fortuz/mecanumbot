@@ -274,7 +274,7 @@
 
   <!-- head_link is x forward, y up, z to the robot's right (the mesh's axes,
        rotated by head_joint's origin). camera_link undoes that roll so it is
-       x along the lens, y left, z up: the camera looks where the head points
+       x along the lens, y left, z up, so the camera looks where the head points
        and head_joint tilts it. It used to be rpy="0 -1.57 0", which put the
        lens on the neck's rotation axis, looking right at every neck angle.
        The offsets and box sizes below are the old ones re-expressed in the new
