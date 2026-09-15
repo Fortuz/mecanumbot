@@ -54,10 +54,18 @@ class BehaviourRunner:
     """Supervises at most one behaviour tree process."""
 
     def __init__(self, config_dirs: Optional[Dict[str, str]] = None,
-                 log_lines: int = LOG_LINES, logger=None):
-        """Build a runner over the config directories the behaviours use."""
+                 log_lines: int = LOG_LINES, logger=None,
+                 noun: str = "behaviour"):
+        """
+        Build a runner over the config directories the behaviours use.
+
+        ``noun`` is what the runner's messages call the thing it runs, so
+        the same supervisor can own the navigation stack without telling
+        the operator that nav2 is a behaviour.
+        """
         self._config_dirs = dict(config_dirs or {})
         self._logger = logger
+        self._noun = noun
         # Reentrant: ``start`` records the command line into the log
         # while it still holds the lock over the process handle.
         self._lock = threading.RLock()
@@ -96,14 +104,29 @@ class BehaviourRunner:
             command = spec.build_command(values or {}, self.config_dir(key))
         except behaviour_catalog.CatalogError as exc:
             raise RunnerError(str(exc)) from exc
+        return self.start_command(
+            spec.key, spec.label, command,
+            dict(spec.defaults(), **(values or {})),
+            busy_note=" Stop it before starting another behaviour -- two "
+                      "trees would drive the robot at once.")
 
+    def start_command(self, key: str, label: str, command: List[str],
+                      values: Optional[Dict] = None,
+                      busy_note: str = "", clear_log: bool = True) -> dict:
+        """
+        Start an already-validated argv, under the same supervision.
+
+        :meth:`start` is this plus the catalog's validation.  Raises
+        :class:`RunnerError` if something is already running.
+        ``clear_log=False`` keeps what :meth:`note` recorded before the
+        start, so a console can show why a process was started as well as
+        what it printed.
+        """
         with self._lock:
             self._reap()
             if self._process is not None:
-                raise RunnerError(
-                    "{} is already running. Stop it before starting another "
-                    "behaviour -- two trees would drive the robot at once."
-                    .format(self._label or self._key))
+                raise RunnerError("{} is already running.{}".format(
+                    self._label or self._key, busy_note))
 
             environment = dict(os.environ)
             # Child stdout is a pipe, not a terminal, so Python would
@@ -127,9 +150,9 @@ class BehaviourRunner:
                     command[0], exc)) from exc
 
             self._process = process
-            self._key = spec.key
-            self._label = spec.label
-            self._values = dict(spec.defaults(), **(values or {}))
+            self._key = key
+            self._label = label
+            self._values = dict(values or {})
             self._command = list(command)
             self._started_at = time.time()
             self._started_monotonic = time.monotonic()
@@ -137,7 +160,8 @@ class BehaviourRunner:
             self._returncode = None
             self._stopping = False
 
-            self._lines.clear()
+            if clear_log:
+                self._lines.clear()
             self._record("$ {}".format(" ".join(command)))
 
             self._reader = threading.Thread(
@@ -147,7 +171,7 @@ class BehaviourRunner:
 
             if self._logger:
                 self._logger.info("Started {}: {}".format(
-                    spec.label, " ".join(command)))
+                    label, " ".join(command)))
             return self._status_locked()
 
     # ── stopping ─────────────────────────────────────────────────────────
@@ -164,7 +188,7 @@ class BehaviourRunner:
             self._reap()
             process = self._process
             if process is None:
-                raise RunnerError("No behaviour is running.")
+                raise RunnerError("No {} is running.".format(self._noun))
             self._stopping = True
             label = self._label
 
@@ -193,7 +217,8 @@ class BehaviourRunner:
             pass
         except Exception as exc:  # pragma: no cover - shutdown must not raise
             if self._logger:
-                self._logger.warn("Behaviour shutdown failed: {}".format(exc))
+                self._logger.warn("{} shutdown failed: {}".format(
+                    self._noun.capitalize(), exc))
 
     def _signal(self, process, sig) -> bool:
         """Send one signal to the child's whole process group."""
@@ -234,6 +259,10 @@ class BehaviourRunner:
                 pass
         process.wait()
         self._record("--- exited with code {} ---".format(process.returncode))
+
+    def note(self, text: str) -> None:
+        """Add a line of the supervisor's own to the console."""
+        self._record(text)
 
     def _record(self, text: str) -> None:
         """Append one numbered line to the ring buffer."""
@@ -312,11 +341,12 @@ class BehaviourRunner:
         code = self._returncode
         if code is None:
             return ""
+        noun = self._noun
         if code == 0:
-            return "The behaviour exited normally."
+            return "The {} exited normally.".format(noun)
         if code < 0:
-            return "The behaviour was stopped by signal {}.".format(-code)
+            return "The {} was stopped by signal {}.".format(noun, -code)
         if code == 130:
-            return "The behaviour was interrupted."
-        return ("The behaviour exited with code {} -- check the log above for "
-                "what it was missing.".format(code))
+            return "The {} was interrupted.".format(noun)
+        return ("The {} exited with code {} -- check the log above for "
+                "what it was missing.".format(noun, code))

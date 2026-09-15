@@ -31,7 +31,7 @@ There is no login and no database.
 | Path | Function |
 | --- | --- |
 | `/joystick` | Edit and reload `mecanumbot_joy`'s profile, with a live input readout. |
-| `/diagnostics` | What the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
+| `/diagnostics` | Whether the navigation stack is up, with a restart; what the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
 | `/behaviour` | Choose a behaviour tree, edit the constants it will load, and run it. |
 
 `/` redirects to `/diagnostics`.
@@ -73,6 +73,54 @@ The nominal table is `config/diagnostics_topics.yaml`; every rate in it is read
 from the node that publishes it, with the source noted per entry. Topics with
 `nominal_hz: 0` are event-driven and judged on staleness alone, so an idle
 `/cmd_vel` never reads SLOW.
+
+#### Navigation stack
+
+The first panel answers "is nav2 up, and if not, bring it back". The state is
+one word: `ACTIVE`, `INACTIVE` (every server registered, but a lifecycle
+manager reports them inactive — the shape of a bringup that aborted, which
+presence alone reads as healthy), `NO ANSWER`, `PARTIAL`, `DOWN`, or `T1` when
+an exploration pass is running its own nav2. Presence comes from the graph and
+activity from each manager's `is_active` service, asked from the page's own
+poll every 3 s with a 1 s timeout.
+
+**Restart is a relaunch, not a lifecycle reset.** A T1 pass's preflight
+signals the composed `nav2_container` away rather than deactivating it, so
+after T1 there is nothing left for `manage_nodes` RESET to reset. A restart
+(`nav_stack.py`) therefore:
+
+1. stops the stack wherever it came from — the one this page launched
+   last time via its process group, and any other local process whose command
+   line carries `__node:=<a study nav2 node>` (the base launch's container, the
+   keepout servers), by pid with SIGINT, then SIGTERM, then SIGKILL. Matched on
+   that whole argument only, so the base `ros2 launch` whose arguments merely
+   name nav2 is never touched, and **not** excluding this node's process group:
+   the base launch started this node and nav2 together, so they share one;
+2. waits for every study nav2 name to leave the **graph**. A new
+   `lifecycle_manager_navigation` configures servers by name, and an old one
+   still answering aborts the new bringup. A stack on another machine
+   (`launch_external` can start one) has no local process to signal, stays on
+   the graph, and the restart fails naming it rather than launching over it;
+3. runs `ros2 launch mecanumbot_bringup nav2.launch.py` as a child, whose
+   console the panel shows. The launch file re-reads the SSID, so a restart
+   after moving rooms loads the other room's map.
+
+**Refused while** a tree runs from the behaviour page, a tree is on the graph
+from a terminal, or a T1 pass is up (its nav2 uses the same node names, so a
+restart would kill it). Restarting under a tree drops its goals mid-trial.
+AMCL comes back at its initial pose, so the pose estimate has to be set again;
+the confirmation dialog says so.
+
+A stack relaunched from here is a child in its own session, so a Ctrl-C of the
+base launch does not reach it; `web_node`'s shutdown stops it, after any tree.
+A stack the base launch started is that launch's, and is left alone at shutdown.
+`mecanumbot_bringup` is not declared as a dependency, because bringup depends
+on this package; the launch file is only found at runtime.
+
+On a machine with no robot attached the costmaps wait for TF indefinitely
+during activation and ignore SIGINT and SIGTERM while they do, so there a
+restart always escalates to SIGKILL. Expected; on the robot they exit on
+SIGINT.
 
 #### Idle is not dead
 
@@ -292,11 +340,13 @@ GUI.
 
 Pure modules with no rclpy: `rate_monitor.py`, `motion.py`, `joystick_store.py`,
 `behaviour_store.py`, `flat_store.py`, `behaviour_catalog.py`,
-`behaviour_runner.py`, `yaml_io.py`, `led_enums.py`. Then `ros_bridge.py`
+`behaviour_runner.py`, `nav_stack.py`, `yaml_io.py`, `led_enums.py`. Then `ros_bridge.py`
 (the node), `app.py` (Flask routes) and `web_node.py` (the entry point).
 
 `behaviour_runner.py` spawns processes but touches no ROS API, so the Flask app
 owns it and the node's only involvement is stopping it on shutdown.
+`nav_stack.py` supervises nav2 with a second instance of the same runner, and
+reads the graph through a function the app hands it.
 
 The palette is cyan and magenta, defined once as custom properties in
 `base.html` and themed for both `prefers-color-scheme` settings. It carries the
@@ -371,8 +421,8 @@ ros2 launch mecanumbot_web web.launch.py web_port:=8080
 colcon test --packages-select mecanumbot_web && colcon test-result --verbose
 ```
 
-224 tests, none needing a ROS graph; the 47 route tests skip cleanly when Flask
-is absent. Note that `pytest.importorskip` is deliberately **not** used for
+About 275 tests, none needing a ROS graph; the route tests skip cleanly when
+Flask is absent. Note that `pytest.importorskip` is deliberately **not** used for
 that — raising `Skipped` at module level aborts collection for the whole
 session under the pytest version Humble ships, which would silently reduce the
 suite to one test instead of skipping one file.
@@ -383,3 +433,9 @@ catalog's. What that module is for is starting a process and being sure it is
 gone afterwards, and a mocked `Popen` would prove neither. One of them ignores
 SIGINT and SIGTERM, so the escalation to SIGKILL is exercised rather than
 assumed.
+
+`test_nav_stack.py` does the same for the navigation restart: stand-in
+servers are child processes carrying `__node:=amcl` and the like, and the
+graph is scripted from whether they are alive. The restarter is handed **only
+those children** as its process list — it signals whatever matches, and a test
+run beside a real nav2 must not stop it.

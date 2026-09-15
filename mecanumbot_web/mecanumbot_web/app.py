@@ -15,7 +15,8 @@ distinction has nothing left to describe.
 Three pages:
 
 ``/joystick``     edit and reload the joystick profile
-``/diagnostics``  measured publish rate of every important topic
+``/diagnostics``  measured publish rate of every important topic, and the
+                  navigation stack, with a restart
 ``/behaviour``    choose a behaviour tree, edit its constants, run it
 
 There is deliberately no user model.  The old "login" was a
@@ -33,7 +34,7 @@ from typing import Dict, List, Optional
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from . import (behaviour_catalog, behaviour_runner, behaviour_store,
-               flat_store, joystick_store, yaml_io)
+               flat_store, joystick_store, nav_stack, yaml_io)
 
 #: Wi-Fi SSID to behaviour constants file, for the leading behaviour.
 #: Held in the catalog, which mirrors what each behaviour's own launch
@@ -85,6 +86,7 @@ class WebApp:
         behaviour_dirs: Optional[Dict[str, str]] = None,
         runner=None,
         backup_root: str = yaml_io.DEFAULT_BACKUP_ROOT,
+        nav=None,
     ):
         """Build the app. ``node`` may be None, in which case ROS routes 503."""
         self._node = node
@@ -106,6 +108,20 @@ class WebApp:
         self.runner = runner if runner is not None else behaviour_runner.BehaviourRunner(
             config_dirs=self._behaviour_dirs,
             logger=node.get_logger() if node is not None else None)
+
+        # Reads the graph, so only exists with a node. It consults the
+        # behaviour runner before stopping nav2, which is why it is built
+        # after it: a restart under a running tree breaks that trial.
+        if nav is not None:
+            self.nav_stack = nav
+        elif node is not None:
+            self.nav_stack = nav_stack.NavStackRestarter(
+                live_nodes=lambda: node.node_names(),
+                behaviour_status=self._run_status,
+                tree_nodes=behaviour_catalog.all_node_names(),
+                logger=node.get_logger())
+        else:
+            self.nav_stack = None
 
         self.app = Flask(__name__)
         self.app.config["JSON_SORT_KEYS"] = False
@@ -381,6 +397,38 @@ class WebApp:
                 return error
             node.reset_rates()
             return jsonify({"ok": True})
+
+        # ── navigation stack API ─────────────────────────────────────────
+
+        @app.route("/api/nav")
+        def api_nav():
+            """Return the nav2 stack's state, any restart, and new console lines."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                after = int(request.args.get("after", 0))
+            except (TypeError, ValueError):
+                after = 0
+            return jsonify({
+                "ok": True,
+                "stack": node.nav_stack_state(),
+                "restart": self.nav_stack.status(),
+                "log": self.nav_stack.runner.log(after),
+            })
+
+        @app.route("/api/nav/restart", methods=["POST"])
+        def api_nav_restart():
+            """Stop the study nav2 stack and launch it again."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                status = self.nav_stack.restart()
+            except behaviour_runner.RunnerError as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "restart": self.nav_stack.status()}), 409
+            return jsonify({"ok": True, "restart": status})
 
         # ── behaviour API ────────────────────────────────────────────────
 

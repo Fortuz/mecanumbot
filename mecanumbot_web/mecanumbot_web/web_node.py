@@ -206,6 +206,10 @@ def main(args=None):
         # tree from outliving the stack it was driving.
         if web is not None:
             web.runner.shutdown()
+            # The same holds for a nav2 stack this node relaunched, and it
+            # goes second: the tree above was using it.
+            if web.nav_stack is not None:
+                web.nav_stack.shutdown()
         if node is not None:
             node.destroy_node()
         try:

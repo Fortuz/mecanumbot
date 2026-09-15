@@ -89,6 +89,22 @@
 .vel-table td, .vel-table th { padding: 4px 6px; border-bottom: none; }
 .vel-table tr + tr td { border-top: 1px solid var(--line); }
 
+/* ── Navigation stack ───────────────────────────────────────────── */
+.nav-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-head h4 {
+  margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--accent);
+}
+.nav-detail { margin-top: 8px; }
+pre.log {
+  margin: 10px 0 0; padding: 10px 12px; max-height: 220px; overflow: auto;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+}
+pre.log:empty { display: none; }
+details.nav-console summary { cursor: pointer; margin-top: 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   .swatch, .swatch::after, .dial .spin { animation: none !important; }
 }
@@ -113,6 +129,23 @@
     <button onclick="resetWindows()">Reset windows</button>
     <button id="pause-btn" onclick="togglePause()">Pause</button>
   </div>
+</div>
+
+<div class="card" id="nav-card">
+  <div class="nav-head">
+    <h4>Navigation stack</h4>
+    <span id="nav-pill" class="pill IDLE">…</span>
+    <span id="nav-summary" class="small dim grow"></span>
+    <button id="nav-restart" class="danger" onclick="restartNav()" disabled>
+      Restart navigation
+    </button>
+  </div>
+  <div id="nav-notice" class="nav-detail"></div>
+  <div id="nav-detail" class="small dim nav-detail"></div>
+  <details class="nav-console" id="nav-console">
+    <summary class="small dim">Console of the relaunched stack</summary>
+    <pre class="log" id="nav-log"></pre>
+  </details>
 </div>
 
 <div class="card hidden" id="state-card">
@@ -242,6 +275,15 @@
     or <code>/cmd_accessory_pos</code> while the robot stands still — the only
     evidence the link is intact is that the driver is still listening, so DEAD
     there means a command would go nowhere.
+  </p>
+  <p class="small dim">
+    <strong>Navigation stack</strong> is the study nav2 stack — AMCL, the map
+    the Wi-Fi network selects, the planner and controller. <em>Restart</em>
+    stops it wherever it was started (the base launch, or an earlier restart
+    from here), waits for its nodes to leave the ROS graph, and launches
+    <code>mecanumbot_bringup nav2.launch.py</code> again, so it also brings nav2
+    back after a T1 pass. It is refused while a behaviour tree or a T1 pass is
+    running. A stack relaunched from here stops when this web node does.
   </p>
   <p class="small dim" style="margin-bottom:0">
     The LED panel is read from the <code>get_led_status</code> service, which is
@@ -453,7 +495,120 @@ function togglePause() {
   if (!paused) refresh();
 }
 
+// ── navigation stack ──────────────────────────────────────────────────
+
+const NAV_STATES = {
+  active:   ['OK',   'ACTIVE',   'every server is up and both lifecycle managers report active'],
+  inactive: ['SLOW', 'INACTIVE', 'the nodes are up but a lifecycle manager reports them inactive — usually a bringup that aborted'],
+  unknown:  ['SLOW', 'NO ANSWER', 'the nodes are up but a lifecycle manager did not answer'],
+  partial:  ['SLOW', 'PARTIAL',  'some servers are missing'],
+  down:     ['DEAD', 'DOWN',     'no nav2 node is on the graph'],
+  t1:       ['IDLE', 'T1',       'a T1 exploration pass is running its own nav2'],
+};
+const NAV_PHASES = {stopping: 'Stopping…', waiting: 'Waiting for the graph…',
+                    starting: 'Starting…'};
+let navLastSeq = 0;
+let navBusy = false;
+// A refused restart changes nothing server-side, so the reason is kept here
+// until the next click rather than being cleared by the next poll.
+let navRefusal = null;
+
+function renderNav(body) {
+  const stack = body.stack || {};
+  const restart = body.restart || {};
+  const process = restart.process || {};
+  const shape = NAV_STATES[stack.state] || ['IDLE', '?', ''];
+
+  const pill = document.getElementById('nav-pill');
+  pill.className = 'pill ' + shape[0];
+  pill.textContent = shape[1];
+
+  let owner = '';
+  if (process.running) {
+    owner = ' · relaunched from this page, pid ' + process.pid +
+            ', up ' + Math.round(process.uptime_s || 0) + ' s';
+  } else if ((stack.present || []).length) {
+    owner = ' · started outside this page';
+  }
+  document.getElementById('nav-summary').textContent = shape[2] + owner;
+
+  const detail = [];
+  if ((stack.missing || []).length && stack.state !== 'down') {
+    detail.push('missing: ' + stack.missing.join(', '));
+  }
+  Object.keys(stack.managers || {}).forEach(function (name) {
+    const answer = stack.managers[name];
+    if (answer !== true) {
+      detail.push(name + (answer === false ? ' reports inactive' : ' did not answer'));
+    }
+  });
+  if (stack.keepout) detail.push('keepout mask served');
+  if (!process.running && process.exit_note) detail.push(process.exit_note);
+  document.getElementById('nav-detail').textContent = detail.join(' · ');
+
+  navBusy = !!restart.busy;
+  const button = document.getElementById('nav-restart');
+  button.disabled = navBusy || stack.state === 't1';
+  button.textContent = navBusy ? (NAV_PHASES[restart.phase] || 'Restarting…')
+    : stack.state === 'down' ? 'Start navigation' : 'Restart navigation';
+
+  if (navRefusal && !navBusy) {
+    banner('nav-notice', 'err', 'Navigation was not restarted', [navRefusal]);
+  } else if (restart.phase === 'failed') {
+    banner('nav-notice', 'err', 'Navigation restart failed', [restart.error]);
+  } else if (navBusy || restart.phase === 'started') {
+    banner('nav-notice', 'info', restart.message);
+  } else {
+    banner('nav-notice', 'ok', null, []);
+  }
+
+  const log = body.log || {};
+  if ((log.lines || []).length) {
+    const pre = document.getElementById('nav-log');
+    if (log.dropped) pre.textContent += '… ' + log.dropped + ' lines not shown …\n';
+    pre.textContent += log.lines.join('\n') + '\n';
+    pre.scrollTop = pre.scrollHeight;
+  }
+  navLastSeq = log.last_seq || navLastSeq;
+}
+
+async function refreshNav() {
+  const result = await api('/api/nav?after=' + navLastSeq);
+  if (!result.ok) {
+    document.getElementById('nav-restart').disabled = true;
+    return;
+  }
+  renderNav(result.body);
+}
+
+async function restartNav() {
+  if (!window.confirm(
+      'Restart the navigation stack?\n\n' +
+      'Any goal in progress is dropped, and AMCL starts again from its ' +
+      'initial pose, so set the pose estimate in RViz afterwards.')) {
+    return;
+  }
+  document.getElementById('nav-restart').disabled = true;
+  navRefusal = null;
+  const result = await post('/api/nav/restart');
+  if (!result.ok) {
+    navRefusal = result.body.error || ('HTTP ' + result.status);
+    refreshNav();
+    return;
+  }
+  document.getElementById('nav-console').open = true;
+  refreshNav();
+}
+
+async function navLoop() {
+  if (!paused) await refreshNav();
+  // Faster while a restart is under way, so each phase is seen; slower
+  // otherwise, because every poll asks the lifecycle managers a question.
+  setTimeout(navLoop, navBusy ? 1000 : 3000);
+}
+
 refresh();
 timer = setInterval(refresh, 1000);
+navLoop();
 </script>
 {% endblock %}

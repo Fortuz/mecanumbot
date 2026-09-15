@@ -12,7 +12,8 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 
 | File                                          | Function                                                                                                                         |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `launch/launch_mecanumbot_base.launch.py`     | Full onboard runtime. Starts `mecanumbot_io_node`, `mecanumbot_battery_alert`, `mecanumbot_sensorproc_node`, `ld08_driver`, `mecanumbot_led_service`, the audio input handler, the robot state publisher include, and a `nav2_bringup` include. **No perception** — that is started by the behaviour that needs it. Map, Nav2 parameter set and keepout mask are selected from the connected Wi-Fi SSID. |
+| `launch/launch_mecanumbot_base.launch.py`     | Full onboard runtime. Starts `mecanumbot_io_node`, `mecanumbot_battery_alert`, `mecanumbot_sensorproc_node`, `ld08_driver`, `mecanumbot_led_service`, the audio input handler, the robot state publisher include, and — under `use_nav2` — `nav2.launch.py`. **No perception** — that is started by the behaviour that needs it. |
+| `launch/nav2.launch.py`                       | The study navigation stack on its own: the `nav2_bringup` include with AMCL and the saved map, plus the keepout mask servers on `MecanumetoNet`. Map, Nav2 parameter set and keepout mask are selected from the Wi-Fi SSID **when this file is launched**, and `NAV2_PARAMS_FILE` overrides the parameter file. Split out of the base launch so the web GUI can restart nav2 without the drivers — see `mecanumbot_web/README.md`, "Navigation stack". |
 | `launch/launch_external.launch.py`            | Operator-PC tools: RViz (`use_rviz`, default true). It starts **no perception** unless asked (`use_people_detection:=true`, for running DR-SPAAM off the robot) — the behaviour that needs people detection starts it itself, and a second `mecanumbot_lidar_detect_people` on the domain publishes over the robot's. Nav2 and the SSID map selection are commented out at the bottom of the file. |
 | `launch/mapping.launch.py`                    | Starts `slam_toolbox` (`async_slam_toolbox_node`) using mapping parameter file.                                                  |
 | `launch/slam_gmapping.launch.py`              | Starts `cartographer_node` and `cartographer_occupancy_grid_node` using `mecanumbot_description/param/mecanumbot_lds.lua`.       |
@@ -28,6 +29,7 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 | `namespace`        | `mecanumbot`   | Robot namespace.                                                                                             |
 | `use_sim_time`     | `false`        | Use the simulation clock.                                                                                    |
 | `use_joy`          | `true`         | Start `joy_node` and the onboard joystick node.                                                              |
+| `use_nav2`         | `true`         | Include `nav2.launch.py`. `false` for T1, which brings its own nav2 without AMCL.                            |
 | `use_web`          | `true`         | Start the robot-hosted web GUI on port 8080.                                                                 |
 | `joystick_profile` | `auto`         | Joystick profile stem, or `auto` to detect from the pad.                                                     |
 

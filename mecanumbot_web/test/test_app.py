@@ -125,6 +125,13 @@ class StubNode:
         """Return a logger the way rclpy's Node does."""
         return self
 
+    def nav_stack_state(self):
+        """Return a healthy study nav2 stack."""
+        self.calls.append("nav_stack_state")
+        return {"state": "active", "present": ["amcl"], "missing": [],
+                "managers": {"lifecycle_manager_navigation": True},
+                "t1_nodes": [], "keepout": False, "nodes": ["/amcl"]}
+
 
 class StubRunner:
     """Records start/stop calls, so no process is ever spawned by a test."""
@@ -167,6 +174,29 @@ class StubRunner:
         return {"lines": ["tree started"], "last_seq": after + 1, "dropped": 0}
 
 
+class StubNavStack:
+    """Records restart requests, so no test ever signals a process."""
+
+    def __init__(self):
+        """Start idle."""
+        self.calls = []
+        self.fail_with = None
+        self.runner = StubRunner()
+
+    def restart(self):
+        """Record a restart, or refuse it the way a running tree would."""
+        self.calls.append("restart")
+        if self.fail_with:
+            raise behaviour_runner.RunnerError(self.fail_with)
+        return self.status()
+
+    def status(self):
+        """Return a plausible restart status."""
+        return {"phase": "stopping" if self.calls else "idle",
+                "busy": bool(self.calls), "message": "", "error": "",
+                "requested_at": None, "process": self.runner.status()}
+
+
 @pytest.fixture
 def context(tmp_path):
     """Build a test client over writable copies of every config directory."""
@@ -188,13 +218,16 @@ def context(tmp_path):
 
     node = StubNode()
     runner = StubRunner()
+    nav = StubNavStack()
     web = WebApp(node=node, joystick_dir=str(joystick_dir),
                  behaviour_dir=behaviour_dirs["leading"],
                  behaviour_dirs=behaviour_dirs,
                  runner=runner,
-                 backup_root=str(tmp_path / "backups"))
+                 backup_root=str(tmp_path / "backups"),
+                 nav=nav)
     web.app.config["TESTING"] = True
     return {"client": web.app.test_client(), "node": node, "runner": runner,
+            "nav": nav,
             "joystick_dir": str(joystick_dir),
             "behaviour_dir": behaviour_dirs["leading"],
             "ostensive_dir": behaviour_dirs["ostensive"]}
@@ -385,6 +418,46 @@ def test_diagnostics_reset_reaches_the_monitor(context):
     """Reset clears the windows rather than only the display."""
     context["client"].post("/api/diagnostics/reset")
     assert "reset_rates" in context["node"].calls
+
+
+# ── navigation stack API ─────────────────────────────────────────────────
+
+def test_nav_status_carries_the_stack_the_restart_and_the_console(context):
+    """One poll feeds the whole navigation panel."""
+    body = context["client"].get("/api/nav?after=0").get_json()
+    assert body["ok"] is True
+    assert body["stack"]["state"] == "active"
+    assert body["restart"]["phase"] == "idle"
+    assert body["log"]["lines"] == ["tree started"]
+
+
+def test_nav_restart_is_passed_to_the_restarter(context):
+    response = context["client"].post("/api/nav/restart")
+    assert response.status_code == 200
+    assert response.get_json()["restart"]["busy"] is True
+    assert context["nav"].calls == ["restart"]
+
+
+def test_a_refused_nav_restart_says_why(context):
+    """A running tree is a reason to stop, and the operator has to be told it."""
+    context["nav"].fail_with = "Leading is running from the behaviour page."
+    response = context["client"].post("/api/nav/restart")
+    assert response.status_code == 409
+    assert response.get_json()["error"].startswith("Leading is running")
+
+
+def test_nav_routes_need_the_node(tmp_path):
+    web = WebApp(node=None, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path))
+    client = web.app.test_client()
+    assert web.nav_stack is None
+    assert client.get("/api/nav").status_code == 503
+    assert client.post("/api/nav/restart").status_code == 503
+
+
+def test_diagnostics_page_has_the_navigation_panel(context):
+    page = context["client"].get("/diagnostics").data
+    assert b'id="nav-restart"' in page
+    assert b"Restart navigation" in page
 
 
 # ── behaviour API ────────────────────────────────────────────────────────

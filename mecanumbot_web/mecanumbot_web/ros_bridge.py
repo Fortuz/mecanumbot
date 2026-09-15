@@ -49,7 +49,7 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 
-from . import led_enums, motion
+from . import led_enums, motion, nav_stack
 from .rate_monitor import RateMonitor, TopicSpec
 
 #: How often the graph is rescanned for topics that have appeared.
@@ -57,6 +57,11 @@ DISCOVERY_PERIOD = 2.0
 
 #: Default blocking timeout for a service call made from a Flask thread.
 SERVICE_TIMEOUT = 8.0
+
+#: Timeout for asking a nav2 lifecycle manager ``is_active``. Short: the
+#: page asks every few seconds, and a manager that cannot answer in this
+#: long is reported as not answering.
+MANAGER_TIMEOUT = 1.0
 
 #: How often the LED controller is asked what it is showing.  Every poll
 #: is a serial exchange on the same link the behaviour trees use to set
@@ -151,6 +156,10 @@ class WebNode(Node):
 
         group = ReentrantCallbackGroup()
         self._group = group
+        # Created on first sight of each manager, which may be in any
+        # namespace and may come and go with a restart.
+        self._manager_clients: Dict[str, object] = {}
+        self._manager_lock = threading.Lock()
 
         self._reload_client = self.create_client(
             Trigger, "{}/reload_profile".format(self._joy_node), callback_group=group)
@@ -346,6 +355,48 @@ class WebNode(Node):
             "{}/{}".format(namespace.rstrip("/"), name)
             for name, namespace in found if name in wanted
         ]
+
+    # ── navigation stack ─────────────────────────────────────────────────
+
+    def node_names(self) -> List[str]:
+        """Return every node on the graph, fully qualified."""
+        try:
+            found = self.get_node_names_and_namespaces()
+        except Exception:  # pragma: no cover - rmw-dependent
+            return []
+        return ["{}/{}".format(namespace.rstrip("/"), name)
+                for name, namespace in found]
+
+    def nav_stack_state(self) -> dict:
+        """
+        Describe the study nav2 stack from the graph and its managers.
+
+        Presence alone cannot tell a working stack from one whose bringup
+        aborted -- every node is still registered either way -- so each
+        lifecycle manager on the graph is asked ``is_active``.  Called from
+        a Flask thread, with a short timeout, because a wedged manager is
+        exactly the case this exists to show.
+        """
+        live = self.node_names()
+        active = {}
+        for qualified in live:
+            name = nav_stack.bare(qualified)
+            if name not in nav_stack.MANAGERS:
+                continue
+            with self._manager_lock:
+                client = self._manager_clients.get(qualified)
+                if client is None:
+                    client = self.create_client(
+                        Trigger, "{}/is_active".format(qualified),
+                        callback_group=self._group)
+                    self._manager_clients[qualified] = client
+            result = self._call(client, Trigger.Request(),
+                                timeout=MANAGER_TIMEOUT)
+            active[name] = None if result is None else bool(result.success)
+        state = nav_stack.describe(live, active)
+        state["nodes"] = [name for name in live
+                          if nav_stack.bare(name) in nav_stack.STACK_NODES]
+        return state
 
     # ── LED state ────────────────────────────────────────────────────────
 
