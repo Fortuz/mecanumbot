@@ -209,7 +209,10 @@ def generate_launch_description():
         # detector that behaviour needs:
         #
         #   ros2 launch mecanumbot_sensorprocess_smart perception.launch.py \
-        #       detector:=pose|fetch|none use_camera:=true|false
+        #       detector:=pose|fetch|none camera_source:=direct|topic
+        #
+        # (`direct`, the default, has the detector open the webcam itself --
+        # no camera node, no ROS image topic in the frame path.)
         #
         # which is what the leading, ostensive, seek and fetch launch files
         # include. `mecanumbot_peopledetect.launch.py` is the same thing under
