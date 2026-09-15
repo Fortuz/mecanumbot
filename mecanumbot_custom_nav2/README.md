@@ -129,8 +129,8 @@ envelope:
 | Height | Meaning | Action |
 | --- | --- | --- |
 | above `robot_height` (0.45 m) | an overhang | ignore — the robot drives under it |
-| `clearance` … `robot_height` | the robot would hit it | **keepout** |
-| below `clearance` (0.03 m) | a cable, a threshold strip | ignore — the robot rolls over it |
+| `robot_clearance` … `robot_height` | the robot would hit it | **keepout** |
+| below `robot_clearance` (0.03 m) | a cable, a threshold strip | ignore — the robot rolls over it |
 | **unknown** | the server saw structure and could not measure it | **keepout** |
 
 An unknown height is treated as blocking on purpose. Assuming an overhang is the
@@ -166,7 +166,8 @@ The study files are deliberately left alone: the leading and ostensive
 experiments run on them, and adding a filter to their configuration — even an
 inert one — is a change to apparatus those trials are calibrated against. Select
 the T2 file with the `NAV2_PARAMS_FILE` environment variable, which
-`launch_mecanumbot_base.launch.py` now honours:
+`mecanumbot_bringup/nav2.launch.py` honours (and so the base launch, which
+includes it under `use_nav2`):
 
 ```bash
 NAV2_PARAMS_FILE=$(ros2 pkg prefix mecanumbot_description)/share/mecanumbot_description/param/mecanumbot_seek_nav2.yaml \
@@ -205,8 +206,8 @@ and they do not fall due at the same time.
 | --- | --- | --- | --- |
 | 1 | `FRONTIERS` | no frontier worth driving to for `frontier_quiet_time` | exact but brittle: one sliver of unknown behind a glass door keeps it false for ever |
 | 2 | `GAIN` | newly-observed cells per **metre driven** below `min_cells_per_metre` | robust but never quite reaches zero |
-| 3 | `STABLE` | known area grew < `max_map_growth` over the window, and no loop closure within `loop_closure_settle` | a map that has stopped growing may still have unexplored rooms |
-| 4 | `CLOUD` | the server says coverage ≥ `min_grid_coverage`, ≤ `max_uncertain_regions` complaints left, and the cloud has stopped growing | says nothing about whether the robot can still get anywhere |
+| 3 | `STABLE` | known area grew ≤ `max_growth_fraction` over the window, and no loop closure within `loop_closure_settle` | a map that has stopped growing may still have unexplored rooms |
+| 4 | `CLOUD` | the cloud is placed where the map is (agreement ≥ `min_agreement`), the server says coverage ≥ `min_grid_coverage`, ≤ `max_uncertain_regions` complaints left, and the cloud has stopped growing | says nothing about whether the robot can still get anywhere |
 | 5 | `BUDGET` | time, distance or battery ran out | not a quality criterion at all |
 
 ```text
@@ -347,9 +348,10 @@ ros2 launch mecanumbot_autoslam launch_t1.launch.py
 `launch_t1.launch.py` (in `mecanumbot_autoslam`) is the whole robot side of T1:
 the drivers (with `use_nav2:=false`), then, after `explorer_delay`,
 `launch_autoslam.launch.py`. That file starts the **camera** and the **Deep3R
-client** at once, and SLAM, nav2, the comparison handler and the explorer once
-its preflight has cleared the graph. One Ctrl-C stops all of it. Useful
-arguments, all passed through to `launch_autoslam`:
+client** at once, and the scan-grid node, SLAM, nav2, the comparison handler and
+the explorer once its preflight has cleared the graph. One Ctrl-C stops all of
+it. Useful arguments, all but `explorer_delay` passed through to
+`launch_autoslam`:
 
 ```bash
 ros2 launch mecanumbot_autoslam launch_t1.launch.py require_cloud:=false use_deep3r:=false  # mapping only
@@ -472,7 +474,7 @@ ros2 launch mecanumbot_seek launch_seek.launch.py
 ## The nav2 parameter file
 
 `mecanumbot_description/param/mecanumbot_exploration_nav2.yaml`, derived from
-`mecanumbot_custom_nav2_no_keepout.yaml`. Four differences, all of them things
+`mecanumbot_custom_nav2_no_keepout.yaml`. The differences, all of them things
 exploration forces and none of them needing code:
 
 1. **No localisation stack.** slam_toolbox owns `map -> odom`; the `amcl`,
@@ -480,19 +482,33 @@ exploration forces and none of them needing code:
    up through `nav2_bringup/navigation_launch.py`, which starts navigation and
    nothing else — running AMCL as well gives two things estimating the same
    transform.
-2. **No static layer in the global costmap.** `/map` is being built and
-   republished whole on every update, so the obstacle layer is the only source.
+2. **The global costmap keeps its static layer.** It was removed once, on the
+   grounds that `/map` is republished whole and the obstacle layer is the only
+   source; but the static layer is also what gives the costmap its size and
+   origin, and without it nav2 fell back to a 5 × 5 m grid at (0, 0) and logged
+   `Robot is out of bounds of the costmap!`. It is back, as in nav2's own SLAM
+   configuration.
 3. **A generous planner tolerance (0.75 m).** Every goal is a frontier — a point
    on the boundary of the unknown, which is exactly where NavFn is least willing
-   to terminate a path. At the study file's 0.3 m a large fraction of frontier
+   to terminate a path. The study files use 0.5 m
+   (`mecanumbot_custom_nav2_no_keepout.yaml`) and 0.3 m
+   (`mecanumbot_custom_nav2.yaml`), and at 0.3 m a large fraction of frontier
    goals are outright planning failures.
-4. **Stock nav2 recovery behaviours.** The study runs replace them because half
-   a minute of spinning and reversing mid-trial looks absurd; during exploration
-   nobody is watching and a spin is free LiDAR coverage.
+4. **The keepout filter is on, and points at this package's handler**
+   (`deep3r/costmap_filter_info`, see above).
+5. **Stock nav2 recovery behaviours.** The study runs replace them (through
+   `nav2.launch.py`) because half a minute of spinning and reversing mid-trial
+   looks absurd; `launch_autoslam` does not, and during exploration nobody is
+   watching and a spin is free LiDAR coverage.
+6. **Yaw rate is capped below the study's** — DWB `max_vel_theta` 0.6 rad/s
+   (study 1.0), `rotate_to_heading_angular_vel` 0.4 (0.7), and the matching
+   rotational limits in the velocity smoother. The LDS-02 scan is smeared by a
+   fast turn and slam_toolbox adds no pose-graph nodes during a turn in place;
+   the file's header gives the full reasoning.
 
-Everything else — footprint, inflation, DWB tuning, the velocity smoother — is
-deliberately identical, so a path driven during exploration is driven the same
-way as a path during a trial.
+Everything else — footprint, inflation, the DWB translation limits, the velocity
+smoother's linear terms — is deliberately identical, so a path driven during
+exploration is driven as close as possible to a path during a trial.
 
 ## Tests
 

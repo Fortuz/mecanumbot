@@ -291,8 +291,9 @@ Validation follows what actually consumes each file:
 - A `_times` list **shorter** than its `_seq` list is a hard error —
   `LEDBehaviourSequence` reads `delays[index - 1]` up to `len(patterns)`, so it
   would raise `IndexError` mid-tick, during an experiment.
-- A `_times` list **longer** is a warning. Both shipped files are currently in
-  that state. The page offers a one-click trim but does not apply it silently:
+- A `_times` list **longer** is a warning. `Eto_behaviour_setting_constants.yaml`
+  is currently in that state (`LED_indicate_close_target_times`,
+  `Dog_indicate_target_times`); `behaviour_setting_constants.yaml` no longer is. The page offers a one-click trim but does not apply it silently:
   seven delays against five patterns most likely means two patterns were lost,
   not that the delays are wrong, and that call belongs to the operator.
 
@@ -399,8 +400,10 @@ or started, rather than the GUI failing to come up.
 this node's namespace alongside the LED service node and
 `mecanumbot_sensorproc_node`. `cmd_vel_topic` is absolute because the base
 launch remaps `cmd_vel` out of the namespace so Nav2 and the joy node meet on
-one topic. `led_poll_period` and `odom_topic` are also launch arguments of
-`web.launch.py`.
+one topic. `web.launch.py` declares `namespace` (`mecanumbot`), `web_host`,
+`web_port`, `joystick_config_dir`, `behaviour_config_dir`, `diagnostics_config`,
+`led_poll_period` and `odom_topic`; the other config directories, `backup_root`
+and the joy/LED/`cmd_vel` names are only node parameters.
 
 ## Dependencies
 
@@ -426,6 +429,9 @@ ros2 launch mecanumbot_web web.launch.py web_port:=8080
 
 ```bash
 colcon test --packages-select mecanumbot_web && colcon test-result --verbose
+
+# or directly, from the package directory
+PYTHONPATH=.:$PYTHONPATH python3 -m pytest test/ -q -p no:launch_testing
 ```
 
 About 275 tests, none needing a ROS graph; the route tests skip cleanly when

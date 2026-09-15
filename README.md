@@ -8,7 +8,7 @@ This repository contains the Mecanumbot related packages. The repository made by
 [mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project `<br>`
 [mecanumbot_remote](https://github.com/Fortuz/mecanumbot_remote) - Contains ROS2 packages for used on an external computer connected to the robot `<br>`
 [mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the NVIDIA Jetson Orin Nano on the robot `<br>`
-[mecanumbot_server](https://github.com/Fortuz/mecanumbot_server) - Contains ROS2 packages that talk to the off-board compute server (`mecanumbot_deep3r`) `<br>`
+[mecanumbot_server](https://github.com/hubaycsenge/mecanumbot_server) - Contains ROS2 packages that talk to the off-board compute server (`mecanumbot_deep3r`) `<br>`
 [mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors. Can be found on the robot locally in the ~/Sandbox folder `<br>`
 
 Original sources: `<br>`
@@ -17,7 +17,7 @@ Original sources: `<br>`
 
 ## Packages in this repository
 
-Ten packages, all of them part of the onboard Jetson stack (`mecanumbot_monitor`
+Twelve packages, including the `mecanumbot` metapackage, all of them part of the onboard Jetson stack (`mecanumbot_monitor`
 is equally usable on a development machine). Simulation is no longer one of them:
 `mecanumbot_sim` moved to [`mecanumbot_remote`](https://github.com/Fortuz/mecanumbot_remote),
 because nothing about it runs on the robot.
@@ -25,13 +25,13 @@ because nothing about it runs on the robot.
 | Package | Build type | Executables | Purpose |
 | --- | --- | --- | --- |
 | `mecanumbot` | `ament_cmake` (meta) | — | Dependency aggregation only. No nodes, no launch files: installing it pulls in the runtime packages. |
-| `mecanumbot_core` | Python | `mecanumbot_io_node`, `mecanumbot_sensorproc_node`, `mecanumbot_battery_alert` | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link (CRC8-CCITT framing) and the mecanum kinematics, turning `cmd_vel` into four wheel commands; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state, `has_object` and the `odom → base_footprint` transform, plus `orin_battery_state` from the INA219 when running on a Jetson; `mecanumbot_battery_alert` raises a visible low-battery alarm. |
-| `mecanumbot_bringup` | `ament_cmake` | — (launch only) | Launch orchestration. No node logic of its own — it starts nodes from the other packages and picks map / Nav2 params from the current Wi-Fi SSID. Holds `launch_mecanumbot_base.launch.py` (full onboard stack), `launch_external.launch.py` (operator PC), the camera, state-publisher, mapping, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run — the only launch file here that starts nodes from outside this repository, since `mecanumbot_sim` lives in `mecanumbot_remote`. |
-| `mecanumbot_description` | `ament_cmake` | — (assets only) | Robot assets, no nodes: URDF/xacro and meshes, maps, Nav2/SLAM/Cartographer parameter sets, RViz layouts, the joystick profile YAMLs, the udev rules for `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano`, and the systemd autostart unit. |
+| `mecanumbot_core` | Python | `mecanumbot_io_node`, `mecanumbot_sensorproc_node`, `mecanumbot_battery_alert`, `mecanumbot_scan_grid_node` | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link (CRC8-CCITT framing) and the mecanum kinematics, turning `cmd_vel` into four wheel commands; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state, `has_object` and the `odom → base_footprint` transform, plus `orin_battery_state` from the INA219 when running on a Jetson; `mecanumbot_battery_alert` raises a visible low-battery alarm; `mecanumbot_scan_grid_node` republishes the LD08 scan on a fixed 200-sector grid as `/mecanumbot/scan_grid`, which is what slam_toolbox reads. |
+| `mecanumbot_bringup` | `ament_cmake` | — (launch only) | Launch orchestration. No node logic of its own — it starts nodes from the other packages and picks map / Nav2 params from the current Wi-Fi SSID. Holds `launch_mecanumbot_base.launch.py` (full onboard stack), `nav2.launch.py` (the study Nav2 stack, included by the base launch under `use_nav2` and restartable on its own), `launch_external.launch.py` (operator PC), the camera, state-publisher, mapping, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run — the only launch file here that starts nodes from outside this repository, since `mecanumbot_sim` lives in `mecanumbot_remote`. |
+| `mecanumbot_description` | `ament_cmake` | — (assets only) | Robot assets, no nodes: URDF/xacro and meshes, maps, Nav2/SLAM/Cartographer parameter sets (including the T1 exploration and T2 seek Nav2 sets), the Nav2 behaviour-tree XMLs, RViz layouts, the joystick profile YAMLs, the udev rules for `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano`, and the systemd autostart unit. |
 | `mecanumbot_joy` | Python | `mecanumbot_joy_node` | The robot's joystick node and the only `/joy` consumer. Applies a YAML mapping profile (`mecanumbot_description/config/joystick/`) to publish `/cmd_vel`, `/cmd_accessory_pos` and LED service calls. Layout decoding, profile validation and the action vocabulary live in rclpy-free modules, so they are unit-tested without a ROS graph. Replaces the old operator-PC teleop and the retired `mecanumbot_gui` controller stack. |
-| `mecanumbot_web` | Python | `mecanumbot_web_node` | The robot-hosted web GUI (Flask inside an rclpy node) at `http://<robot>:8080`, started by the base launch and disabled with `use_web:=false`. Three pages: `/joystick` edits and reloads the joystick profile with a live `/joy` readout, `/diagnostics` shows LED state, commanded-vs-measured movement and measured publish rates against nominal, `/behaviour` edits the leading-behaviour constants YAML. No login, no database. |
+| `mecanumbot_web` | Python | `mecanumbot_web_node` | The robot-hosted web GUI (Flask inside an rclpy node) at `http://<robot>:8080`, started by the base launch and disabled with `use_web:=false`. Three pages: `/joystick` edits and reloads the joystick profile with a live `/joy` readout, `/diagnostics` shows Nav2 stack state (with a restart), LED state, commanded-vs-measured movement and measured publish rates against nominal, `/behaviour` picks one of the behaviour trees (leading, ostensive, seek, fetch, autoslam, demo), edits the constants it loads and starts/stops it. No login, no database. |
 | `mecanumbot_led` | Python | `mecanumbot_led_service` | `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`. |
-| `mecanumbot_camera_stream` | Python | `camera_image_publisher_node`, `compressed_camera_publisher_node`, `h264_camera_publisher_node` | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. Picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
+| `mecanumbot_camera_stream` | Python | `camera_image_publisher_node`, `compressed_camera_publisher_node`, `h264_camera_publisher_node` | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. The robot's camera is a USB (UVC) webcam on `/dev/video0`, so `usb` is the default backend; the CSI path picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
 | `mecanumbot_cam_optim` | `ament_cmake` (C++) | `camera_stream_node` | A C++ capture path alongside the Python one, built on `rclcpp`, `cv_bridge` and `image_transport`. No README; package manifest is still a TODO stub. |
 | `mecanumbot_audio` | Python | `input_handler` | Publishes microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. No README. |
 | `mecanumbot_custom_nav2` | Python | `mecanumbot_map_agreement_node` | Map analysis for the Deep3R seeking system, and no motion. Libraries: an RRT frontier detector over slam_toolbox's occupancy grid, the occupancy model, the frontier scoring, and the T1 exit criteria (which include the server's reconstruction verdict). The pass that drives on the strength of them is `mecanumbot_autoslam`, in `mecanumbot_behaviours`; sending the robot to a frontier is a behaviour, so it lives there with the launch files that start it. It replaces no part of Nav2: the exploration tuning is a parameter file in `mecanumbot_description`. `mecanumbot_map_agreement_node` runs in **both** phases and is the robot's end of the 2D/3D comparison: it turns the server's verdict into a Nav2 keepout mask (the lidar is one horizontal plane, so a table top or a low step is "free" in the 2D map and lethal in the cloud), a revisit list and RViz markers. It only ever *adds* obstacles. |
@@ -73,7 +73,7 @@ What the platform change means in practice:
 | Area                | On the Jetson Orin Nano                                                                                                                                      |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | OS / ROS            | JetPack 6 (Ubuntu 22.04) + ROS2 Humble, `aarch64`.                                                                                                           |
-| CSI camera          | `mecanumbot_camera_stream` uses the `nvarguscamerasrc` GStreamer pipeline instead of the Pi `libcamera` path. See `mecanumbot_camera_stream/README.md`.       |
+| Camera              | The robot's camera is a USB (UVC) webcam on `/dev/video0` (backend `usb`). For a CSI camera, `mecanumbot_camera_stream` uses the `nvarguscamerasrc` GStreamer pipeline instead of the Pi `libcamera` path. See `mecanumbot_camera_stream/README.md`. |
 | H.264 encoding      | Hardware NVENC (`nvv4l2h264enc`) is auto-detected, instead of the Pi `omxh264enc`. See `mecanumbot_camera_stream/OPTIMIZATION_GUIDE.md`.                     |
 | Onboard power rail  | `mecanumbot_sensorproc_node` reads an INA219 over I2C and publishes `orin_battery_state`. This publisher only exists when the device tree reports a Jetson. |
 | GPIO                | The `wiringpi` debug toggle from the Pi build is disabled; `wiringpi` is not installed and is not a dependency.                                               |
@@ -130,7 +130,6 @@ $ echo 'export TURTLEBOT3_MODEL=mecanumbot' >> ~/.bashrc
 $ echo 'export ROS_LOCALHOST_ONLY=0' >> ~/.bashrc
 $ echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp " >> ~/.bashrc
 $ echo "alias start_robot='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py'" >> ~/.bashrc
-$ echo "alias start_robot_with_led='ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py & ros2 run mecanumbot_led mecanumbot_led_service & wait'" >> ~/.bashrc
 $ source ~/.bashrc
 
 ```
@@ -172,8 +171,10 @@ $ journalctl -u ros2.service -f
 
 ```
 $ ssh ubuntu@192.168.1.240
-$ start_robot_with_led
+$ start_robot
 ```
+
+The base launch already starts `mecanumbot_led_service`; starting a second one by hand would open `/dev/arduino_nano` twice.
 
 ## Connect new PC to robot
 
@@ -205,6 +206,7 @@ $ git clone https://github.com/Fortuz/mecanumbot
 $ git clone https://github.com/Fortuz/mecanumbot_remote
 $ git clone https://github.com/Fortuz/mecanumbot_msgs
 $ git clone https://github.com/hubaycsenge/mecanumbot_behaviours
+$ git clone https://github.com/hubaycsenge/mecanumbot_sensorprocess_smart
 $ cd ..
 $ colcon build --symlink-install
 $ echo 'export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp' >> ~/.bashrc
@@ -228,13 +230,13 @@ $ sudo systemctl restart chrony
 Send a message to get back the actual status of the leds
 
 ```
-$ ros2 service call /get_led_status mecanumbot_msgs/srv/GetLedStatus "{}"
+$ ros2 service call /mecanumbot/get_led_status mecanumbot_msgs/srv/GetLedStatus "{}"
 ```
 
 Send a message to set the status of the leds
 
 ```
-$ ros2 service call /set_led_status mecanumbot_msgs/srv/SetLedStatus "{
+$ ros2 service call /mecanumbot/set_led_status mecanumbot_msgs/srv/SetLedStatus "{
   fl_mode: 1,
   fl_color: 3,
   fr_mode: 1,

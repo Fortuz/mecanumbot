@@ -6,6 +6,8 @@ The node runs on the robot's Jetson Orin Nano and talks to the Arduino over USB 
 
 ## Node: `mecanumbot_led_service_node`
 
+Executable: `mecanumbot_led_service`. The node registers as `mecanumbot_led_service_node`; the base launch starts it as `/mecanumbot/mecanumbot_led_service`, so its services resolve to `/mecanumbot/set_led_status` and `/mecanumbot/get_led_status` there.
+
 ### Services handled
 
 | Service          | Type                               | Behavior                                                                                         |
@@ -15,7 +17,7 @@ The node runs on the robot's Jetson Orin Nano and talks to the Arduino over USB 
 
 ### Behavior
 
-- Uses a custom byte protocol with start byte, checksum, and fixed frame layout.
+- Uses a custom byte protocol with start byte, checksum, and fixed frame layout (start `0xAA`, eight mode/colour bytes, a two-byte duration, XOR checksum; status request `0xAC`, feedback start `0xAB`).
 - Performs serial parsing and checksum validation for returned LED feedback.
 - Communicates directly with Arduino Nano at `115200` baud.
 

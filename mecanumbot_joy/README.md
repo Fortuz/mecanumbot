@@ -26,8 +26,9 @@ from rclpy**:
 
 That split is what makes the behaviour unit-testable without a ROS graph — the
 same reason `mecanumbot_sim`'s `kinematics.py` is separate from its nodes. Run
-`colcon test --packages-select mecanumbot_joy` for 73 tests that need neither a
-gamepad nor a robot.
+`colcon test --packages-select mecanumbot_joy`, or directly
+`PYTHONPATH=.:$PYTHONPATH python3 -m pytest test/test_actions.py test/test_layout.py test/test_profile.py -p no:launch_testing`
+from the package directory, for 73 tests that need neither a gamepad nor a robot.
 
 `mecanumbot_web` imports `profile.validate_document` rather than reimplementing
 it, so the web GUI cannot save a profile this node would then refuse to load.
@@ -115,6 +116,9 @@ ros2 launch mecanumbot_joy joy_teleop.launch.py
 
 # pick a profile explicitly
 ros2 launch mecanumbot_joy joy_teleop.launch.py joystick_profile:=ps4
+
+# other launch arguments: namespace (mecanumbot), joystick_config_dir
+# (mecanumbot_description/config/joystick), joy_dev (/dev/input/js0)
 
 # switch at runtime
 ros2 param set /mecanumbot/mecanumbot_joy_node profile generic
