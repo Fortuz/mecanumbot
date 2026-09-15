@@ -206,7 +206,7 @@ constants it will load, start it, watch its console, stop it.
 | Ostensive | `ros2 launch mecanumbot_ostensive_behaviour launch_ostensive.launch.py` | constants file, namespace |
 | Seek (T2) | `ros2 launch mecanumbot_seek launch_seek.launch.py` | constants file, namespace |
 | Fetch | `ros2 launch mecanumbot_fetch_behaviour launch_fetch.launch.py` | constants file, namespace |
-| Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, constants file, namespace |
+| Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, **use_camera**, **use_deep3r**, constants file, namespace |
 | Demo: wander between people | `ros2 run mecanumbot_demo_behaviours wander_between_people_node` | constants file, namespace |
 
 Seek, fetch and autoslam were startable from a terminal for months before they
@@ -219,6 +219,13 @@ nav2 stack, AMCL, the map server and any behaviour tree it finds on the graph â€
 including one started from this page. That is the point of it, but it is worth
 knowing before clicking Start, which is why the row carries the warning.
 `use_preflight:=false` skips it, and then the two stacks fight.
+
+It is also the one row that brings up hardware and a network link: the launch
+file starts the camera and the Deep3R client, because T1 cannot finish without
+them. Set **use_camera** / **use_deep3r** to `false` if either is already
+running: the camera can only be opened once, and a second client is a second
+run, for which the server wipes its reconstruction. The cluster server and the
+tunnel still have to be up before Start.
 
 The catalog is `behaviour_catalog.py`, and every entry is the command the
 workspace documents for that tree â€” so a run started here and a run typed at a

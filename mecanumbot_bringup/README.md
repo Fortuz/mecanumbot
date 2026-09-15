@@ -19,7 +19,7 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 | `launch/slam_gmapping.launch.py`              | Starts `cartographer_node` and `cartographer_occupancy_grid_node` using `mecanumbot_description/param/mecanumbot_lds.lua`.       |
 | `launch/mecanumbot_state_publisher.launch.py` | Starts `robot_state_publisher` with robot description from URDF/xacro.                                                           |
 | `launch/rviz2.launch.py`                      | Starts RViz with the package-provided visualization config.                                                                      |
-| `launch/camera.launch.py`                     | Includes `mecanumbot_camera_stream/camera_compressed.launch.py` (JPEG compressed stream). Replaces the earlier raw `v4l2_camera_node` setup. Not included by the base launch: `perception.launch.py` starts the same publisher, with `use_camera:=true`, because whoever owns the camera has to be the same process that the detector is configured against. |
+| `launch/camera.launch.py`                     | Includes `mecanumbot_camera_stream/camera_compressed.launch.py` (JPEG compressed stream). Replaces the earlier raw `v4l2_camera_node` setup. Not included by the base launch, **and no longer by `perception.launch.py` either** (its include has been commented out since `2f7aade`), so `use_camera:=true` runs need the camera started by hand. The one launch that still starts the publisher is `mecanumbot_autoslam`'s `launch_autoslam.launch.py`, for T1. The backend is `usb`: the robot's camera is a USB webcam on `/dev/video0`. |
 | `launch/sim.launch.py`                        | The single entry point for every simulated run, intended for a development machine and not the Jetson. Two orthogonal arguments: `backend` (`mujoco` \| `gazebo`) picks the simulator, `mode` (`base` \| `mapping` \| `perception` \| `truth_twin` \| `behaviour`) picks what runs on top. Replaces the five `launch_mecanumbot_sim*` / `launch_mecanumbot_truth_twin` files, which were layered includes of one another. Everything it starts lives in `mecanumbot_sim`. |
 
 ## Base launch arguments
@@ -29,7 +29,7 @@ The onboard launch files run on the robot's NVIDIA Jetson Orin Nano. `launch_mec
 | `namespace`        | `mecanumbot`   | Robot namespace.                                                                                             |
 | `use_sim_time`     | `false`        | Use the simulation clock.                                                                                    |
 | `use_joy`          | `true`         | Start `joy_node` and the onboard joystick node.                                                              |
-| `use_nav2`         | `true`         | Include `nav2.launch.py`. `false` for T1, which brings its own nav2 without AMCL.                            |
+| `use_nav2`         | `true`         | Include `nav2.launch.py`. `false` for T1, which brings its own nav2 without AMCL (`launch_t1.launch.py` passes it). |
 | `use_web`          | `true`         | Start the robot-hosted web GUI on port 8080.                                                                 |
 | `joystick_profile` | `auto`         | Joystick profile stem, or `auto` to detect from the pad.                                                     |
 

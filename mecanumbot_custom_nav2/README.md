@@ -344,27 +344,43 @@ plus warm-up is about 25 s — wait for the bind line before starting the robot.
 ros2 launch mecanumbot_autoslam launch_t1.launch.py
 ```
 
-`launch_t1.launch.py` (in `mecanumbot_autoslam`) starts the drivers, the
-Deep3R client and the exploration stack in that order, with delays so the logs read in the order the
-subsystems came up. One Ctrl-C stops all of it. Useful arguments:
+`launch_t1.launch.py` (in `mecanumbot_autoslam`) is the whole robot side of T1:
+the drivers (with `use_nav2:=false`), then, after `explorer_delay`,
+`launch_autoslam.launch.py`. That file starts the **camera** and the **Deep3R
+client** at once, and SLAM, nav2, the comparison handler and the explorer once
+its preflight has cleared the graph. One Ctrl-C stops all of it. Useful
+arguments, all passed through to `launch_autoslam`:
 
 ```bash
-ros2 launch mecanumbot_autoslam launch_t1.launch.py require_cloud:=false use_deep3r:=false
-ros2 launch mecanumbot_autoslam launch_t1.launch.py deep3r_delay:=15.0 explorer_delay:=25.0
+ros2 launch mecanumbot_autoslam launch_t1.launch.py require_cloud:=false use_deep3r:=false  # mapping only
+ros2 launch mecanumbot_autoslam launch_t1.launch.py explorer_delay:=25.0
+ros2 launch mecanumbot_autoslam launch_t1.launch.py use_camera:=false use_deep3r:=false     # both already up
 ```
 
-The trade is that three stacks share one terminal. When something is wrong and
-the noise is in the way, use the three-terminal form below instead — it is the
-same three launch files and the same ordering.
+The camera and the client are part of the pass because T1 cannot finish without
+them, and until 2026-09-15 nothing in T1 started the camera: the base launch
+had stopped, perception is not part of T1, and the client ran, reached the
+server and sent no frame -- so no cloud, no `map_agreement`, and a `CLOUD`
+criterion that was never met, with no error anywhere. Starting a camera or a
+client that is already running is not harmless: the camera can be opened once,
+and a second client is a second run, for which the server wipes the
+reconstruction. Pass `use_camera:=false` / `use_deep3r:=false` then.
 
-### 2b. The robot — three terminals
+The trade is that every stack shares one terminal. When something is wrong and
+the noise is in the way, use the two-terminal form below instead — it is the
+same two launch files.
+
+### 2b. The robot — two terminals
 
 ```bash
-# drivers and camera, but NOT nav2 -- autoslam brings its own
+# drivers, but NOT nav2 -- autoslam brings its own
 ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py use_nav2:=false
-ros2 launch mecanumbot_deep3r deep3r.launch.py        # needs the tunnel up
+# camera + Deep3R client (needs the tunnel up), then preflight, SLAM, nav2, explorer
 ros2 launch mecanumbot_autoslam launch_autoslam.launch.py
 ```
+
+Starting **Autoslam (T1)** from the robot's web GUI runs the second command;
+the page offers the same `use_camera` and `use_deep3r` switches.
 
 `use_nav2:=false` is still what you want, though it is no longer the only thing
 standing between you and a broken run: the base launch otherwise starts nav2
@@ -374,7 +390,8 @@ one both publish `map -> odom` and both serve `navigate_to_pose`.
 nav2 stack, AMCL, the map server and any behaviour tree it finds on the graph
 before it starts anything of its own — so forgetting the argument now costs a
 restart of those nodes rather than a wasted pass. Not starting them is still
-cheaper than starting them and retiring them.
+cheaper than starting them and retiring them. The preflight leaves the drivers,
+the joystick, the camera and the Deep3R client alone.
 
 > **`use_nav2` did not exist until 2026-09-08.** It was documented here, in this
 > package's launch file and in the workspace `CLAUDE.md`, but was never declared
@@ -385,7 +402,7 @@ cheaper than starting them and retiring them.
 > runs a preflight that shuts the study stack down if it is up anyway, so this
 > is one fewer thing to get right by hand.
 
-`deep3r.launch.py` defaults to `enable_map_loop:=true`, which is what sends the
+`deep3r.launch.py`, which `launch_autoslam` includes, defaults to `enable_map_loop:=true`, which is what sends the
 pose, the grid and the scan **up** and republishes the server's verdict back
 down. Without it the node is a frame pump, the server has nothing to place the
 cloud against, and the `CLOUD` criterion below can never be satisfied — so T1
@@ -416,7 +433,7 @@ line up with the room.
 ### Without a server
 
 ```bash
-ros2 launch mecanumbot_autoslam launch_autoslam.launch.py require_cloud:=false
+ros2 launch mecanumbot_autoslam launch_autoslam.launch.py require_cloud:=false use_deep3r:=false
 ```
 
 Mapping only, and the exit criteria fall back to the 2D ones. The right thing

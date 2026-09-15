@@ -7,6 +7,8 @@ ROS 2 package that captures frames from USB (UVC) or CSI/ribbon cameras on the r
 The nodes detect the board from `/proc/device-tree/model` and pick the matching capture path:
 
 - **Jetson Orin Nano (the robot):** CSI capture goes through `nvarguscamerasrc` + `nvvidconv` (JetPack 6 / Argus), and H.264 encoding uses the NVENC element `nvv4l2h264enc`.
+
+**The robot's camera is a USB (UVC) webcam on `/dev/video0`, not a CSI one.** The DeepStream detectors in `mecanumbot_sensorprocess_smart` open the same device with `v4l2src`. So `usb` is the default backend in every config file here and in `camera_compressed.launch.py`. `csi` sends capture through `nvarguscamerasrc`, which cannot open that device: the node logs `Camera open failed` and keeps retrying. Only select `csi` if a ribbon camera is fitted.
 - Other boards fall back to their own pipelines (`libcamera` on Raspberry Pi, plain V4L2 elsewhere). These paths are kept for development machines and are not exercised on the robot.
 
 USB (UVC) capture is plain OpenCV/V4L2 and is identical on every platform.

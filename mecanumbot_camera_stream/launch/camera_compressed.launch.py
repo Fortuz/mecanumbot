@@ -41,7 +41,10 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "camera_backend",
-                default_value="csi",
+                # The robot's camera is a USB (UVC) webcam on /dev/video0 -- the
+                # DeepStream detectors open it with v4l2src too. csi goes through
+                # nvarguscamerasrc and cannot open it.
+                default_value="usb",
                 description="Camera backend: auto, usb, or csi",
             ),
             DeclareLaunchArgument(

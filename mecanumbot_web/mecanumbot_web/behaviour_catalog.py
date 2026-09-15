@@ -452,8 +452,9 @@ AUTOSLAM = BehaviourSpec(
     requires=(
         "The drivers, ideally started with use_nav2:=false -- this launch "
         "brings up its own nav2 and slam_toolbox",
-        "The Deep3R client and a live tunnel, unless require_cloud is false. "
-        "Without a verdict from the server the exit criteria can never be "
+        "The cluster server and a live tunnel, unless require_cloud is false. "
+        "The launch file starts the camera and the Deep3R client itself, but "
+        "without a verdict from the server the exit criteria can never be "
         "satisfied and the pass will not finish",
     ),
     default_file="autoslam_setting_constants.yaml",
@@ -501,6 +502,29 @@ AUTOSLAM = BehaviourSpec(
             doc="Shut down the study nav2 stack, AMCL and any running tree "
                 "before starting. false starts straight away, and then they "
                 "fight this pass for map -> odom and for navigate_to_pose.",
+        ),
+        Argument(
+            name="use_camera",
+            label="Start the camera",
+            kind=KIND_CHOICE,
+            default="true",
+            choices=("true", "false"),
+            emit=("use_camera:={}",),
+            doc="Start the compressed camera publisher the Deep3R client "
+                "reads. false only when one is already running: the camera "
+                "can be opened once.",
+        ),
+        Argument(
+            name="use_deep3r",
+            label="Start the Deep3R client",
+            kind=KIND_CHOICE,
+            default="true",
+            choices=("true", "false"),
+            emit=("use_deep3r:={}",),
+            doc="Start the client that streams frames to the server. false "
+                "only when one is already running -- a second one is a second "
+                "run, and the server wipes the reconstruction for it -- or for "
+                "a mapping run with require_cloud false.",
         ),
         _NAMESPACE_LAUNCH,
     ),
