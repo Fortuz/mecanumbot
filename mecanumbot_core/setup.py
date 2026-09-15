@@ -30,6 +30,7 @@ setup(
             "mecanumbot_io_node = mecanumbot_core.mecanumbot_IO_node:main",
             "mecanumbot_sensorproc_node = mecanumbot_core.mecanumbot_sensorproc_node:main",
             "mecanumbot_battery_alert = mecanumbot_core.mecanumbot_battery_alert:main",
+            "mecanumbot_scan_grid_node = mecanumbot_core.mecanumbot_scan_grid_node:main",
         ],
     },
 )

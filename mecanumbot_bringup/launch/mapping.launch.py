@@ -33,9 +33,21 @@ def generate_launch_description():
         output="screen",
     )
 
+    # slam_toolbox reads /mecanumbot/scan_grid, not the driver's scan: the LD08
+    # changes its geometry every revolution and slam_toolbox drops every scan
+    # that does not match the first. See mecanumbot_core/scan_grid.py.
+    start_scan_grid_node = Node(
+        package="mecanumbot_core",
+        executable="mecanumbot_scan_grid_node",
+        name="mecanumbot_scan_grid_node",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
     # 4. Create Launch Description and add actions
     ld = LaunchDescription()
     ld.add_action(declare_use_sim_time_argument)
+    ld.add_action(start_scan_grid_node)
     ld.add_action(start_async_slam_toolbox_node)
 
     return ld

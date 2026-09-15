@@ -99,3 +99,32 @@ the leading experiment: a low battery will take the lights over mid-trial.
 | `orin_battery_state` | subscribe  | **Jetson only.** Onboard computer rail voltage from the INA219.                                             |
 | `cmd_accessory_pos`  | publish    | Nods the neck back and forth while the alert is active.                                                     |
 | `set_led_status`     | service call | Sets all four LED panels to fast-blinking red while the alert is active.                                   |
+
+## Node: `mecanumbot_scan_grid_node`
+
+Republishes the lidar scan on a **fixed angular grid**, for slam_toolbox. Started by
+the launch files that start slam_toolbox: `mecanumbot_bringup/mapping.launch.py`
+(and so the simulator's `mapping` mode) and `mecanumbot_autoslam/launch_autoslam.launch.py`.
+
+| Topic | Direction | Function |
+| --- | --- | --- |
+| `/mecanumbot/scan` (`input_topic`) | subscribe | The LD08 driver's scan. |
+| `/mecanumbot/scan_grid` (`output_topic`) | publish | The same revolution on `bins` sectors (default 200, 1.8°) from angle 0. Same stamp and frame. |
+
+**Why it exists.** The LD08 publishes every revolution with its own `angle_min`,
+`angle_max` and `angle_increment`, and with 201 to 206 readings. slam_toolbox (Karto)
+builds its laser model from the **first** scan it receives and drops every later
+scan with a different reading count. Which scan comes first changes per launch, so a
+mapping run kept between half its scans and almost none. Measured on the robot on
+2026-09-15: about one launch in seven kept 2%, and slam_toolbox's map was still
+0 × 0 after five minutes. Nav2's global costmap takes its size from that map, so it
+fell back to a 5 × 5 m square at the origin and logged `Robot is out of bounds of
+the costmap!`.
+
+**What it does to the data.** Each sector keeps its *nearest* valid return, and a
+sector with no valid return is `inf`. The sectors are wider than the driver's
+~1.76° spacing, so a revolution leaves none empty. On 224 live scans every output had
+200 readings, and exactly as many sectors were empty (11.7%) as raw readings were
+no-returns. Costmaps, perception and the Deep3R client still read the driver's own
+topic. The grid function is `scan_grid.py`, tested in `test/test_scan_grid.py`
+(`PYTHONPATH=. python3 -m pytest test/test_scan_grid.py`, no ROS).

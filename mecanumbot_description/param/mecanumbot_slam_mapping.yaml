@@ -17,7 +17,13 @@
     odom_frame: mecanumbot/odom
     map_frame: map
     base_frame: mecanumbot/base_link
-    scan_topic: /mecanumbot/scan    # Match your LIDAR frame
+    # NOT the driver's /mecanumbot/scan. The LD08 changes angle_min/max/increment
+    # and its reading count (201..206) every revolution, and slam_toolbox drops
+    # every scan whose count differs from the first one it saw -- on a bad
+    # launch all but 2%, and the map stays 0 x 0. mecanumbot_scan_grid_node
+    # (mecanumbot_core) republishes each revolution on 200 fixed sectors; the
+    # launch files that start slam_toolbox start it too.
+    scan_topic: /mecanumbot/scan_grid
     use_map_saver: true
     mode: mapping
 
