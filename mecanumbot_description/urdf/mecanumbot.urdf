@@ -218,7 +218,7 @@
   <joint name="${namespace}/head_joint" type="revolute">
     <parent link="${namespace}/base_link"/>
     <child link="${namespace}/head_link"/>
-    <origin xyz="0.1063 0.0 0.1679" rpy="1.57 0 0"/>
+    <origin xyz="0.1063 0.0 0.1700" rpy="1.57 0 0"/>
     <axis xyz="0 0 1"/>
     <limit lower="-1.57" upper="1.57" effort="5.0" velocity="1.0"/>
   </joint>
@@ -277,10 +277,21 @@
        x along the lens, y left, z up, so the camera looks where the head points
        and head_joint tilts it. It used to be rpy="0 -1.57 0", which put the
        lens on the neck's rotation axis, looking right at every neck angle.
-       The offsets and box sizes below are the old ones re-expressed in the new
-       axes, so nothing has moved. -->
+       MEASURED 2026-09-18 with a tape from the floor, the neck held at 550
+       ticks (a pitch of -9.8 deg under mecanumbot_sensorproc_node's calibrated
+       offset): the horn screw, which is head_joint's own axis, is 0.180 m up
+       and the lens is 0.230 m up, which is this lever. The lens had been
+       0.021 m low. camera_rgb_frame's offset is now zero, so camera_link IS
+       the lens and TF agrees with the lever mecanumbot_deep3r and
+       ball_locating place frames with; before this the URDF's optical frame
+       and their lens were 0.011 m apart. lever_x has NOT been measured, only
+       the height, and the meshes are unchanged: head.stl's flat plate sits
+       about 0.011 m lower than the real bracket's, and base.stl's neck servo
+       is a 40 mm block where the AX-12A stands 50 mm on its long edge. Both
+       are visual only, but they are why the head reads low by eye in RViz.
+       (No double hyphens here: XML forbids them inside a comment.) -->
   <joint name="${namespace}/camera_joint" type="fixed">
-    <origin xyz="0.022 0.038 0.0" rpy="-1.5708 0 0"/>
+    <origin xyz="0.022 0.0545 0.0" rpy="-1.5708 0 0"/>
     <parent link="${namespace}/head_link"/>
     <child link="${namespace}/camera_link"/>
   </joint>
@@ -294,7 +305,7 @@
       <material name="red"/>
     </visual>
     <collision>
-      <origin xyz="-0.013 -0.005 0.011" rpy="0 0 0"/>
+      <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
       <geometry>
         <box size="0.027 0.015 0.030"/>
       </geometry>
@@ -303,7 +314,7 @@
   </link>
 
   <joint name="${namespace}/camera_rgb_joint" type="fixed">
-    <origin xyz="-0.009 -0.003 0.011" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
     <parent link="${namespace}/camera_link"/>
     <child link="${namespace}/camera_rgb_frame"/>
   </joint>
