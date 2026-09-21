@@ -64,6 +64,10 @@ As a main source of information, documentation, codes and more the original [Tur
 
 The project is made with Ubuntu 22.04 and ROS2 Humble. `<br>`
 
+## Hardware
+
+The full component list — every board, motor, sensor and 3D-printed part, with where to buy it and a price — is in [docs/COMPONENTS.md](docs/COMPONENTS.md).
+
 ## Onboard computer
 
 The whole onboard stack runs on an **NVIDIA Jetson Orin Nano** (JetPack 6, Ubuntu 22.04, ROS2 Humble). Earlier revisions of the robot used a Raspberry Pi; the packages in this repository are now developed and tested on the Orin Nano.
