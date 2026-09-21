@@ -1,9 +1,12 @@
 import rclpy
+from mecanumbot_msgs.msg import OpenCRState
 from mecanumbot_msgs.srv import SetLedStatus
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
+
+from mecanumbot_core.alerts import LEDS_OFF, Debounce, choose_alarm, dxl_bus_silent
 
 
 def get_device_model():
@@ -15,10 +18,6 @@ def get_device_model():
 
 
 MODEL = get_device_model()
-
-# SetLedStatus vocabulary, from mecanumbot_led.
-BLACK, RED = 0, 3
-SOLID, FAST_BLINK = 4, 5
 
 # Consecutive readings below the threshold before the alarm is raised.
 ALERT_AFTER_SAMPLES = 5
@@ -32,12 +31,24 @@ else:
 
 
 class MecanumbotBatteryAlert(Node):
+    """
+    Show the robot's hardware alarms on the LEDs.
+
+    Two of them: a low battery (red fast blink) and a Dynamixel bus the OpenCR
+    cannot read (yellow fast blink) -- the wheels then neither report nor, as a
+    rule, drive, which from outside looks like the robot ignoring its commands.
+    """
+
     def __init__(self):
         super().__init__("mecanumbot_battery_alert")
         self.get_logger().info("MecanumbotBatteryAlert node has started.")
 
         # Get battery threshold from parameter or use default
         self.declare_parameter("battery_threshold", 9.7)  # Default threshold in volts
+        # Seconds the bus has to stay silent before the alarm goes up, and has to
+        # stay readable before it comes down again.
+        self.declare_parameter("dxl_bus_alert_after", 1.0)
+        self.declare_parameter("dxl_bus_clear_after", 1.0)
 
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
@@ -51,6 +62,20 @@ class MecanumbotBatteryAlert(Node):
         self.battery_threshold = self.get_parameter("battery_threshold").value
         self.alert = False
         self.alert_num = {"opencr": 0, "orin": 0}
+        self.dxl_bus = Debounce(
+            self.get_parameter("dxl_bus_alert_after").value,
+            self.get_parameter("dxl_bus_clear_after").value,
+        )
+        # The alarm on the LEDs now, so clearing it is sent once, not every second.
+        self.shown = None
+
+        self.opencr_state_subscription = self.create_subscription(
+            OpenCRState,
+            "opencr_state",
+            self.opencr_state_callback,
+            10,
+            callback_group=self.callback_group,
+        )
 
         self.cr_battery_subscription = self.create_subscription(
             BatteryState,
@@ -76,8 +101,29 @@ class MecanumbotBatteryAlert(Node):
         self.pending_future = self.srv_client.call_async(req)
 
     def timer_callback(self):
-        if self.alert:
-            self.set_leds(RED, FAST_BLINK)
+        """Re-send the alarm every second, or clear the LEDs once it is gone."""
+        alarm = choose_alarm(self.alert, self.dxl_bus.active)
+        if alarm is not None:
+            self.set_leds(*alarm)
+        elif self.shown is not None:
+            # Clear to off rather than restoring whatever a trial had set, which
+            # the node does not know; the alarm itself already clobbers that.
+            self.set_leds(*LEDS_OFF)
+        self.shown = alarm
+
+    def opencr_state_callback(self, msg):
+        """Watch the wheels' error fields for the board's no-answer sentinel."""
+        was_up = self.dxl_bus.active
+        now = self.get_clock().now().nanoseconds * 1e-9
+        errors = (msg.err_bl, msg.err_br, msg.err_fl, msg.err_fr)
+        if self.dxl_bus.update(dxl_bus_silent(errors), now) != was_up:
+            if self.dxl_bus.active:
+                self.get_logger().error(
+                    "Dynamixel bus silent: the OpenCR cannot read the wheels. "
+                    "LEDs blink yellow. Check DXL power and cabling."
+                )
+            else:
+                self.get_logger().info("Dynamixel bus answering again.")
 
     def batterystate_callback(self, msg, battery):
         voltage = msg.voltage
@@ -92,15 +138,9 @@ class MecanumbotBatteryAlert(Node):
             # Count consecutive low samples, not low samples ever seen. Without
             # this the counter latched past the threshold on the first flat
             # battery of the session and every later dip alarmed instantly.
+            # Cleared by the timer, which knows whether another alarm is up.
             self.alert_num[battery] = 0
-            if self.alert:
-                self.alert = False
-                # Clear the alarm instead of re-sending it -- this branch used
-                # to repeat the same red fast-blink, so the LEDs stayed in the
-                # alarm state after the voltage recovered. It clears to off
-                # rather than restoring whatever a trial had set, which the node
-                # does not know; the alarm itself already clobbers that.
-                self.set_leds(BLACK, SOLID)
+            self.alert = False
 
 
 def main(args=None):
