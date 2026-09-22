@@ -50,6 +50,10 @@ class Mecanumbot_IO_Node(Node):
                 # The write is periodic rather than per-message so that an
                 # incoming cmd_vel can never block on the serial link.
                 ("dev_params.tx_hz", 50.0),
+                # The wheels stop when no cmd_vel has arrived for this long, in
+                # seconds; 0 disables it. Without it a publisher that dies
+                # mid-turn leaves the robot turning on its last command.
+                ("dev_params.cmd_vel_timeout", 0.5),
                 # Robot parameters
                 ("robot_params.wheel.radius", 0.0325),
                 ("robot_params.wheel.separation_x", 0.129),
@@ -78,6 +82,9 @@ class Mecanumbot_IO_Node(Node):
         self.device_name = self.get_parameter("dev_params.device_name").value
         self.baudrate = self.get_parameter("dev_params.baudrate").value
         self.tx_hz = max(1.0, float(self.get_parameter("dev_params.tx_hz").value))
+        self.cmd_vel_timeout = float(
+            self.get_parameter("dev_params.cmd_vel_timeout").value
+        )
         self.wheel_radius = self.get_parameter("robot_params.wheel.radius").value
         self.wheel_separation_x = self.get_parameter(
             "robot_params.wheel.separation_x"
@@ -123,7 +130,8 @@ class Mecanumbot_IO_Node(Node):
         # Log parameters
 
         self.get_logger().info(
-            f"Device: {self.device_name} @ {self.baudrate} baud, tx {self.tx_hz} Hz"
+            f"Device: {self.device_name} @ {self.baudrate} baud, tx {self.tx_hz} Hz, "
+            f"wheels stop after {self.cmd_vel_timeout} s without cmd_vel"
         )
         self.get_logger().info(
             f"Packet: payload_size={self.payload_size}, full_packet_size={self.full_packet_size}"
@@ -151,6 +159,7 @@ class Mecanumbot_IO_Node(Node):
         # Gates the tx timer until a real command has been seen; see
         # update_motor_cmds_out.
         self._have_command = False
+        self._last_vel_time = None
         self.cmd_outputs = {
             "BL_vel": 0,
             "BR_vel": 0,
@@ -353,6 +362,7 @@ class Mecanumbot_IO_Node(Node):
             self.cmd_outputs["BR_vel"] = max(min(br_raw, limit), -limit)
             self.cmd_outputs["FR_vel"] = max(min(fr_raw, limit), -limit)
             self._have_command = True
+            self._last_vel_time = time.monotonic()
 
     def access_motor_cmd_callback(self, msg):
         # wiringpi.digitalWrite(self.GPIO_pin,1)
@@ -375,6 +385,12 @@ class Mecanumbot_IO_Node(Node):
         if vals is None:
             return False
         return min(vals[23:27]) < 0
+
+    def cmd_vel_timed_out(self):
+        """Report whether the last velocity command is too old to keep obeying."""
+        if self.cmd_vel_timeout <= 0.0 or self._last_vel_time is None:
+            return False
+        return time.monotonic() - self._last_vel_time > self.cmd_vel_timeout
 
     def update_motor_cmds_out(self, force=False):
         """
@@ -407,6 +423,13 @@ class Mecanumbot_IO_Node(Node):
 
         fmt = "<7h"
         with self.cmd_lock:
+            if self.cmd_vel_timed_out():
+                for wheel in ("BL_vel", "BR_vel", "FL_vel", "FR_vel"):
+                    self.cmd_outputs[wheel] = 0
+                self._last_vel_time = None
+                self.get_logger().warn(
+                    f"No cmd_vel for {self.cmd_vel_timeout} s: stopping the wheels."
+                )
             wheels = (
                 (0, 0, 0, 0)
                 if hold_wheels

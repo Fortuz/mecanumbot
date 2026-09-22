@@ -24,6 +24,7 @@ Runs on the robot's NVIDIA Jetson Orin Nano. The nodes read `/proc/device-tree/m
 | Parameter          | Default | Function                                                                              |
 | ------------------ | ------- | --------------------------------------------------------------------------------------- |
 | `dev_params.tx_hz` | `50.0`  | Rate at which the current command set is written to the board. See *Command transmission*. |
+| `dev_params.cmd_vel_timeout` | `0.5` | Seconds without a `cmd_vel` after which the wheels are zeroed; `0` disables it. Every publisher on the robot repeats its command (nav2 at 6 Hz, the trees every tick, the joystick on its timer), so only a publisher that has died trips it. |
 | `robot_params.wheel.max_cmd_ticks` | `300` | Ceiling on a single wheel command, in board ticks. Also the lever for peak current draw: four wheels accelerating to this at once is the worst case the supply sees. |
 
 ### Holding the wheels when the bus goes silent
