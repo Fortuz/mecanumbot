@@ -1,68 +1,49 @@
 # Mecanumbot Project - Onboard Jetson codes
 
-The Mecanumbot projects goal is to build a Turtlebot3 friend with mecanum wheel drive and fit into the Turtlebot3 family.`<br>`
-This repository contains the Mecanumbot related packages. The repository made by using the original Turtlebot3 packeges.
+Mecanumbot is a mecanum-wheel member of the TurtleBot3 family, and the experimental robot platform for HRI and attention-guidance research.
+This repository holds the ROS 2 Humble packages that run **on the robot itself**, on an NVIDIA Jetson Orin Nano (Ubuntu 22.04): the OpenCR hardware interface, launch orchestration, robot description and assets, joystick control, the web GUI, LEDs, camera capture, audio, and the map analysis behind the Deep3R seeking system.
+
+## Built on TurtleBot3
+
+Mecanumbot started from the original TurtleBot3 packages, but it uses a mecanum-wheel drive instead of a differential drive, and it adds motors that speak different protocols. That meant changing the original architecture, so a large part of the codebase has been modified. The aim is to keep the same functionality as the original TurtleBot3 repositories.
+
+The setup steps are mostly the same as TurtleBot3's, so the TurtleBot3 e-Manual is still the main reference for documentation and background. The steps that matter for Mecanumbot are written out below.
+
+- 📘 [TurtleBot3 e-Manual](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/#overview)
+- 🐢 [turtlebot3, humble branch](https://github.com/ROBOTIS-GIT/turtlebot3/tree/humble)
+- ✉️ [turtlebot3_msgs, humble branch](https://github.com/ROBOTIS-GIT/turtlebot3_msgs/tree/humble)
 
 ## Project Repositories
 
-[mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers) - Contains the microcontroller codes for the project `<br>`
-[mecanumbot_remote](https://github.com/Fortuz/mecanumbot_remote) - Contains ROS2 packages for used on an external computer connected to the robot `<br>`
-[mecanumbot](https://github.com/Fortuz/mecanumbot) - [This repository] Contains ROS2 packages run on the NVIDIA Jetson Orin Nano on the robot `<br>`
-[mecanumbot_server](https://github.com/hubaycsenge/mecanumbot_server) - Contains ROS2 packages that talk to the off-board compute server (`mecanumbot_deep3r`) `<br>`
-[mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git) - Contains the native python scripts for manipulating the motors. Can be found on the robot locally in the ~/Sandbox folder `<br>`
-
-Original sources: `<br>`
-[Turtlebot3 - humble version](https://github.com/ROBOTIS-GIT/turtlebot3/tree/humble) `<br>`
-[Turtlebot3_msgs - humble version](https://github.com/ROBOTIS-GIT/turtlebot3_msgs/tree/humble) `<br>`
+- [mecanumbot](https://github.com/Fortuz/mecanumbot) **(this repository)**: ROS 2 packages that run on the NVIDIA Jetson Orin Nano on the robot
+- [mecanumbot_msgs](https://github.com/Fortuz/mecanumbot_msgs): every custom `.msg`/`.srv`, a build dependency of most packages here
+- [mecanumbot_sensorprocess_smart](https://github.com/hubaycsenge/mecanumbot_sensorprocess_smart): LiDAR and camera people detection and their fusion
+- [mecanumbot_behaviours](https://github.com/hubaycsenge/mecanumbot_behaviours): the `py_trees_ros` behaviour trees
+- [mecanumbot_remote](https://github.com/Fortuz/mecanumbot_remote): ROS 2 packages for an external computer connected to the robot (keyboard teleop, LED GUI, and the `mecanumbot_sim` simulator)
+- [mecanumbot_server](https://github.com/hubaycsenge/mecanumbot_server): ROS 2 packages that talk to the off-board compute server (`mecanumbot_deep3r`)
+- [mecanumbot_microcontrollers](https://github.com/Fortuz/mecanumbot_microcontrollers): the microcontroller code
+- [mecanumbot_python](https://github.com/fegyobeno/mecanumbot_python.git): native Python scripts for driving the motors, kept on the robot in `~/Sandbox`
 
 ## Packages in this repository
 
-Twelve packages, including the `mecanumbot` metapackage, all of them part of the onboard Jetson stack (`mecanumbot_monitor`
-is equally usable on a development machine). Simulation is no longer one of them:
-`mecanumbot_sim` moved to [`mecanumbot_remote`](https://github.com/Fortuz/mecanumbot_remote),
-because nothing about it runs on the robot.
+There are twelve packages, including the `mecanumbot` metapackage. All of them belong to the onboard Jetson stack, and `mecanumbot_monitor` also works on a development machine.
 
-| Package | Build type | Executables | Purpose |
-| --- | --- | --- | --- |
-| `mecanumbot` | `ament_cmake` (meta) | — | Dependency aggregation only. No nodes, no launch files: installing it pulls in the runtime packages. |
-| `mecanumbot_core` | Python | `mecanumbot_io_node`, `mecanumbot_sensorproc_node`, `mecanumbot_battery_alert`, `mecanumbot_scan_grid_node` | The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link (CRC8-CCITT framing) and the mecanum kinematics, turning `cmd_vel` into four wheel commands; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state, `has_object` and the `odom → base_footprint` transform, plus `orin_battery_state` from the INA219 when running on a Jetson; `mecanumbot_battery_alert` raises a visible low-battery alarm; `mecanumbot_scan_grid_node` republishes the LD08 scan on a fixed 200-sector grid as `/mecanumbot/scan_grid`, which is what slam_toolbox reads. |
-| `mecanumbot_bringup` | `ament_cmake` | — (launch only) | Launch orchestration. No node logic of its own — it starts nodes from the other packages and picks map / Nav2 params from the current Wi-Fi SSID. Holds `launch_mecanumbot_base.launch.py` (full onboard stack), `nav2.launch.py` (the study Nav2 stack, included by the base launch under `use_nav2` and restartable on its own), `launch_external.launch.py` (operator PC), the camera, state-publisher, mapping, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run — the only launch file here that starts nodes from outside this repository, since `mecanumbot_sim` lives in `mecanumbot_remote`. |
-| `mecanumbot_description` | `ament_cmake` | — (assets only) | Robot assets, no nodes: URDF/xacro and meshes, maps, Nav2/SLAM/Cartographer parameter sets (including the T1 exploration and T2 seek Nav2 sets), the Nav2 behaviour-tree XMLs, RViz layouts, the joystick profile YAMLs, the udev rules for `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano`, and the systemd autostart unit. |
-| `mecanumbot_joy` | Python | `mecanumbot_joy_node` | The robot's joystick node and the only `/joy` consumer. Applies a YAML mapping profile (`mecanumbot_description/config/joystick/`) to publish `/cmd_vel`, `/cmd_accessory_pos` and LED service calls. Layout decoding, profile validation and the action vocabulary live in rclpy-free modules, so they are unit-tested without a ROS graph. Replaces the old operator-PC teleop and the retired `mecanumbot_gui` controller stack. |
-| `mecanumbot_web` | Python | `mecanumbot_web_node` | The robot-hosted web GUI (Flask inside an rclpy node) at `http://<robot>:8080`, started by the base launch and disabled with `use_web:=false`. Three pages: `/joystick` edits and reloads the joystick profile with a live `/joy` readout, `/diagnostics` shows Nav2 stack state (with a restart), LED state, commanded-vs-measured movement and measured publish rates against nominal, `/behaviour` picks one of the behaviour trees (leading, ostensive, seek, fetch, autoslam, demo), edits the constants it loads and starts/stops it. No login, no database. |
-| `mecanumbot_led` | Python | `mecanumbot_led_service` | `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`. |
-| `mecanumbot_camera_stream` | Python | `camera_image_publisher_node`, `compressed_camera_publisher_node`, `h264_camera_publisher_node` | Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. The robot's camera is a USB (UVC) webcam on `/dev/video0`, so `usb` is the default backend; the CSI path picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano). |
-| `mecanumbot_cam_optim` | `ament_cmake` (C++) | `camera_stream_node` | A C++ capture path alongside the Python one, built on `rclcpp`, `cv_bridge` and `image_transport`. No README; package manifest is still a TODO stub. |
-| `mecanumbot_audio` | Python | `input_handler` | Publishes microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. No README. |
-| `mecanumbot_custom_nav2` | Python | `mecanumbot_map_agreement_node` | Map analysis for the Deep3R seeking system, and no motion. Libraries: an RRT frontier detector over slam_toolbox's occupancy grid, the occupancy model, the frontier scoring, and the T1 exit criteria (which include the server's reconstruction verdict). The pass that drives on the strength of them is `mecanumbot_autoslam`, in `mecanumbot_behaviours`; sending the robot to a frontier is a behaviour, so it lives there with the launch files that start it. It replaces no part of Nav2: the exploration tuning is a parameter file in `mecanumbot_description`. `mecanumbot_map_agreement_node` runs in **both** phases and is the robot's end of the 2D/3D comparison: it turns the server's verdict into a Nav2 keepout mask (the lidar is one horizontal plane, so a table top or a low step is "free" in the 2D map and lethal in the cloud), a revisit list and RViz markers. It only ever *adds* obstacles. |
-| `mecanumbot_monitor` | Python | `wheel_monitor`, `accessory_monitor`, `rosbag_stepper`, `metric_eval` | Test and evaluation utilities: `wheel_monitor` and `accessory_monitor` generate repeatable command patterns for drivetrain and servo testing; `rosbag_stepper` chunks bag playback; `metric_eval` logs ground truth against detections to CSV. |
+- **`mecanumbot`**: Dependency aggregation only. No nodes, no launch files: installing it pulls in the runtime packages.
+- **`mecanumbot_core`**: The only code that talks to the OpenCR board. `mecanumbot_io_node` owns the serial link (CRC8-CCITT framing) and the mecanum kinematics, turning `cmd_vel` into four wheel commands; `mecanumbot_sensorproc_node` turns board telemetry into `odom`, `imu`, `joint_states`, battery state, `has_object` and the `odom → base_footprint` transform, plus `orin_battery_state` from the INA219 when running on a Jetson; `mecanumbot_battery_alert` raises a visible low-battery alarm; `mecanumbot_scan_grid_node` republishes the LD08 scan on a fixed 200-sector grid as `/mecanumbot/scan_grid`, which is what slam_toolbox reads.
+- **`mecanumbot_bringup`**: Launch orchestration. No node logic of its own — it starts nodes from the other packages and picks map / Nav2 params from the current Wi-Fi SSID. Holds `launch_mecanumbot_base.launch.py` (full onboard stack), `nav2.launch.py` (the study Nav2 stack, included by the base launch under `use_nav2` and restartable on its own), `launch_external.launch.py` (operator PC), the camera, state-publisher, mapping, SLAM and RViz launches, and `sim.launch.py`, the single entry point for every simulated run — the only launch file here that starts nodes from outside this repository, since `mecanumbot_sim` lives in `mecanumbot_remote`.
+- **`mecanumbot_description`**: Robot assets, no nodes: URDF/xacro and meshes, maps, Nav2/SLAM/Cartographer parameter sets (including the T1 exploration and T2 seek Nav2 sets), the Nav2 behaviour-tree XMLs, RViz layouts, the joystick profile YAMLs, the udev rules for `/dev/opencr`, `/dev/ld08_lidar` and `/dev/arduino_nano`, and the systemd autostart unit.
+- **`mecanumbot_joy`**: The robot's joystick node and the only `/joy` consumer. Applies a YAML mapping profile (`mecanumbot_description/config/joystick/`) to publish `/cmd_vel`, `/cmd_accessory_pos` and LED service calls. Layout decoding, profile validation and the action vocabulary live in rclpy-free modules, so they are unit-tested without a ROS graph. Replaces the old operator-PC teleop and the retired `mecanumbot_gui` controller stack.
+- **`mecanumbot_web`**: The robot-hosted web GUI (Flask inside an rclpy node) at `http://<robot>:8080`, started by the base launch and disabled with `use_web:=false`. Three pages: `/joystick` edits and reloads the joystick profile with a live `/joy` readout, `/diagnostics` shows Nav2 stack state (with a restart), LED state, commanded-vs-measured movement and measured publish rates against nominal, `/behaviour` picks one of the behaviour trees (leading, ostensive, seek, fetch, autoslam, demo), edits the constants it loads and starts/stops it. No login, no database.
+- **`mecanumbot_led`**: `set_led_status` / `get_led_status` services, forwarded over serial to the Arduino Nano LED controller at `/dev/arduino_nano`.
+- **`mecanumbot_camera_stream`**: Camera capture on the Jetson: raw, JPEG-compressed and H.264 publishers. The robot's camera is a USB (UVC) webcam on `/dev/video0`, so `usb` is the default backend; the CSI path picks its GStreamer pipeline from the detected board (`nvarguscamerasrc` + NVENC on the Orin Nano).
+- **`mecanumbot_cam_optim`**: A C++ capture path alongside the Python one, built on `rclcpp`, `cv_bridge` and `image_transport`. No README; package manifest is still a TODO stub.
+- **`mecanumbot_audio`**: Publishes microphone blocks as `mecanumbot_msgs/AudioData`, with device auto-detection and reopen-on-failure. No README.
+- **`mecanumbot_custom_nav2`**: Map analysis for the Deep3R seeking system, and no motion. Libraries: an RRT frontier detector over slam_toolbox's occupancy grid, the occupancy model, the frontier scoring, and the T1 exit criteria (which include the server's reconstruction verdict). The pass that drives on the strength of them is `mecanumbot_autoslam`, in `mecanumbot_behaviours`; sending the robot to a frontier is a behaviour, so it lives there with the launch files that start it. It replaces no part of Nav2: the exploration tuning is a parameter file in `mecanumbot_description`. `mecanumbot_map_agreement_node` runs in **both** phases and is the robot's end of the 2D/3D comparison: it turns the server's verdict into a Nav2 keepout mask (the lidar is one horizontal plane, so a table top or a low step is "free" in the 2D map and lethal in the cloud), a revisit list and RViz markers. It only ever *adds* obstacles.
+- **`mecanumbot_monitor`**: Test and evaluation utilities: `wheel_monitor` and `accessory_monitor` generate repeatable command patterns for drivetrain and servo testing; `rosbag_stepper` chunks bag playback; `metric_eval` logs ground truth against detections to CSV.
 
 Every package except `mecanumbot`, `mecanumbot_audio` and `mecanumbot_cam_optim`
 has its own README with the full publisher / subscriber / parameter tables — read
 the relevant one before changing a node interface.
-
-### What is *not* in this repository
-
-The onboard stack is only part of the robot. The rest lives in the sibling repos
-listed above: `mecanumbot_msgs` (every custom `.msg`/`.srv`, and a build
-dependency of most packages here), `mecanumbot_sensorprocess_smart` (LiDAR and
-camera people detection and their fusion), `mecanumbot_behaviours` (the
-`py_trees_ros` behaviour trees), `mecanumbot_remote` (operator-PC keyboard teleop
-and LED GUI, plus `mecanumbot_sim`) and `mecanumbot_server` (`mecanumbot_deep3r`,
-the robot's end of the off-board CUT3R link).
-
-**Simulation is in `mecanumbot_remote`.** `sim.launch.py` stays here — it is
-launch orchestration like every other launch file in `mecanumbot_bringup` — but
-every node, model, world, scenario and evaluator it starts is in
-`mecanumbot_remote/mecanumbot_sim`, and `mecanumbot_bringup/package.xml` carries
-the cross-repo `exec_depend` on it. A workspace with only this repository cloned
-builds, but `sim.launch.py` will not run.
-
-Building and using a robot with additional motors with different protocols, using a mecanum wheel drive sysetem instead of a differential drive system requires some changes in the original architecture so this repository is intend to provide a full functionality similar to the original Turtlebot3 repositories.
-
-As a main source of information, documentation, codes and more the original [Turtlebot3 e-Manual](https://emanual.robotis.com/docs/en/platform/turtlebot3/overview/#overview) can be found here. Lot of the setup and codes came from the original Turtlebot3 project but a huge chunk of the codebase have been modified to accomodate the new motors, setup, and work with the mecanum wheel drive system. Altough the setups steps are basicaly the same some the important steps can be read below.
-
-The project is made with Ubuntu 22.04 and ROS2 Humble. `<br>`
 
 ## Hardware
 
