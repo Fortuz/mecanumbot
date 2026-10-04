@@ -17,9 +17,25 @@ Executable: `mecanumbot_led_service`. The node registers as `mecanumbot_led_serv
 
 ### Behavior
 
-- Uses a custom byte protocol with start byte, checksum, and fixed frame layout (start `0xAA`, eight mode/colour bytes, a two-byte duration, XOR checksum; status request `0xAC`, feedback start `0xAB`).
+- Uses a custom byte protocol with start byte, checksum, and fixed frame layout (start `0xAA`, eight mode/colour bytes, the progress fill and its colour, XOR checksum; status request `0xAC`, feedback start `0xAB`).
 - Performs serial parsing and checksum validation for returned LED feedback.
 - Communicates directly with Arduino Nano at `115200` baud.
+
+### Progress fill
+
+`SetLedStatus` carries `progress` and `progress_color` beside the four panels. `progress`
+is how many of a panel's 8 LEDs are drawn in `progress_color` instead of the panel's own
+colour (0 is no fill, 8 the whole panel); it is the same on all four panels, and the
+panel's mode runs over both colours, so a wave stays one wave with a bar of another
+colour inside it. The LED condition of the leading study fills the panels this way as
+the robot nears its target.
+
+The fill is drawn by the firmware (`mecanumbot_microcontrollers/Mecanumbot_Nano_LED`),
+which grows it towards the front of the robot on every strip: `FILL_FROM_LAST_*` in
+`LEDutils.h` says which end that is per panel. The two bytes it travels in used to hold
+a duration the firmware never read, so the frame is the same 12 bytes: firmware that
+predates the fill ignores it, and the new firmware treats an old sender's duration as
+"no fill". `get_led_status` does not report the fill.
 
 ## LED value reference
 

@@ -9,6 +9,9 @@ START_BYTE = 0xAA
 FEEDBACK_START = 0xAB
 REQUEST_BYTE = 0xAC
 
+# LEDs per panel, and so the largest progress fill.
+PROGRESS_MAX = 8
+
 
 def build_packet(
     FL_mode,
@@ -19,10 +22,18 @@ def build_packet(
     BL_color,
     BR_mode,
     BR_color,
-    duration_ms,
+    progress=0,
+    progress_color=0,
 ):
-    tL = duration_ms & 0xFF
-    tH = (duration_ms >> 8) & 0xFF
+    """
+    Build the 12-byte command frame.
+
+    Bytes 9 and 10 are the progress fill and its colour. They used to carry a
+    duration the firmware never read; firmware that predates the fill still
+    ignores them, so the frame is the same length either way.
+    """
+    progress = max(0, min(int(progress), PROGRESS_MAX))
+    progress_color = int(progress_color) & 0xFF
     checksum = (
         FL_mode
         ^ FL_color
@@ -32,8 +43,8 @@ def build_packet(
         ^ BL_color
         ^ BR_mode
         ^ BR_color
-        ^ tL
-        ^ tH
+        ^ progress
+        ^ progress_color
     )
     return bytes(
         [
@@ -46,8 +57,8 @@ def build_packet(
             BL_color,
             BR_mode,
             BR_color,
-            tL,
-            tH,
+            progress,
+            progress_color,
             checksum,
         ]
     )
@@ -128,7 +139,6 @@ class LedServiceNode(Node):
             self.get_led_status_callback,
             callback_group=self.callback_group,
         )
-        self.duration_ms = 1000
 
     def set_led_status_callback(self, request, response):
 
@@ -141,7 +151,8 @@ class LedServiceNode(Node):
             request.bl_color,
             request.br_mode,
             request.br_color,
-            self.duration_ms,
+            request.progress,
+            request.progress_color,
         )
         try:
             self.get_logger().info("Sending packet to Arduino")
