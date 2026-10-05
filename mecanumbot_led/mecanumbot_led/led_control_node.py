@@ -142,27 +142,29 @@ class LedServiceNode(Node):
 
     def set_led_status_callback(self, request, response):
 
-        packet = build_packet(
-            request.fl_mode,
-            request.fl_color,
-            request.fr_mode,
-            request.fr_color,
-            request.bl_mode,
-            request.bl_color,
-            request.br_mode,
-            request.br_color,
-            request.progress,
-            request.progress_color,
-        )
+        # Everything that can raise is inside the try: an exception that leaves
+        # a service callback ends the executor, and the node with it.
         try:
+            packet = build_packet(
+                request.fl_mode,
+                request.fl_color,
+                request.fr_mode,
+                request.fr_color,
+                request.bl_mode,
+                request.bl_color,
+                request.br_mode,
+                request.br_color,
+                request.progress,
+                request.progress_color,
+            )
             self.get_logger().info("Sending packet to Arduino")
             self.serial_port.write(packet)
             response.success = True
             response.message = "No error"
         except Exception as e:
             response.success = False
-            response.message = e
-            self.get_logger().error(e)
+            response.message = f"{type(e).__name__}: {e}"
+            self.get_logger().error(f"set_led_status failed: {response.message}")
         return response
 
     def get_led_status_callback(self, request, response):
