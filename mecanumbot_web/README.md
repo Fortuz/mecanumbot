@@ -206,7 +206,7 @@ constants it will load, start it, watch its console, stop it.
 | Ostensive | `ros2 launch mecanumbot_ostensive_behaviour launch_ostensive.launch.py` | constants file, namespace |
 | Seek (T2) | `ros2 launch mecanumbot_seek launch_seek.launch.py` | constants file, namespace |
 | Fetch | `ros2 launch mecanumbot_fetch_behaviour launch_fetch.launch.py` | constants file, namespace |
-| Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, **use_camera**, **use_deep3r**, **server_port**, constants file, namespace |
+| Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, **publish_debug_image**, **use_deep3r**, **server_port**, constants file, namespace |
 | Demo: wander between people | `ros2 run mecanumbot_demo_behaviours wander_between_people_node` | constants file, namespace |
 
 Seek, fetch and autoslam were startable from a terminal for months before they
@@ -221,10 +221,12 @@ knowing before clicking Start, which is why the row carries the warning.
 `use_preflight:=false` skips it, and then the two stacks fight.
 
 It is also the one row that brings up hardware and a network link: the launch
-file starts the camera and the Deep3R client, because T1 cannot finish without
-them. Set **use_camera** / **use_deep3r** to `false` if either is already
-running: the camera can only be opened once, and a second client is a second
-run, for which the server wipes its reconstruction. The cluster server and the
+file starts the Deep3R client, which opens the camera itself, because T1 cannot
+finish without it. Set **use_deep3r** to `false` if one is already running: a
+second client is a second run, for which the server wipes its reconstruction,
+and `/dev/video0` opens once. **publish_debug_image** replaced the old "Start
+the camera" switch -- there is no camera publisher any more; it republishes the
+exact frames the client sent, for watching a run. The cluster server and the
 tunnel still have to be up before Start. **server_port** is the local port the
 client connects to (`tcp://127.0.0.1:<port>`, default `5555`); change it when
 5555 is held by something else, and forward the same port in the tunnel.

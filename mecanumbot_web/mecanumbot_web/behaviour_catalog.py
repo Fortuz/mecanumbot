@@ -466,9 +466,9 @@ AUTOSLAM = BehaviourSpec(
         "The drivers, ideally started with use_nav2:=false -- this launch "
         "brings up its own nav2 and slam_toolbox",
         "The cluster server and a live tunnel, unless require_cloud is false. "
-        "The launch file starts the camera and the Deep3R client itself, but "
-        "without a verdict from the server the exit criteria can never be "
-        "satisfied and the pass will not finish",
+        "The launch file starts the Deep3R client itself, and the client opens "
+        "the camera, but without a verdict from the server the exit criteria "
+        "can never be satisfied and the pass will not finish",
     ),
     default_file="autoslam_setting_constants.yaml",
     # No Eto_ file: the only room-dependent constant is max_duration, so both
@@ -517,15 +517,18 @@ AUTOSLAM = BehaviourSpec(
                 "fight this pass for map -> odom and for navigate_to_pose.",
         ),
         Argument(
-            name="use_camera",
-            label="Start the camera",
+            name="publish_debug_image",
+            label="Republish what was sent",
             kind=KIND_CHOICE,
-            default="true",
+            default="false",
             choices=("true", "false"),
-            emit=("use_camera:={}",),
-            doc="Start the compressed camera publisher the Deep3R client "
-                "reads. false only when one is already running: the camera "
-                "can be opened once.",
+            emit=("publish_debug_image:={}",),
+            doc="Put the exact frames the Deep3R client sent to the server on "
+                "~/debug/image_raw/compressed, so you can watch them. Off by "
+                "default -- nothing in the pass reads it, and it is the same "
+                "bytes, not a second encoding. This replaced 'Start the "
+                "camera': there is no camera publisher any more, because the "
+                "client opens the device itself.",
         ),
         Argument(
             name="use_deep3r",
