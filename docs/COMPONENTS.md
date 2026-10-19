@@ -20,7 +20,7 @@ cable counts in particular are **TBC** until someone counts them on the robot.
 standard **TurtleBot3 Waffle Pi** kit:
 
 - 🟦 the kit supplies the part in full.
-- 🟨 the kit supplies some of it. It has 2 of the 4 XM430s.
+- 🟨 the kit supplies some of it: 2 of the 4 XM430s, and 1 of the 2 LiPo batteries.
 - No marker: the part has to be bought separately.
 
 The totals at the end show the robot's price with and without these parts.
@@ -52,7 +52,7 @@ Each servo ships with its horn and horn bolts.
 The frames are light-grey ROBOTIS **FP04** parts, the AX-series (Bioloid / ROBOTIS PREMIUM)
 frame family. They are identified by matching the robot photos against the ROBOTIS
 product photos, so check them on the robot before ordering. The servo bodies sit in
-the printed mounts (rows 38–40). The FP04 frames carry everything from the horn outwards.
+the printed mounts (rows 38–39). The FP04 frames carry everything from the horn outwards.
 
 | Assembly | Frames, from the horn outwards |
 | --- | --- |
@@ -65,7 +65,7 @@ the printed mounts (rows 38–40). The FP04 frames carry everything from the hor
 | 10 | ROBOTIS FP04-F3 (10 pcs) | 3 (neck 1, jaws 2) | Camera plate (neck), joiner between the bracket and the finger (jaws). **Verify the neck plate:** F6 looks similar. | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0037-001), [ROBOTIS US](https://www.robotis.us/fp04-f3-10pcs/) | $10.60 / 10 | $10.60 |
 | 11 | ROBOTIS FP04-F11 (2 pcs) | 2 | The curved grabber fingers | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0045-001) | $1.60 / 2 | $1.60 |
 
-The FP04 frames are fixed with M2 bolts and nuts from the Bolt Nut Set BNS-10 (row 28).
+The FP04 frames are fixed with M2 bolts and nuts from the Bolt Nut Set BNS-10 (row 27).
 ROBOTIS sells them without fasteners.
 
 ## 3. Sensors
@@ -80,28 +80,27 @@ ROBOTIS sells them without fasteners.
 
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 15 | 🟦 ROBOTIS LiPo 11.1 V 1800 mAh LB-012 (3S) | 1–2 | Motor/OpenCR supply. The low-battery alarm fires at 9.7 V. | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0210-000), [ROBOTIS US](https://www.robotis.us/lipo-battery-11-1v-1800mah-lb-012/) | $59.60 | $59.60 |
-| 16 | Jetson power source (separate battery / DC-DC) — **TBC** | 1 | Supplies the Orin Nano. The INA219 in row 5 monitors it. | — | — | — |
-| 17 | 🟦 LiPo charger (3S balance) | 1 | Charging | ROBOTIS LBB-040 or any 3S balance charger | ~$30 | ~$30 |
+| 15 | 🟨 ROBOTIS LiPo 11.1 V 1800 mAh LB-012 (3S) | 2 | One supplies the motors and the OpenCR. The other supplies the Jetson through a custom cable (row 33) and the INA219 (row 5). The low-battery alarm fires at 9.7 V. The TurtleBot3 kit includes only one. | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0210-000), [ROBOTIS US](https://www.robotis.us/lipo-battery-11-1v-1800mah-lb-012/) | $59.60 | $119.20 |
+| 16 | 🟦 LiPo charger (3S balance) | 1 | Charging | ROBOTIS LBB-040 or any 3S balance charger | ~$30 | ~$30 |
 
 ## 5. Chassis and drivetrain
 
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 18 | 🟦 TurtleBot3 Waffle Plate-IPL-01 (8 pcs) | 2–3 sets | Three-deck waffle chassis | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0259-000), [ROBOTIS US](https://www.robotis.us/tb3-waffle-plate-ipl-01-8ea/) | $19.00 | ~$57 |
-| 19 | Mecanum wheels, 65 mm (2 left + 2 right) | 1 set | Drive wheels. `wheel.radius = 0.0325 m` in `mecanumbot_IO_node` | [DFRobot](https://www.dfrobot.com/product-2302.html), [Yahboom](https://category.yahboom.net/products/mecanum-wheel) | ~$30–50 / set | ~$40 |
+| 17 | 🟦 TurtleBot3 Waffle Plate-IPL-01 (8 pcs) | 2–3 sets | Three-deck waffle chassis | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0259-000), [ROBOTIS US](https://www.robotis.us/tb3-waffle-plate-ipl-01-8ea/) | $19.00 | ~$57 |
+| 18 | Mecanum wheels, 65 mm (2 left + 2 right) | 1 set | Drive wheels. `wheel.radius = 0.0325 m` in `mecanumbot_IO_node` | [DFRobot](https://www.dfrobot.com/product-2302.html), [Yahboom](https://category.yahboom.net/products/mecanum-wheel) | ~$30–50 / set | ~$40 |
 
 ## 6. LEDs
 
 The firmware (`Mecanumbot_Nano_LED/LEDutils.h`) drives **32 WS2812B pixels, GRB order,
 on Nano pin D5**, split into four bars of 8. From index 0, the bars are back-right,
-back-left, front-right and front-left. Each bar sits under a printed diffuser (row 38).
+back-left, front-right and front-left. Each bar sits under a printed diffuser (row 37).
 
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 20 | WS2812B addressable LED strip, 5 V, 60 LEDs/m, cut into 4 × 8-pixel bars (≈ 0.55 m used) | 1 m | Signalling LEDs | [Adafruit NeoPixel strip](https://www.adafruit.com/category/183), or any WS2812B 60/m strip (Amazon, AliExpress) | ~$12 / m | ~$12 |
-| 21 | 3-wire LED leads (5 V / GND / DIN) with connectors, e.g. JST-SM 3-pin pigtails | 4 | Bar-to-Nano wiring. The photo shows ribbon leads on each bar. | any | ~$8 / pack | ~$8 |
-| 22 | 5 V supply for the LEDs — **TBC** | 1 | See the warning below | — | — | — |
+| 19 | WS2812B addressable LED strip, 5 V, 60 LEDs/m, cut into 4 × 8-pixel bars (≈ 0.55 m used) | 1 m | Signalling LEDs | [Adafruit NeoPixel strip](https://www.adafruit.com/category/183), or any WS2812B 60/m strip (Amazon, AliExpress) | ~$12 / m | ~$12 |
+| 20 | 3-wire LED leads (5 V / GND / DIN) with connectors, e.g. JST-SM 3-pin pigtails | 4 | Bar-to-Nano wiring. The photo shows ribbon leads on each bar. | any | ~$8 / pack | ~$8 |
+| 21 | 5 V supply for the LEDs — **TBC** | 1 | See the warning below | — | — | — |
 
 ⚠ **LED power.** The firmware sets `BRIGHTNESS 240` and no FastLED power limit, so all 32
 pixels on white can draw about **1.8 A at 5 V**. A Nano powered over USB cannot supply that.
@@ -117,12 +116,12 @@ depend on this robot's deck layout, so they are **TBC**.
 
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 23 | 🟦 M3 hex standoff, female–female, **35 mm** | **TBC** | Deck spacer (TB3 plate support) | generic aluminium/brass M3 F–F standoffs ([Misumi](https://us.misumi-ec.com/), Amazon, AliExpress) | ~$1 / pc | ~$10 |
-| 24 | 🟦 M3 hex standoff, female–female, **45 mm** | **TBC** | Deck spacer (TB3 plate support) | as above | ~$1 / pc | ~$10 |
-| 25 | 🟦 TB3 PCB Support-IBB-01 (12 pcs) | 1 set | Mounts boards (OpenCR, Jetson, Nano) and parts that don't match the waffle hole pitch | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0261-000), [ROBOTIS US](https://www.robotis.us/tb3-pcb-support-ibb-01-12ea/) | $7.00 | $7.00 |
-| 26 | 🟦 Metric screw assortment with nuts and washers: M2.5 and M3 pan-head, 6–12 mm | 1 kit | Plate-to-plate joints, standoff ends, board mounting. The camera bridge, grabber mounts and diffusers are fixed with pan-head M3 screws and washers (see the photo). | generic (Amazon, AliExpress, local hardware store) | ~$15 | ~$15 |
-| 27 | ROBOTIS Wrench Bolt M2.5×4 (200 pcs) | 1 pack (spares) | XM430 horn/frame bolts and the wheel-adapter-to-horn joint | [ROBOTIS US](https://www.robotis.us/wrench-bolt-m2-5-4-200-pcs/) | $19.21 | $19.21 |
-| 28 | ROBOTIS Bolt Nut Set BNS-10 (M2/M3 bolts, nuts, spacers) | 1 | Fixes the FP04 frames (rows 9–11) to each other and to the AX-12As | [ROBOTIS US](https://www.robotis.us/bolt-nut-set-bns-10/) | $32.09 | $32.09 |
+| 22 | 🟦 M3 hex standoff, female–female, **35 mm** | **TBC** | Deck spacer (TB3 plate support) | generic aluminium/brass M3 F–F standoffs ([Misumi](https://us.misumi-ec.com/), Amazon, AliExpress) | ~$1 / pc | ~$10 |
+| 23 | 🟦 M3 hex standoff, female–female, **45 mm** | **TBC** | Deck spacer (TB3 plate support) | as above | ~$1 / pc | ~$10 |
+| 24 | 🟦 TB3 PCB Support-IBB-01 (12 pcs) | 1 set | Mounts boards (OpenCR, Jetson, Nano) and parts that don't match the waffle hole pitch | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0261-000), [ROBOTIS US](https://www.robotis.us/tb3-pcb-support-ibb-01-12ea/) | $7.00 | $7.00 |
+| 25 | 🟦 Metric screw assortment with nuts and washers: M2.5 and M3 pan-head, 6–12 mm | 1 kit | Plate-to-plate joints, standoff ends, board mounting. The camera bridge, grabber mounts and diffusers are fixed with pan-head M3 screws and washers (see the photo). | generic (Amazon, AliExpress, local hardware store) | ~$15 | ~$15 |
+| 26 | ROBOTIS Wrench Bolt M2.5×4 (200 pcs) | 1 pack (spares) | XM430 horn/frame bolts and the wheel-adapter-to-horn joint | [ROBOTIS US](https://www.robotis.us/wrench-bolt-m2-5-4-200-pcs/) | $19.21 | $19.21 |
+| 27 | ROBOTIS Bolt Nut Set BNS-10 (M2/M3 bolts, nuts, spacers) | 1 | Fixes the FP04 frames (rows 9–11) to each other and to the AX-12As | [ROBOTIS US](https://www.robotis.us/bolt-nut-set-bns-10/) | $32.09 | $32.09 |
 
 ## 8. Cables
 
@@ -130,16 +129,30 @@ The OpenCR's Dynamixel TTL ports and the XM430s both use the **JST** 3-pin conne
 AX-12A uses the older **Molex** 3-pin connector, so the AX chain needs a JST↔Molex
 "convertible" cable at the OpenCR end.
 
+The motors use **3 of the OpenCR's Dynamixel ports**:
+
+| OpenCR port | Chain | Cables |
+| --- | --- | --- |
+| 1 | OpenCR → wheel XM430 → wheel XM430 | 2 × X3P 240 mm (row 28) |
+| 2 | OpenCR → wheel XM430 → wheel XM430 | 2 × X3P 240 mm (row 28) |
+| 3 | OpenCR → AX-12A → AX-12A → AX-12A (the neck and both jaws) | 1 × X3P convertible 180 mm (row 29), then 2 × 3P 200 mm (row 30) |
+
+⚠ The **Robot Cable-3P-XL** (for example the 160 mm 5-pack) does **not** fit the wheel
+motors. ROBOTIS sells it for the XL-320 only, and says it is not compatible with the
+other X-series servos. The XM430s need **X3P** cables.
+
+Prices in rows 28–30 are robotis.hu list prices excluding VAT, checked on 2026-10-19.
+
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 29 | 🟦 ROBOTIS Robot Cable-X3P 180 mm (10 pcs) | 1 pack | OpenCR ↔ XM430 and XM430 ↔ XM430 daisy chain (JST–JST) | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0249-000), [ROBOTIS US](https://www.robotis.us/robot-cable-x3p-180mm-10pcs/) | $19.00 | $19.00 |
-| 30 | ROBOTIS Robot Cable-X3P (Convertible) 180 mm (10 pcs) | 1 pack | OpenCR (JST) → first AX-12A (Molex) | [ROBOTIS](https://en.robotis.com/shop_en/item.php?it_id=903-0251-000), [ROBOTIS US](https://www.robotis.us/robot-cable-x3p-180mm-convertible-10pcs/) | $15.50 | $15.50 |
-| 31 | ROBOTIS Robot Cable-3P 180 mm (10 pcs) | 1 pack | AX-12A ↔ AX-12A daisy chain (Molex–Molex): neck and both grabber jaws | [ROBOTIS](https://en.robotis.com/shop_en/list.php?ca_id=302090), [ROBOTIS US](https://robotis.us/robot-cable-3p-180mm-10pcs/) | $16.70 | $16.70 |
-| 32 | USB cables: micro-USB (OpenCR), mini-USB (Arduino Nano), the LiDAR interface lead, a webcam extension, and the hub's upstream cable | ~5 | Every serial device reaches the Jetson over USB, through the hub (row 6) | any, short 15–30 cm leads | ~$3 each | ~$15 |
-| 33 | 🟦 Battery lead: LB-012 → OpenCR battery input (extension / connector) — **TBC** | 1 | Motor power | comes with the TurtleBot3 kit, or built in-house | ~$5 | ~$5 |
-| 34 | Jetson DC power lead (5.5 × 2.5 mm barrel) — **TBC** | 1 | Jetson power, through the INA219 shunt | depends on row 16 | ~$5 | ~$5 |
-| 35 | Dupont jumper wires (F–F) | 1 pack | HC-SR04 → OpenCR header (VCC, TRIG, ECHO, GND) and INA219 → Jetson I2C header (SDA, SCL, 3V3, GND) | any | ~$5 | ~$5 |
-| 36 | Cable ties, spiral wrap, heat-shrink | — | Routing along the standoffs and to the neck (see the photo) | any | ~$8 | ~$8 |
+| 28 | ROBOTIS Robot Cable-X3P **240 mm** (10 pcs) | 4 pieces from 1 pack | Wheel motors, as two daisy-chained pairs: OpenCR → XM430 → XM430, twice (JST–JST). At least 20 cm is needed, so the kit's 180 mm X3P cables are too short. 240 mm is the longest X3P length ROBOTIS sells. | [ROBOTIS.hu](https://www.robotis.hu/11-robotis?page=4&limit=100), [ROBOTIS](https://en.robotis.com/shop_en/list.php?ca_id=302090) | $21.40 | $21.40 |
+| 29 | ROBOTIS Robot Cable-X3P (Convertible) 180 mm (10 pcs) | 1 piece from 1 pack | OpenCR (JST) → first AX-12A (Molex) | [ROBOTIS.hu](https://www.robotis.hu/11-robotis/489-robot-cable-x3p-convertible-180mm-10pcs), [ROBOTIS US](https://www.robotis.us/robot-cable-x3p-180mm-convertible-10pcs/) | $15.50 | $15.50 |
+| 30 | ROBOTIS Robot Cable-3P **200 mm** (10 pcs) | 2 pieces from 1 pack | AX-12A ↔ AX-12A daisy chain (Molex–Molex): the neck and both grabber jaws on one chain | [ROBOTIS.hu](https://www.robotis.hu/11-robotis/500-robot-cable-3p-200mm-10pcs) | $17.20 | $17.20 |
+| 31 | USB cables: micro-USB (OpenCR), mini-USB (Arduino Nano), the LiDAR interface lead, a webcam extension, and the hub's upstream cable | ~5 | Every serial device reaches the Jetson over USB, through the hub (row 6) | any, short 15–30 cm leads | ~$3 each | ~$15 |
+| 32 | 🟦 Battery lead: LB-012 → OpenCR battery input (extension / connector) — **TBC** | 1 | Motor power | comes with the TurtleBot3 kit, or built in-house | ~$5 | ~$5 |
+| 33 | Jetson power cable: LB-012 → INA219 shunt → 5.5 × 2.5 mm barrel plug | 1 | Jetson power from the second LiPo (row 15) | **CUSTOM** (built in-house) | ~$5 | ~$5 |
+| 34 | Dupont jumper wires (F–F) | 1 pack | HC-SR04 → OpenCR header (VCC, TRIG, ECHO, GND) and INA219 → Jetson I2C header (SDA, SCL, 3V3, GND) | any | ~$5 | ~$5 |
+| 35 | Cable ties, spiral wrap, heat-shrink | — | Routing along the standoffs and to the neck (see the photo) | any | ~$8 | ~$8 |
 
 ## 9. 3D-printed and in-house parts (CUSTOM)
 
@@ -147,26 +160,26 @@ The STLs are in `mecanumbot_description/meshes/3Dparts/`. Price means filament c
 
 | # | Component | Qty | File | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 37 | Camera bridge (the white arch holding the neck servo and camera) | 1 | `cam_bridge.stl` | **CUSTOM** (3D printed) | ~$3 | ~$3 |
-| 38 | LED diffusers | 4 | `diffuser.stl` | **CUSTOM** (3D printed) | ~$0.50 | ~$2 |
-| 39 | Grabber mount, front (holds the AX-12A bodies) | 1 | `grabbermount_front.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
-| 40 | Grabber mount, rear | 1 | `grabbermount_rear.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
-| 41 | Wheel adapter (XM430 horn → mecanum wheel hub) | 4 | `omniwheel_adapter.stl` | **CUSTOM** (3D printed) | ~$0.50 | ~$2 |
-| 42 | HC-SR04 holder — **TBC** (no STL in the repo) | 1 | — | **CUSTOM** | — | — |
-| 43 | LED bar, INA219 and HC-SR04 wiring harness (soldered joints, splices) | 1 | — | **CUSTOM** (built in-house from rows 21 and 35) | — | — |
+| 36 | Camera bridge (the white arch holding the neck servo and camera) | 1 | `cam_bridge.stl` | **CUSTOM** (3D printed) | ~$3 | ~$3 |
+| 37 | LED diffusers | 4 | `diffuser.stl` | **CUSTOM** (3D printed) | ~$0.50 | ~$2 |
+| 38 | Grabber mount, front (holds the AX-12A bodies) | 1 | `grabbermount_front.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
+| 39 | Grabber mount, rear | 1 | `grabbermount_rear.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
+| 40 | Wheel adapter (XM430 horn → mecanum wheel hub) | 4 | `omniwheel_adapter.stl` | **CUSTOM** (3D printed) | ~$0.50 | ~$2 |
+| 41 | HC-SR04 holder — **TBC** (no STL in the repo) | 1 | — | **CUSTOM** | — | — |
+| 42 | LED bar, INA219 and HC-SR04 wiring harness (soldered joints, splices) | 1 | — | **CUSTOM** (built in-house from rows 20 and 34) | — | — |
 
 ## 10. Operator side (not mounted on the robot)
 
 | # | Component | Qty | Role | Source | Unit price |
 | --- | --- | --- | --- | --- | --- |
-| 44 | Gamepad: Sony DualShock 4 **or** Xbox 360 wireless controller + wireless adapter | 1 | `mecanumbot_joy` teleop (udev rules shipped for both) | any electronics retailer | ~$30–60 |
-| 45 | ROBOTIS RC-100 remote (optional) | 1 | Standalone OpenCR control (`OpenCR_Core` firmware), not used by the ROS stack | [ROBOTIS shop](https://en.robotis.com/shop_en/) | ~$20 |
+| 43 | Gamepad: Sony DualShock 4 **or** Xbox 360 wireless controller + wireless adapter | 1 | `mecanumbot_joy` teleop (udev rules shipped for both) | any electronics retailer | ~$30–60 |
+| 44 | ROBOTIS RC-100 remote (optional) | 1 | Standalone OpenCR control (`OpenCR_Core` firmware), not used by the ROS stack | [ROBOTIS shop](https://en.robotis.com/shop_en/) | ~$20 |
 
 ## Approximate total
 
 These are the sums of the *Line total* columns, so the `~` estimates are included. The
 operator-side items in section 10 are left out. *Without TurtleBot3 parts* leaves out the
-🟦 rows and two of the four XM430s in the 🟨 row 7, so it is what remains to buy for
+🟦 rows, two of the four XM430s in row 7 and one of the two batteries in row 15 (both 🟨). So it is what remains to buy for
 someone who already has a TurtleBot3 Waffle Pi.
 
 | Group | Total | Without TurtleBot3 parts | TurtleBot3 rows in the group |
@@ -174,15 +187,15 @@ someone who already has a TurtleBot3 Waffle Pi.
 | Compute and control | ~$591 | ~$344 | 3 |
 | Actuators and frames | ~$1,249 | ~$709 | 7 (2 of 4) |
 | Sensors | ~$154 | ~$54 | 12 |
-| Power (excluding the Jetson supply) | ~$90 | $0 | 15, 17 |
-| Chassis and drivetrain | ~$97 | ~$40 | 18 |
+| Power | ~$149 | ~$60 | 15 (1 of 2), 16 |
+| Chassis and drivetrain | ~$97 | ~$40 | 17 |
 | LEDs (excluding their 5 V supply) | ~$20 | ~$20 | — |
-| Fasteners and standoffs | ~$93 | ~$51 | 23–26 |
-| Cables | ~$89 | ~$65 | 29, 33 |
+| Fasteners and standoffs | ~$93 | ~$51 | 22–25 |
+| Cables | ~$92 | ~$87 | 32 |
 | Custom parts | ~$9 | ~$9 | — |
-| **Robot total** | **~$2,392** | **~$1,293** | |
+| **Robot total** | **~$2,455** | **~$1,374** | |
 
-The TurtleBot3 parts are therefore worth about **$1,100** when bought one by one.
+The TurtleBot3 parts are therefore worth about **$1,080** when bought one by one.
 
 ### TurtleBot3 price
 
@@ -195,8 +208,8 @@ European resellers charge about €1,880–2,060 for the Waffle Pi including VAT
 
 **Two ways to build the robot:**
 
-- **Starting from a Waffle Pi kit:** $1,933.61 + ~$1,293 ≈ **~$3,227**.
-- **Buying every part separately:** ≈ **~$2,392**.
+- **Starting from a Waffle Pi kit:** $1,933.61 + ~$1,374 ≈ **~$3,308**.
+- **Buying every part separately:** ≈ **~$2,455**.
 
 Buying the parts separately is cheaper because the kit also pays for parts this robot does
 not use: the Raspberry Pi 4, the Pi camera, the standard wheels and the caster. The kit is
@@ -207,5 +220,6 @@ The four XM430 wheel motors are about 45 % of the cost. The
 firmware variant replaces them with NEMA17 steppers on TMC2209 drivers, which costs much
 less but adds weight and loses the wheel telemetry. Its README lists the trade-offs.
 
-A complete **TurtleBot3 Waffle Pi** kit covers the 🟦 rows (3, 12, 15, 17, 18, 23–26, 29
-and 33) and 2 of the 4 XM430s in row 7. The kit's Raspberry Pi and Pi camera are then left over.
+A complete **TurtleBot3 Waffle Pi** kit covers the 🟦 rows (3, 12, 16, 17, 22–25 and 32), 2 of the 4
+XM430s in row 7 and 1 of the 2 batteries in row 15. Its X3P cables are 180 mm, too short
+for this robot's wheel chains (row 28). The kit's Raspberry Pi and Pi camera are then left over.
