@@ -228,6 +228,23 @@ def test_autoslam_offers_the_two_choices_that_can_ruin_a_pass(tmp_path):
     assert "use_preflight:=true" in argv
 
 
+def test_autoslam_talks_to_the_usual_port_unless_told_otherwise(tmp_path):
+    """The tunnel's port is 5555 by default, and settable when it is taken."""
+    (tmp_path / "autoslam_setting_constants.yaml").write_text("/**:\n")
+    assert "server_port:=5555" in bc.AUTOSLAM.build_command({}, str(tmp_path))
+    argv = bc.AUTOSLAM.build_command({"server_port": " 5556 "}, str(tmp_path))
+    assert "server_port:=5556" in argv
+
+
+@pytest.mark.parametrize("port", [
+    "", "0", "65536", "-1", "+5556", "5_556", "55.5", "http", "5556 use_x:=1"])
+def test_a_port_must_be_a_port(port, tmp_path):
+    """A port is a number in range, so nothing else reaches the command line."""
+    (tmp_path / "autoslam_setting_constants.yaml").write_text("/**:\n")
+    with pytest.raises(bc.CatalogError):
+        bc.AUTOSLAM.build_command({"server_port": port}, str(tmp_path))
+
+
 def test_autoslam_says_that_it_stops_other_behaviours():
     """
     The page must warn about it: a pass started here stops the tree next to it.

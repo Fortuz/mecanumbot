@@ -43,6 +43,9 @@ KIND_TEXT = "text"
 #: A constants file, chosen from the behaviour's own config directory.
 KIND_FILE = "file"
 
+#: A TCP port number, validated as an integer in range (e.g. the tunnel's).
+KIND_PORT = "port"
+
 #: A single ROS name token. Namespaces are offered as one level because
 #: that is all any launch file in the workspace uses, and accepting a
 #: path here would let the page build a namespace no other node expects.
@@ -114,6 +117,16 @@ class Argument:
                 raise CatalogError("{}: '{}' is not a constants file in {}".format(
                     self.label, text, config_dir or "(no config directory)"))
             return os.path.join(config_dir, text)
+
+        if self.kind == KIND_PORT:
+            # Digits only before int(): int() alone would also accept "+80",
+            # " 80 " and "8_0", and the value goes on a command line.
+            if not text.isascii() or not text.isdigit() \
+                    or not 1 <= int(text) <= 65535:
+                raise CatalogError(
+                    "{}: '{}' is not a port -- a whole number from 1 to "
+                    "65535".format(self.label, text))
+            return str(int(text))
 
         if not NAME_TOKEN.match(text):
             raise CatalogError(
@@ -453,9 +466,9 @@ AUTOSLAM = BehaviourSpec(
         "The drivers, ideally started with use_nav2:=false -- this launch "
         "brings up its own nav2 and slam_toolbox",
         "The cluster server and a live tunnel, unless require_cloud is false. "
-        "The launch file starts the camera and the Deep3R client itself, but "
-        "without a verdict from the server the exit criteria can never be "
-        "satisfied and the pass will not finish",
+        "The launch file starts the Deep3R client itself, and the client opens "
+        "the camera, but without a verdict from the server the exit criteria "
+        "can never be satisfied and the pass will not finish",
     ),
     default_file="autoslam_setting_constants.yaml",
     # No Eto_ file: the only room-dependent constant is max_duration, so both
@@ -504,15 +517,18 @@ AUTOSLAM = BehaviourSpec(
                 "fight this pass for map -> odom and for navigate_to_pose.",
         ),
         Argument(
-            name="use_camera",
-            label="Start the camera",
+            name="publish_debug_image",
+            label="Republish what was sent",
             kind=KIND_CHOICE,
-            default="true",
+            default="false",
             choices=("true", "false"),
-            emit=("use_camera:={}",),
-            doc="Start the compressed camera publisher the Deep3R client "
-                "reads. false only when one is already running: the camera "
-                "can be opened once.",
+            emit=("publish_debug_image:={}",),
+            doc="Put the exact frames the Deep3R client sent to the server on "
+                "~/debug/image_raw/compressed, so you can watch them. Off by "
+                "default -- nothing in the pass reads it, and it is the same "
+                "bytes, not a second encoding. This replaced 'Start the "
+                "camera': there is no camera publisher any more, because the "
+                "client opens the device itself.",
         ),
         Argument(
             name="use_deep3r",
@@ -525,6 +541,17 @@ AUTOSLAM = BehaviourSpec(
                 "only when one is already running -- a second one is a second "
                 "run, and the server wipes the reconstruction for it -- or for "
                 "a mapping run with require_cloud false.",
+        ),
+        Argument(
+            name="server_port",
+            label="Deep3R server port",
+            kind=KIND_PORT,
+            default="5555",
+            emit=("server_port:={}",),
+            doc="The local port the Deep3R client connects to: the robot's "
+                "end of the tunnel, tcp://127.0.0.1:<port>. Change it only "
+                "when 5555 is taken, and then the tunnel has to forward the "
+                "same port -- this moves the client, not the tunnel.",
         ),
         _NAMESPACE_LAUNCH,
     ),

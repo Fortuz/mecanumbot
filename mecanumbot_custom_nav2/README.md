@@ -347,26 +347,30 @@ ros2 launch mecanumbot_autoslam launch_t1.launch.py
 
 `launch_t1.launch.py` (in `mecanumbot_autoslam`) is the whole robot side of T1:
 the drivers (with `use_nav2:=false`), then, after `explorer_delay`,
-`launch_autoslam.launch.py`. That file starts the **camera** and the **Deep3R
-client** at once, and the scan-grid node, SLAM, nav2, the comparison handler and
-the explorer once its preflight has cleared the graph. One Ctrl-C stops all of
+`launch_autoslam.launch.py`. That file starts the **Deep3R client** -- which
+opens the camera itself -- at once, and the scan-grid node, SLAM, nav2, the
+comparison handler and the explorer once its preflight has cleared the graph. One Ctrl-C stops all of
 it. Useful arguments, all but `explorer_delay` passed through to
 `launch_autoslam`:
 
 ```bash
 ros2 launch mecanumbot_autoslam launch_t1.launch.py require_cloud:=false use_deep3r:=false  # mapping only
 ros2 launch mecanumbot_autoslam launch_t1.launch.py explorer_delay:=25.0
-ros2 launch mecanumbot_autoslam launch_t1.launch.py use_camera:=false use_deep3r:=false     # both already up
+ros2 launch mecanumbot_autoslam launch_t1.launch.py use_deep3r:=false                      # client already up
+ros2 launch mecanumbot_autoslam launch_t1.launch.py publish_debug_image:=true               # watch the frames sent
 ```
 
-The camera and the client are part of the pass because T1 cannot finish without
-them, and until 2026-09-15 nothing in T1 started the camera: the base launch
-had stopped, perception is not part of T1, and the client ran, reached the
-server and sent no frame -- so no cloud, no `map_agreement`, and a `CLOUD`
-criterion that was never met, with no error anywhere. Starting a camera or a
-client that is already running is not harmless: the camera can be opened once,
-and a second client is a second run, for which the server wipes the
-reconstruction. Pass `use_camera:=false` / `use_deep3r:=false` then.
+The client is part of the pass because T1 cannot finish without it, and until
+2026-09-15 nothing in T1 started the camera: the base launch had stopped,
+perception is not part of T1, and the client ran, reached the server and sent no
+frame -- so no cloud, no `map_agreement`, and a `CLOUD` criterion that was never
+met, with no error anywhere. Since 2026-10-09 there is no camera publisher at
+all: the client opens `/dev/video0` itself, which is one fewer thing that can be
+missing and one fewer place that can alter a frame. Starting a client that is
+already running is not harmless -- it is a second run, for which the server
+wipes the reconstruction, and it would be a second process after a device that
+opens once. Pass `use_deep3r:=false` then. `use_camera` is retired: it is still
+accepted, logs that it did nothing, and changes nothing.
 
 The trade is that every stack shares one terminal. When something is wrong and
 the noise is in the way, use the two-terminal form below instead — it is the
@@ -377,12 +381,14 @@ same two launch files.
 ```bash
 # drivers, but NOT nav2 -- autoslam brings its own
 ros2 launch mecanumbot_bringup launch_mecanumbot_base.launch.py use_nav2:=false
-# camera + Deep3R client (needs the tunnel up), then preflight, SLAM, nav2, explorer
+# Deep3R client, which opens the camera (needs the tunnel up), then preflight,
+# SLAM, nav2, explorer
 ros2 launch mecanumbot_autoslam launch_autoslam.launch.py
 ```
 
 Starting **Autoslam (T1)** from the robot's web GUI runs the second command;
-the page offers the same `use_camera` and `use_deep3r` switches.
+the page offers the same `use_deep3r` switch, and `publish_debug_image` where
+`use_camera` used to be.
 
 `use_nav2:=false` is still what you want, though it is no longer the only thing
 standing between you and a broken run: the base launch otherwise starts nav2

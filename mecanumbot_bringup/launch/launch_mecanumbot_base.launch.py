@@ -71,10 +71,6 @@ def generate_launch_description():
         "mecanumbot_state_publisher.launch.py",
     )
 
-    camera_path = os.path.join(
-        get_package_share_directory("mecanumbot_bringup"), "launch", "camera.launch.py"
-    )
-
     audio_path = os.path.join(
         get_package_share_directory("mecanumbot_audio"),
         "launch",
@@ -236,15 +232,8 @@ def generate_launch_description():
 
     """
     # Optional / Commented Out Camera Nodes
-    Node(
-        package='mecanumbot_camera_stream',
-        executable='compressed_camera_publisher_node',
-        name='compressed_camera_publisher_node',
-        namespace=namespace,
-        parameters=[{'use_sim_time': use_sim_time,'camera_backend': 'usb', 'device': '/dev/video0'}],
-        output='screen'
-    ),
-    
+    # (the compressed camera publisher is gone: mecanumbot_deep3r opens the
+    # camera itself, so nothing here should take /dev/video0 from it.)
     Node(
         namespace="mecanumbot",
         package="mecanumbot_sensorprocess_smart",
