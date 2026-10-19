@@ -27,7 +27,7 @@ Panels:
         - /PoseArray4
         - /PointCloud21
       Splitter Ratio: 0.5
-    Tree Height: 879
+    Tree Height: 364
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -233,7 +233,7 @@ Visualization Manager:
       Max Color: 255; 255; 255
       Max Intensity: 240
       Min Color: 0; 0; 0
-      Min Intensity: 68
+      Min Intensity: 74
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
@@ -550,7 +550,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.743074893951416
+      Distance: 34.4546012878418
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -565,10 +565,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.21479840576648712
+      Pitch: 1.2802029848098755
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.81608247756958
+      Yaw: 3.5760796070098877
     Saved: ~
 Window Geometry:
   Displays:
