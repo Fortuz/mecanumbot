@@ -103,12 +103,15 @@ checked on 2026-10-19. It drops to 502 Ft each from 5 pieces. Dollar figures ass
 | --- | --- | --- | --- | --- | --- | --- |
 | 19 | CJMCU-2812B-8 WS2812B RGB LED module, 8 LEDs, 5 V | 4 | Signalling LEDs, one module per bar | [HESTORE 100.410.78](https://www.hestore.hu/prod_10041078.html) | 586 Ft (~$1.75) | ~$7 |
 | 20 | 3-wire LED leads (5 V / GND / DIN) with connectors, e.g. JST-SM 3-pin pigtails | 4 | Bar-to-Nano wiring. The photo shows ribbon leads on each bar. | any | ~$8 / pack | ~$8 |
-| 21 | 5 V supply for the LEDs — **TBC** | 1 | See the warning below | — | — | — |
+| 21 | 5 V supply for the LEDs: the Nano's 5 V pin | — | The bars run off the Nano, which is powered over its USB link to the Jetson (through the hub in row 6). Nothing extra to buy. See the warning below. | — | — | — |
 
 ⚠ **LED power.** The firmware sets `BRIGHTNESS 240` and no FastLED power limit, so all 32
-pixels on white can draw about **1.8 A at 5 V**. A Nano powered over USB cannot supply that.
-Record where the bars actually take their 5 V from (for example OpenCR's 5 V header or a
-separate regulator) before building a copy.
+pixels on white can draw about **1.8 A at 5 V**. The bars take their 5 V from the Nano, and
+the Nano is powered over USB from the Jetson. A USB port supplies 0.5 A (USB 2) to 0.9 A
+(USB 3), so that worst case is more than the link can carry. Patterns that light only some
+of the pixels, or that are not white, draw much less. If the LEDs flicker, or the Nano
+resets when many pixels light at once, this is the likely cause. The fixes are a separate
+5 V supply for the bars, or a power limit in the firmware (`FastLED.setMaxPowerInVoltsAndMilliamps`).
 
 ## 7. Fasteners, standoffs and spacers
 
@@ -192,7 +195,7 @@ someone who already has a TurtleBot3 Waffle Pi.
 | Sensors | ~$154 | ~$54 | 12 |
 | Power | ~$149 | ~$60 | 15 (1 of 2), 16 |
 | Chassis and drivetrain | ~$97 | ~$40 | 17 |
-| LEDs (excluding their 5 V supply) | ~$15 | ~$15 | — |
+| LEDs | ~$15 | ~$15 | — |
 | Fasteners and standoffs | ~$93 | ~$51 | 22–25 |
 | Cables | ~$92 | ~$87 | 32 |
 | Custom parts | ~$9 | ~$9 | — |
