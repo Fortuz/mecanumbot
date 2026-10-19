@@ -96,9 +96,12 @@ The firmware (`Mecanumbot_Nano_LED/LEDutils.h`) drives **32 WS2812B pixels, GRB 
 on Nano pin D5**, split into four bars of 8. From index 0, the bars are back-right,
 back-left, front-right and front-left. Each bar sits under a printed diffuser (row 37).
 
+The HESTORE price is the single-unit price, 744 Ft including 27 % VAT, or 586 Ft without it,
+checked on 2026-10-19. It drops to 502 Ft each from 5 pieces. Dollar figures assume about 335 Ft/$.
+
 | # | Component | Qty | Role on the robot | Source | Unit price | Line total |
 | --- | --- | --- | --- | --- | --- | --- |
-| 19 | WS2812B addressable LED strip, 5 V, 60 LEDs/m, cut into 4 × 8-pixel bars (≈ 0.55 m used) | 1 m | Signalling LEDs | [Adafruit NeoPixel strip](https://www.adafruit.com/category/183), or any WS2812B 60/m strip (Amazon, AliExpress) | ~$12 / m | ~$12 |
+| 19 | CJMCU-2812B-8 WS2812B RGB LED module, 8 LEDs, 5 V | 4 | Signalling LEDs, one module per bar | [HESTORE 100.410.78](https://www.hestore.hu/prod_10041078.html) | 586 Ft (~$1.75) | ~$7 |
 | 20 | 3-wire LED leads (5 V / GND / DIN) with connectors, e.g. JST-SM 3-pin pigtails | 4 | Bar-to-Nano wiring. The photo shows ribbon leads on each bar. | any | ~$8 / pack | ~$8 |
 | 21 | 5 V supply for the LEDs — **TBC** | 1 | See the warning below | — | — | — |
 
@@ -189,11 +192,11 @@ someone who already has a TurtleBot3 Waffle Pi.
 | Sensors | ~$154 | ~$54 | 12 |
 | Power | ~$149 | ~$60 | 15 (1 of 2), 16 |
 | Chassis and drivetrain | ~$97 | ~$40 | 17 |
-| LEDs (excluding their 5 V supply) | ~$20 | ~$20 | — |
+| LEDs (excluding their 5 V supply) | ~$15 | ~$15 | — |
 | Fasteners and standoffs | ~$93 | ~$51 | 22–25 |
 | Cables | ~$92 | ~$87 | 32 |
 | Custom parts | ~$9 | ~$9 | — |
-| **Robot total** | **~$2,455** | **~$1,374** | |
+| **Robot total** | **~$2,450** | **~$1,369** | |
 
 The TurtleBot3 parts are therefore worth about **$1,080** when bought one by one.
 
@@ -208,8 +211,8 @@ European resellers charge about €1,880–2,060 for the Waffle Pi including VAT
 
 **Two ways to build the robot:**
 
-- **Starting from a Waffle Pi kit:** $1,933.61 + ~$1,374 ≈ **~$3,308**.
-- **Buying every part separately:** ≈ **~$2,455**.
+- **Starting from a Waffle Pi kit:** $1,933.61 + ~$1,369 ≈ **~$3,303**.
+- **Buying every part separately:** ≈ **~$2,450**.
 
 Buying the parts separately is cheaper because the kit also pays for parts this robot does
 not use: the Raspberry Pi 4, the Pi camera, the standard wheels and the caster. The kit is
