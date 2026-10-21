@@ -223,9 +223,14 @@
     <limit lower="-1.57" upper="1.57" effort="5.0" velocity="1.0"/>
   </joint>
 
+  <!-- The head mesh is turned 0.315 rad about the joint axis so it is drawn
+       straight when head_joint is 0, i.e. when the camera looks level (500
+       ticks). Unturned it looked straight at head_joint = +0.315 (646 ticks
+       on 2026-10-21) and drew a level head 18 deg nose down. Visual only:
+       camera_link is not under this origin. -->
   <link name="${namespace}/head_link">
     <visual>
-      <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+      <origin xyz="0.0 0.0 0.0" rpy="0 0 0.315"/>
       <geometry>
         <mesh filename="package://mecanumbot_description/meshes/head.stl" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -278,8 +283,9 @@
        and head_joint tilts it. It used to be rpy="0 -1.57 0", which put the
        lens on the neck's rotation axis, looking right at every neck angle.
        MEASURED 2026-09-18 with a tape from the floor, the neck held at 550
-       ticks (a pitch of -9.8 deg under mecanumbot_sensorproc_node's calibrated
-       offset): the horn screw, which is head_joint's own axis, is 0.180 m up
+       ticks (taken then as a pitch of -9.8 deg; with the camera level at ~505
+       ticks, as measured 2026-10-21, it was +13.0 deg, so the lever below was
+       fitted at the wrong angle and wants re-measuring): the horn screw, which is head_joint's own axis, is 0.180 m up
        and the lens is 0.230 m up, which is this lever. The lens had been
        0.021 m low. camera_rgb_frame's offset is now zero, so camera_link IS
        the lens and TF agrees with the lever mecanumbot_deep3r and

@@ -31,12 +31,15 @@ GRIPPER_MIDPOINT_COMPENSATE_CONSTANT = 2.618  # 150 deg diff in rads
 # place frames with, so change all three or none. The old constant (3.8172 rad)
 # showed the head leaning back ~40 deg at level.
 NECK_LEVEL_TICKS = 600
-# Measured 2026-09-15 with a ball on the floor and the neck held still at
-# 500..600 ticks (see ball.neck.pitch_at_level_deg in
-# mecanumbot_sensorprocess_smart's config): at 600 ticks the camera looks
-# 4.7 deg up, so it is level at ~584. The per-tick slope matched the AX-12A's
-# TICK_TO_RAD, so only this offset was wrong.
-NECK_PITCH_AT_LEVEL = math.radians(4.7)
+# MEASURED 2026-10-21 with a tennis ball on the floor 1 m out and the neck at
+# 500 ticks: the lens looks 1.8 deg down by the ball's apparent size, 1.2 deg
+# down by its known distance, so it is level at ~505 and looks 27.5 deg up at
+# 600. The 2026-09-15 ball-on-floor fit had it
+# level at ~584 (4.7 deg here); by 2026-10-21 RViz drew the head straight at
+# 646 while the real one was straight at 500, and every model of the neck was
+# aiming the camera ~24 deg higher than it believed. The per-tick slope is the
+# AX-12A's TICK_TO_RAD and was not in question.
+NECK_PITCH_AT_LEVEL = math.radians(27.5)
 
 
 def get_device_model():
