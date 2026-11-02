@@ -11,13 +11,14 @@ than merely deactivating it -- a lifecycle reset has nothing left to reset.
 
 Everything is chosen when the file is launched, not when the robot booted: a
 restart re-reads the SSID, so moving the robot between rooms and restarting
-picks up the other room's map. `NAV2_PARAMS_FILE` overrides the parameter file
-here exactly as it did in the base launch.
+picks up the other room's map. A map chosen on the web GUI's maps page overrides
+the SSID until it is cleared there (`mecanumbot_web/map_store.py`), and the
+keepout servers go with whichever map that is. `NAV2_PARAMS_FILE` overrides the
+parameter file here exactly as it did in the base launch.
 
     ros2 launch mecanumbot_bringup nav2.launch.py
 """
 
-import glob
 import os
 import subprocess
 
@@ -27,6 +28,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogI
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from mecanumbot_web import map_store
 from nav2_common.launch import RewrittenYaml
 
 mecanumbot_description_pkg_share = get_package_share_directory("mecanumbot_description")
@@ -85,16 +87,11 @@ def get_wifi_ssid():
 
 
 def choose_launch_profile(ssid):
-    ssid_to_map = {
-        "MecanumNet": "AI_dept",
-        "MecanumetoNet": "LED_exp",
-    }
-    map_name = ssid_to_map.get(ssid, "AI_dept")
-    map_dir = os.path.join(mecanumbot_description_pkg_share, "maps", map_name)
-    map_path = os.path.join(map_dir, f"{map_name}.yaml")
-    keepout_matches = sorted(glob.glob(os.path.join(map_dir, "*_keepout.yaml")))
-    keepout_path = keepout_matches[0] if keepout_matches else ""
-    use_keepout = map_name == "LED_exp" and bool(keepout_path)
+    maps_dir = os.path.join(mecanumbot_description_pkg_share, "maps")
+    map_name, map_source, map_note = map_store.resolve(ssid, maps_dir)
+    map_path = os.path.join(maps_dir, map_name, f"{map_name}.yaml")
+    keepout_path = map_store.keepout_file(maps_dir, map_name)
+    use_keepout = bool(keepout_path)
     nav2_params_file = os.path.join(
         mecanumbot_description_pkg_share,
         "param",
@@ -104,16 +101,23 @@ def choose_launch_profile(ssid):
             else "mecanumbot_custom_nav2_no_keepout.yaml"
         ),
     )
-    return map_name, map_path, keepout_path, nav2_params_file, use_keepout
+    return (map_name, map_path, keepout_path, nav2_params_file, use_keepout,
+            map_source, map_note)
 
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time")
 
     detected_ssid = get_wifi_ssid()
-    map_name, map_file, keepout_file, nav2_params_file, _ = choose_launch_profile(
-        detected_ssid
-    )
+    (
+        map_name,
+        map_file,
+        keepout_file,
+        nav2_params_file,
+        use_keepout,
+        map_source,
+        map_note,
+    ) = choose_launch_profile(detected_ssid)
 
     # An override, because the SSID picks the file for a *study* run and not
     # every run is one. T2 of the Deep3R seeking system wants
@@ -132,7 +136,10 @@ def generate_launch_description():
         LogInfo(
             msg=f"[nav2] Detected WiFi SSID: {detected_ssid if detected_ssid else 'None'}"
         ),
-        LogInfo(msg=f"[nav2] Chosen map setting: {map_name} ({map_file})"),
+        LogInfo(
+            msg=f"[nav2] Chosen map setting: {map_name} ({map_file}), by {map_source}"
+            + (f"; {map_note}" if map_note else "")
+        ),
         LogInfo(msg=f"[nav2] Keepout mask: {keepout_file if keepout_file else 'none'}"),
         LogInfo(msg=f"[nav2] Nav2 params: {nav2_params_file}"),
         IncludeLaunchDescription(
@@ -154,7 +161,7 @@ def generate_launch_description():
         ),
     ]
 
-    if detected_ssid == "MecanumetoNet":
+    if use_keepout:
         launch_actions.extend(
             [
                 Node(

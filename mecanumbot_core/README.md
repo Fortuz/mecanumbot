@@ -86,16 +86,18 @@ The timer stays silent until the first command arrives, so merely starting the n
 
 ## Node: `mecanumbot_battery_alert`
 
-Shows the robot's hardware alarms on the LEDs (all four groups):
+Reports what is wrong with the hardware. Every fault is published once a second on
+`hardware_alerts`, which the web GUI shows as a line under the tabs on every page.
+Only the battery also takes over the LEDs (all four groups), because the LEDs are what
+the LED condition of the leading experiment signals with.
 
-| Alarm | LEDs | Raised when |
-| --- | --- | --- |
-| Battery low | red fast blink | a battery drops below `battery_threshold` (default `9.7` V) |
-| Dynamixel bus silent | **yellow** fast blink | every `opencr_state` frame for `dxl_bus_alert_after` s (default `1.0`) has a negative `err_*` -- the OpenCR's "this wheel did not answer" sentinel. Cleared after `dxl_bus_clear_after` s (default `1.0`) of answers. Also logged as an error. |
+| Fault | LEDs | Page | Raised when |
+| --- | --- | --- | --- |
+| Battery low | red fast blink | red line | a battery drops below `battery_threshold` (default `9.7` V). An OpenCR below 1 V is worded as no main power. |
+| OpenCR not responding | none | red line | no `opencr_state` frame for `opencr_silent_after` s (default `2.0`), including a board that never spoke. Also logged as an error. |
+| Motors not responding | none | yellow line | every `opencr_state` frame for `dxl_bus_alert_after` s (default `1.0`) has a negative `err_*` -- the OpenCR's "this wheel did not answer" sentinel. Cleared after `dxl_bus_clear_after` s (default `1.0`) of answers. Also logged as an error. |
 
-The battery wins when both are up: a flat battery is a common reason for the bus to
-go silent. Yellow is used by none of the leading experiment's LED scripts. The timing
-and the choice are in `alerts.py`, which needs no ROS (`test/test_alerts.py`).
+The timing and the wording are in `alerts.py`, which needs no ROS (`test/test_alerts.py`).
 
 The alarm needs more than `ALERT_AFTER_SAMPLES` (5) **consecutive** readings below the
 threshold (so the sixth raises it), and clears the LEDs when the voltage recovers. It clears them to off
@@ -107,7 +109,8 @@ the leading experiment: a low battery will take the lights over mid-trial.
 | -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
 | `cr_battery_state`   | subscribe  | OpenCR main battery voltage.                                                                                |
 | `orin_battery_state` | subscribe  | **Jetson only.** Onboard computer rail voltage from the INA219.                                             |
-| `opencr_state`       | subscribe  | The wheels' `err_*` fields, for the bus alarm.                                                              |
+| `opencr_state`       | subscribe  | The wheels' `err_*` fields, for the motors alert, and its arrival, for the OpenCR alert.                    |
+| `hardware_alerts`    | publish    | `diagnostic_msgs/DiagnosticArray`, 1 Hz: one status per fault that is up (`WARN` or `ERROR`), empty when none is. |
 | `set_led_status`     | service call | Sets all four LED panels to the active alarm (re-sent every second), and to off once when it clears.      |
 
 ## Node: `mecanumbot_scan_grid_node`

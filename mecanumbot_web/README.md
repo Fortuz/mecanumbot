@@ -33,8 +33,25 @@ There is no login and no database.
 | `/joystick` | Edit and reload `mecanumbot_joy`'s profile, with a live input readout. |
 | `/diagnostics` | Whether the navigation stack is up, with a restart; what the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
 | `/behaviour` | Choose a behaviour tree, edit the constants it will load, and run it. |
+| `/maps` | Choose the map folder nav2 loads, and load it. |
 
 `/` redirects to `/diagnostics`.
+
+### Alert lines
+
+Every page polls `/api/alerts` every 2 s and shows each hardware fault as one thin
+line under the tabs, which stays in view when the page is scrolled. The faults come
+from `mecanumbot_core`'s `mecanumbot_battery_alert`, on `hardware_alerts`, so the page
+and the node cannot disagree about thresholds or timing, and nothing here has to
+deserialise the 100 Hz `opencr_state`.
+
+| Line | Means |
+| --- | --- |
+| Yellow | Motors not responding: the OpenCR cannot read the Dynamixel bus. |
+| Red | OpenCR not responding, or a battery is low (the LEDs blink red for that too). |
+| Grey | Faults unknown: the monitoring node is not reporting, or the page lost the robot. |
+
+The grey line exists because no line at all has to mean a healthy robot.
 
 ### Joystick
 
@@ -103,7 +120,8 @@ after T1 there is nothing left for `manage_nodes` RESET to reset. A restart
    the graph, and the restart fails naming it rather than launching over it;
 3. runs `ros2 launch mecanumbot_bringup nav2.launch.py` as a child, whose
    console the panel shows. The launch file re-reads the SSID, so a restart
-   after moving rooms loads the other room's map.
+   after moving rooms loads the other room's map, unless the maps page has
+   pinned one.
 
 **Refused while** a tree runs from the behaviour page, a tree is on the graph
 from a terminal, or a T1 pass is up (its nav2 uses the same node names, so a
@@ -194,6 +212,32 @@ is `raw=True` like the monitor's and the bytes are deserialised at most every
 here the payload is actually wanted. Set `odom_topic` to an empty string to
 drop the subscription entirely; the panel then says it is showing commanded
 velocity only.
+
+### Maps
+
+Lists every folder under `mecanumbot_description`'s installed `maps/` and loads
+the one you pick. A map is `maps/<name>/<name>.yaml` beside the image it names;
+a folder that breaks that is listed with what is wrong and cannot be loaded. A
+new folder appears after `colcon build --packages-select mecanumbot_description`.
+
+**Loading is saving the choice and restarting nav2** with the restart above, so
+it is refused in the same situations (a tree running, a T1 pass), and a refusal
+puts the previous choice back. AMCL comes back at its initial pose, so the pose
+estimate has to be set again. "Running on" is asked of the map server itself
+(`yaml_filename`), so it stays true of a stack this page did not start.
+
+**The choice is a pin over the Wi-Fi rule**, kept in
+`~/.mecanumbot/selected_map.yaml`, so it survives a reboot and the base launch
+honours it too. "Follow the Wi-Fi" removes it. With no pin `nav2.launch.py`
+picks what it always did; a pinned folder that has since gone falls back to the
+SSID's map and the launch log says so. `map_store.py` holds the rule and the
+launch file imports it, so the page and the launch cannot disagree.
+
+The keepout mask goes with the map: any folder with a `*_keepout.yaml` gets the
+keepout servers and the keepout parameter file, whichever network the robot is
+on. **The behaviour constants do not move.** They are still chosen by SSID and
+their routes are coordinates on one map, so the page warns whenever the loaded
+map is not the one the network's constants were written for.
 
 ### Behaviour
 

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Maps · Mecanumbot{% endblock %}
+
+{% block styles %}
+<style>
+.map-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.map-head h4 { margin: 0; font-size: 14px; }
+tr.current td:first-child { font-weight: 650; }
+pre.log {
+  max-height: 260px; overflow: auto; margin: 8px 0 0; padding: 10px;
+  background: var(--panel2); border-radius: 6px; font-size: 12px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Maps</h1>
+<p class="sub">Choose the map folder the navigation stack loads. Loading restarts
+  navigation, so the robot has to be standing still with no behaviour running.</p>
+
+<div id="map-notice"></div>
+
+<div class="card">
+  <div class="map-head">
+    <h4>Navigation stack</h4>
+    <span id="nav-pill" class="pill IDLE">…</span>
+    <span id="loaded" class="small dim grow"></span>
+    <button id="use-wifi" onclick="loadMap(null)">Follow the Wi-Fi</button>
+  </div>
+  <div id="choice" class="small dim"></div>
+</div>
+
+<div class="card">
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Folder</th><th class="num">Resolution</th><th>Keepout</th>
+            <th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="map-rows"></tbody>
+    </table>
+  </div>
+  <p class="small dim" id="maps-dir"></p>
+</div>
+
+<details class="card" id="nav-console">
+  <summary class="small dim">Console of the relaunched stack</summary>
+  <pre class="log" id="nav-log"></pre>
+</details>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const NAV_LABELS = {
+  active: ['OK', 'ACTIVE'], inactive: ['SLOW', 'INACTIVE'],
+  unknown: ['SLOW', 'NO ANSWER'], partial: ['SLOW', 'PARTIAL'],
+  down: ['DEAD', 'DOWN'], t1: ['IDLE', 'T1'],
+};
+let navLastSeq = 0;
+let busy = false;
+// A refused load changes nothing on the robot, so the reason stays on screen
+// until the next click rather than being cleared by the next poll.
+let refusal = null;
+
+function renderMaps(body) {
+  const loaded = body.loaded;
+  const rows = document.getElementById('map-rows');
+  rows.innerHTML = '';
+  body.maps.forEach(function (map) {
+    const notes = [];
+    if (map.name === loaded) notes.push(el('span', {class: 'pill OK', text: 'LOADED'}));
+    if (map.name === body.selected) notes.push(el('span', {class: 'pill accent', text: 'SELECTED'}));
+    if (map.name === body.ssid_map) notes.push(el('span', {class: 'pill IDLE', text: 'WI-FI'}));
+    if (!map.ok) notes.push(el('span', {class: 'small dim', text: map.problem}));
+
+    const button = el('button', {
+      text: 'Load', class: 'primary',
+      onclick: function () { loadMap(map.name); },
+    });
+    button.disabled = busy || !map.ok || (body.stack || {}).state === 't1';
+    rows.appendChild(el('tr', {class: map.name === loaded ? 'current' : ''}, [
+      el('td', {class: 'mono', text: map.name}),
+      el('td', {class: 'num', text: map.resolution ? map.resolution + ' m/px' : '–'}),
+      el('td', {text: map.keepout ? 'yes' : 'no'}),
+      el('td', {}, notes),
+      el('td', {}, [button]),
+    ]));
+  });
+
+  document.getElementById('use-wifi').disabled =
+    busy || !body.selected || (body.stack || {}).state === 't1';
+  document.getElementById('choice').textContent = body.selected
+    ? 'Selected here: ' + body.selected + '. It stays selected across reboots, until you ' +
+      'choose another map or follow the Wi-Fi again.'
+    : 'No map selected here, so the Wi-Fi decides: ' + (body.ssid || 'no network') +
+      ' selects ' + body.ssid_map + '.';
+  document.getElementById('maps-dir').textContent = 'Reading ' + body.maps_dir +
+    '. A new folder appears after colcon build --packages-select mecanumbot_description ' +
+    'and holds <folder>/<folder>.yaml beside its image.';
+
+  document.getElementById('loaded').textContent =
+    loaded ? 'Running on ' + loaded : 'No map server is answering';
+}
+
+function renderNotice(body) {
+  const restart = body.restart || {};
+  if (refusal && !busy) {
+    banner('map-notice', 'err', 'The map was not changed', [refusal]);
+  } else if (restart.phase === 'failed') {
+    banner('map-notice', 'err', 'Navigation restart failed', [restart.error]);
+  } else if (busy || restart.phase === 'started') {
+    banner('map-notice', 'info', restart.message);
+  } else if (body.selection_problem) {
+    banner('map-notice', 'warn', body.selection_problem);
+  } else if (body.constants_warning) {
+    banner('map-notice', 'warn', body.constants_warning);
+  } else {
+    banner('map-notice', 'ok', null, []);
+  }
+}
+
+function renderNav(body) {
+  const stack = body.stack || {};
+  const shape = NAV_LABELS[stack.state] || ['IDLE', '?'];
+  const pill = document.getElementById('nav-pill');
+  pill.className = 'pill ' + shape[0];
+  pill.textContent = shape[1];
+
+  const log = body.log || {};
+  if ((log.lines || []).length) {
+    const pre = document.getElementById('nav-log');
+    if (log.dropped) pre.textContent += '… ' + log.dropped + ' lines not shown …\n';
+    pre.textContent += log.lines.join('\n') + '\n';
+    pre.scrollTop = pre.scrollHeight;
+  }
+  navLastSeq = log.last_seq || navLastSeq;
+}
+
+async function refresh() {
+  const result = await api('/api/maps?after=' + navLastSeq);
+  if (!result.ok) {
+    banner('map-notice', 'err', result.body.error || ('HTTP ' + result.status));
+    return;
+  }
+  busy = !!(result.body.restart || {}).busy;
+  renderMaps(result.body);
+  renderNav(result.body);
+  renderNotice(result.body);
+}
+
+async function loadMap(name) {
+  const what = name === null ? 'the map the Wi-Fi selects' : name;
+  if (!window.confirm(
+      'Load ' + what + '?\n\n' +
+      'This restarts the navigation stack: any goal in progress is dropped, and ' +
+      'AMCL starts again from its initial pose, so set the pose estimate in RViz ' +
+      'afterwards.')) {
+    return;
+  }
+  refusal = null;
+  const result = await post('/api/maps/select', {map: name});
+  if (!result.ok) refusal = result.body.error || ('HTTP ' + result.status);
+  else document.getElementById('nav-console').open = true;
+  refresh();
+}
+
+async function loop() {
+  await refresh();
+  // Faster while a restart is under way, so each phase is seen; slower
+  // otherwise, because every poll asks the lifecycle managers a question.
+  setTimeout(loop, busy ? 1000 : 3000);
+}
+
+loop();
+</script>
+{% endblock %}

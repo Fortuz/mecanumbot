@@ -49,8 +49,20 @@ body {
 header {
   display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   padding: 12px 20px; background: var(--panel);
-  border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20;
+  border-bottom: 1px solid var(--line); position: relative;
 }
+/* Holds the alert lines under the tabs, so they stay in view on a scrolled page. */
+.topbar { position: sticky; top: 0; z-index: 20; }
+/* Quiet on purpose: a thin steady line, no motion. The *-bg colours are
+   translucent, so each is laid over the panel colour or the page would scroll
+   through it. */
+.alert-line {
+  padding: 4px 20px; font-size: 13px; border-bottom: 1px solid;
+  background: linear-gradient(var(--tint), var(--tint)), var(--panel);
+}
+.alert-line.warn  { --tint: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.alert-line.error { --tint: var(--bad-bg);  color: var(--bad);  border-color: var(--bad); }
+.alert-line.unknown { --tint: var(--idle-bg); color: var(--idle); border-color: var(--line); }
 header::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
   background: linear-gradient(90deg, var(--accent), var(--accent2));
@@ -134,16 +146,20 @@ code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 {% block styles %}{% endblock %}
 </head>
 <body>
+<div class="topbar">
 <header>
   <span class="brand">Mecanumbot</span>
   <nav>
     <a href="/joystick"    class="{{ 'active' if page == 'joystick' }}">Joystick</a>
     <a href="/diagnostics" class="{{ 'active' if page == 'diagnostics' }}">Diagnostics</a>
     <a href="/behaviour"   class="{{ 'active' if page == 'behaviour' }}">Behaviour</a>
+    <a href="/maps"        class="{{ 'active' if page == 'maps' }}">Maps</a>
   </nav>
   <span class="spacer"></span>
   <span id="hdr-status" class="small dim"></span>
 </header>
+<div id="hw-alerts" role="status"></div>
+</div>
 <main>
 {% block content %}{% endblock %}
 </main>
@@ -190,6 +206,32 @@ function banner(target, kind, title, items) {
 function setHeaderStatus(text) {
   document.getElementById('hdr-status').textContent = text || '';
 }
+
+// The hardware alert lines, on every page.
+function renderAlerts(lines) {
+  document.getElementById('hw-alerts').replaceChildren(...lines.map(function (line) {
+    return el('div', {class: 'alert-line ' + line[0], text: line[1]});
+  }));
+}
+async function refreshAlerts() {
+  let lines;
+  try {
+    const result = await api('/api/alerts');
+    const body = result.body;
+    lines = (body.alerts || []).map(function (alert) {
+      return [alert.severity, alert.message];
+    });
+    if (!body.monitored) {
+      lines.push(['unknown', 'Hardware faults unknown: mecanumbot_battery_alert is not reporting.']);
+    }
+  } catch (e) {
+    // Without this the last lines would stay up, or a clear page would look healthy.
+    lines = [['unknown', 'Lost contact with the robot: hardware faults unknown.']];
+  }
+  renderAlerts(lines);
+  setTimeout(refreshAlerts, 2000);
+}
+refreshAlerts();
 </script>
 {% block scripts %}{% endblock %}
 </body>

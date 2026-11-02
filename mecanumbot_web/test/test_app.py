@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from mecanumbot_web import behaviour_runner, behaviour_store  # noqa: E402
+from mecanumbot_web import behaviour_runner, behaviour_store, map_store  # noqa: E402
 
 # Deliberately NOT pytest.importorskip: raising Skipped at module level
 # aborts collection for the whole session under pytest 6.2 (the version
@@ -57,6 +57,7 @@ class StubNode:
         self.select_result = (True, "Profile set to 'generic'")
         self.estop_result = (True, "E-stop cleared")
         self.graph_nodes = []
+        self.alerts = {"monitored": True, "alerts": []}
 
     def info(self, message):
         """Swallow a log line, the way a real logger would emit one."""
@@ -91,6 +92,14 @@ class StubNode:
                     "measured": {"vx": 0.19, "vy": 0.0, "wz": 0.0,
                                  "state": "forward", "available": True,
                                  "stale": False, "moving": True}}}
+
+    def hardware_alerts(self):
+        """Return the faults set by the test."""
+        return self.alerts
+
+    def loaded_map(self):
+        """Return the folder a running map server was given."""
+        return "AI_dept"
 
     def monitor_specs(self):
         """Return the configured nominal table."""
@@ -452,6 +461,110 @@ def test_nav_routes_need_the_node(tmp_path):
     assert web.nav_stack is None
     assert client.get("/api/nav").status_code == 503
     assert client.post("/api/nav/restart").status_code == 503
+
+
+# ── alert lines ──────────────────────────────────────────────────────────
+
+def test_alerts_carry_what_the_node_reports(context):
+    line = {"severity": "warn", "key": "motors_silent", "message": "Motors"}
+    context["node"].alerts = {"monitored": True, "alerts": [line]}
+    body = context["client"].get("/api/alerts").get_json()
+    assert body["monitored"] is True
+    assert body["alerts"] == [line]
+
+
+def test_alerts_without_a_node_say_nothing_is_watching(tmp_path):
+    """Every page polls this, so it answers rather than returning a 503."""
+    web = WebApp(node=None, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path))
+    response = web.app.test_client().get("/api/alerts")
+    assert response.status_code == 200
+    assert response.get_json()["monitored"] is False
+
+
+@pytest.mark.parametrize("page", ["joystick", "diagnostics", "behaviour", "maps"])
+def test_every_page_has_the_alert_lines_under_its_tabs(context, page):
+    html = context["client"].get("/" + page).data.decode()
+    assert html.index("</nav>") < html.index('id="hw-alerts"') < html.index("<main>")
+    assert "refreshAlerts()" in html
+
+
+# ── maps API ─────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def maps(tmp_path, context):
+    """Build a test client whose maps directory holds one usable folder."""
+    folder = tmp_path / "maps" / "room_a"
+    folder.mkdir(parents=True)
+    (folder / "room_a.pgm").write_text("P5")
+    (folder / "room_a.yaml").write_text("image: room_a.pgm\nresolution: 0.05\n")
+    selection = tmp_path / "selected_map.yaml"
+    nav = StubNavStack()
+    web = WebApp(node=context["node"], joystick_dir=str(tmp_path),
+                 behaviour_dir=str(tmp_path), runner=StubRunner(), nav=nav,
+                 maps_dir=str(tmp_path / "maps"),
+                 map_selection_file=str(selection))
+    return {"client": web.app.test_client(), "nav": nav,
+            "selection": str(selection)}
+
+
+def test_maps_status_lists_folders_and_what_is_loaded(maps):
+    body = maps["client"].get("/api/maps").get_json()
+    assert [entry["name"] for entry in body["maps"]] == ["room_a"]
+    assert body["selected"] is None
+    assert body["loaded"] == "AI_dept"
+
+
+def test_selecting_a_map_saves_it_and_restarts_navigation(maps):
+    response = maps["client"].post("/api/maps/select", json={"map": "room_a"})
+    assert response.status_code == 200
+    assert map_store.read_selection(maps["selection"]) == "room_a"
+    assert maps["nav"].calls == ["restart"]
+
+
+def test_a_map_on_another_network_warns_about_the_constants(maps):
+    """The routes in the constants file are coordinates on the SSID's map."""
+    maps["client"].post("/api/maps/select", json={"map": "room_a"})
+    body = maps["client"].get("/api/maps").get_json()
+    assert "room_a" in body["constants_warning"]
+
+
+def test_a_refused_restart_leaves_the_previous_choice(maps):
+    """A refusal must not leave a map waiting to take effect at the next boot."""
+    map_store.write_selection("room_a", maps["selection"])
+    maps["nav"].fail_with = "Leading is running from the behaviour page."
+    response = maps["client"].post("/api/maps/select", json={"map": None})
+    assert response.status_code == 409
+    assert response.get_json()["error"].startswith("Leading is running")
+    assert map_store.read_selection(maps["selection"]) == "room_a"
+
+
+def test_clearing_the_choice_returns_to_the_wifi(maps):
+    map_store.write_selection("room_a", maps["selection"])
+    response = maps["client"].post("/api/maps/select", json={"map": None})
+    assert response.status_code == 200
+    assert map_store.read_selection(maps["selection"]) is None
+    assert maps["nav"].calls == ["restart"]
+
+
+@pytest.mark.parametrize("name", ["nowhere", "../room_a", "", 7])
+def test_a_folder_that_cannot_load_is_refused_without_a_restart(maps, name):
+    response = maps["client"].post("/api/maps/select", json={"map": name})
+    assert response.status_code == 400
+    assert maps["nav"].calls == []
+    assert map_store.read_selection(maps["selection"]) is None
+
+
+def test_maps_routes_need_the_node(tmp_path):
+    web = WebApp(node=None, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path))
+    client = web.app.test_client()
+    assert client.get("/api/maps").status_code == 503
+    assert client.post("/api/maps/select", json={"map": "a"}).status_code == 503
+
+
+def test_maps_page_is_in_the_navigation(context):
+    page = context["client"].get("/maps").data
+    assert b'id="map-rows"' in page
+    assert b'href="/maps"' in page
 
 
 def test_diagnostics_page_has_the_navigation_panel(context):

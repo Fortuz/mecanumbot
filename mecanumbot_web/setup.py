@@ -23,7 +23,7 @@ setup(
     maintainer="csenge",
     maintainer_email="csengehubay@gmail.com",
     description="Robot-hosted web GUI: joystick profiles, topic-rate diagnostics, "
-                "behaviour parameters",
+                "behaviour parameters, map selection",
     license="Apache License 2.0",
     extras_require={
         "test": [

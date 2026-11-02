@@ -1,4 +1,5 @@
 import rclpy
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from mecanumbot_msgs.msg import OpenCRState
 from mecanumbot_msgs.srv import SetLedStatus
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -6,7 +7,14 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 
-from mecanumbot_core.alerts import LEDS_OFF, Debounce, choose_alarm, dxl_bus_silent
+from mecanumbot_core.alerts import (
+    ERROR,
+    LEDS_OFF,
+    Debounce,
+    active_alerts,
+    choose_alarm,
+    dxl_bus_silent,
+)
 
 
 def get_device_model():
@@ -32,11 +40,11 @@ else:
 
 class MecanumbotBatteryAlert(Node):
     """
-    Show the robot's hardware alarms on the LEDs.
+    Watch the robot's hardware and report what is wrong with it.
 
-    Two of them: a low battery (red fast blink) and a Dynamixel bus the OpenCR
-    cannot read (yellow fast blink) -- the wheels then neither report nor, as a
-    rule, drive, which from outside looks like the robot ignoring its commands.
+    A low battery blinks the LEDs red. That, a Dynamixel bus the OpenCR cannot
+    read and an OpenCR that has stopped talking altogether are all published on
+    `hardware_alerts`, which the web GUI shows as a line on every page.
     """
 
     def __init__(self):
@@ -49,6 +57,8 @@ class MecanumbotBatteryAlert(Node):
         # stay readable before it comes down again.
         self.declare_parameter("dxl_bus_alert_after", 1.0)
         self.declare_parameter("dxl_bus_clear_after", 1.0)
+        # Seconds without an opencr_state frame before the board counts as silent.
+        self.declare_parameter("opencr_silent_after", 2.0)
 
         timer_period = 1  # seconds
         self.callback_group = ReentrantCallbackGroup()
@@ -68,6 +78,12 @@ class MecanumbotBatteryAlert(Node):
         )
         # The alarm on the LEDs now, so clearing it is sent once, not every second.
         self.shown = None
+        self.opencr_silent_after = self.get_parameter("opencr_silent_after").value
+        # From startup rather than None, so a board that never spoke counts too.
+        self.last_opencr_state = self.now_seconds()
+        self.opencr_was_silent = False
+        self.voltages = {}
+        self.alerts_pub = self.create_publisher(DiagnosticArray, "hardware_alerts", 10)
 
         self.opencr_state_subscription = self.create_subscription(
             OpenCRState,
@@ -93,6 +109,9 @@ class MecanumbotBatteryAlert(Node):
                 callback_group=self.callback_group,
             )
 
+    def now_seconds(self):
+        return self.get_clock().now().nanoseconds * 1e-9
+
     def set_leds(self, color, mode):
         """Drive all four LED groups to one colour and mode."""
         req = SetLedStatus.Request()
@@ -101,8 +120,9 @@ class MecanumbotBatteryAlert(Node):
         self.pending_future = self.srv_client.call_async(req)
 
     def timer_callback(self):
-        """Re-send the alarm every second, or clear the LEDs once it is gone."""
-        alarm = choose_alarm(self.alert, self.dxl_bus.active)
+        """Re-send the alarm every second, or clear it once gone; publish the alerts."""
+        self.publish_alerts()
+        alarm = choose_alarm(self.alert)
         if alarm is not None:
             self.set_leds(*alarm)
         elif self.shown is not None:
@@ -111,22 +131,63 @@ class MecanumbotBatteryAlert(Node):
             self.set_leds(*LEDS_OFF)
         self.shown = alarm
 
+    def publish_alerts(self):
+        """
+        Publish every fault that is up, or an empty list when none is.
+
+        Empty rather than nothing, so a subscriber can tell a healthy robot from
+        this node not running.
+        """
+        silent_for = self.now_seconds() - self.last_opencr_state
+        silent = silent_for >= self.opencr_silent_after
+        if silent != self.opencr_was_silent:
+            if silent:
+                self.get_logger().error(
+                    f"OpenCR not responding: no opencr_state for {silent_for:.0f} s."
+                )
+            else:
+                self.get_logger().info("OpenCR responding again.")
+            self.opencr_was_silent = silent
+
+        # Each battery's own count, not the shared flag the LEDs read, which
+        # the other battery's next good reading clears.
+        low = {
+            battery: self.voltages[battery]
+            for battery, count in self.alert_num.items()
+            if count > ALERT_AFTER_SAMPLES
+        }
+        message = DiagnosticArray()
+        message.header.stamp = self.get_clock().now().to_msg()
+        for severity, key, text in active_alerts(
+            self.dxl_bus.active, silent_for if silent else None, low
+        ):
+            status = DiagnosticStatus()
+            status.level = (
+                DiagnosticStatus.ERROR if severity == ERROR else DiagnosticStatus.WARN
+            )
+            status.name = key
+            status.message = text
+            message.status.append(status)
+        self.alerts_pub.publish(message)
+
     def opencr_state_callback(self, msg):
         """Watch the wheels' error fields for the board's no-answer sentinel."""
         was_up = self.dxl_bus.active
-        now = self.get_clock().now().nanoseconds * 1e-9
+        now = self.now_seconds()
+        self.last_opencr_state = now
         errors = (msg.err_bl, msg.err_br, msg.err_fl, msg.err_fr)
         if self.dxl_bus.update(dxl_bus_silent(errors), now) != was_up:
             if self.dxl_bus.active:
                 self.get_logger().error(
                     "Dynamixel bus silent: the OpenCR cannot read the wheels. "
-                    "LEDs blink yellow. Check DXL power and cabling."
+                    "Check DXL power and cabling."
                 )
             else:
                 self.get_logger().info("Dynamixel bus answering again.")
 
     def batterystate_callback(self, msg, battery):
         voltage = msg.voltage
+        self.voltages[battery] = voltage
         if voltage < self.battery_threshold:
             self.get_logger().warn(
                 f"{battery} battery low: {voltage:.2f} V", throttle_duration_sec=5.0

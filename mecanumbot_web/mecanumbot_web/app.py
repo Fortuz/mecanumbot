@@ -1,5 +1,5 @@
 """
-The robot-hosted web GUI: three pages, no database, no login.
+The robot-hosted web GUI: four pages, no database, no login.
 
 Flask only.  Runs on the robot itself, served from a daemon thread beside
 the rclpy executor (see :mod:`mecanumbot_web.web_node`).
@@ -12,12 +12,13 @@ only to arbitrate between those two copies.  With the GUI on the robot
 there is one copy -- the YAML files in the packages themselves -- so the
 distinction has nothing left to describe.
 
-Three pages:
+Four pages:
 
 ``/joystick``     edit and reload the joystick profile
 ``/diagnostics``  measured publish rate of every important topic, and the
                   navigation stack, with a restart
 ``/behaviour``    choose a behaviour tree, edit its constants, run it
+``/maps``         choose the map folder nav2 loads, and load it
 
 There is deliberately no user model.  The old "login" was a
 process-global name rather than a session -- two browsers already shared
@@ -34,7 +35,7 @@ from typing import Dict, List, Optional
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from . import (behaviour_catalog, behaviour_runner, behaviour_store,
-               flat_store, joystick_store, nav_stack, yaml_io)
+               flat_store, joystick_store, map_store, nav_stack, yaml_io)
 
 #: Wi-Fi SSID to behaviour constants file, for the leading behaviour.
 #: Held in the catalog, which mirrors what each behaviour's own launch
@@ -87,10 +88,14 @@ class WebApp:
         runner=None,
         backup_root: str = yaml_io.DEFAULT_BACKUP_ROOT,
         nav=None,
+        maps_dir: str = "",
+        map_selection_file: str = map_store.SELECTION_FILE,
     ):
         """Build the app. ``node`` may be None, in which case ROS routes 503."""
         self._node = node
         self._joystick_dir = joystick_dir
+        self._maps_dir = maps_dir
+        self._map_selection_file = map_selection_file
         # One config directory per behaviour. ``behaviour_dir`` names the
         # leading behaviour's, which is the one the un-scoped config
         # routes address and the only one that existed before the page
@@ -227,6 +232,32 @@ class WebApp:
         status["graph_nodes"] = graph
         return status
 
+    def _map_status(self) -> dict:
+        """Describe the map folders, the choice, and what a launch would load."""
+        ssid = current_ssid()
+        selected = map_store.read_selection(self._map_selection_file)
+        effective, _source, note = map_store.resolve(
+            ssid, self._maps_dir, self._map_selection_file)
+        warning = ""
+        if map_store.constants_follow_wifi(ssid, effective):
+            warning = (
+                "The behaviour constants still follow the Wi-Fi: {} selects {}, "
+                "whose routes and positions are coordinates on {}, not on {}. "
+                "Check the constants before running a tree on this map.".format(
+                    ssid or "this network", behaviour_file_for_ssid(ssid),
+                    map_store.ssid_map(ssid), effective))
+        return {
+            "ssid": ssid,
+            "ssid_map": map_store.ssid_map(ssid),
+            "selected": selected,
+            "effective": effective,
+            "selection_problem": note,
+            "constants_warning": warning,
+            "loaded": self._node.loaded_map() if self._node else None,
+            "maps_dir": self._maps_dir,
+            "maps": map_store.list_maps(self._maps_dir),
+        }
+
     # ── routes ───────────────────────────────────────────────────────────
 
     def _register_routes(self) -> None:
@@ -274,6 +305,20 @@ class WebApp:
                 led_scripts=list(behaviour_store.LED_SCRIPTS),
                 gesture_scripts=list(behaviour_store.GESTURE_SCRIPTS),
                 config_dir=self._behaviour_dir)
+
+        @app.route("/maps")
+        def maps_page():
+            """Render the map chooser."""
+            return render_template("maps.html", page="maps")
+
+        # ── alerts API ───────────────────────────────────────────────────
+
+        @app.route("/api/alerts")
+        def api_alerts():
+            """Return the hardware faults every page shows under its tabs."""
+            if self._node is None:
+                return jsonify({"ok": True, "monitored": False, "alerts": []})
+            return jsonify({"ok": True, **self._node.hardware_alerts()})
 
         # ── joystick API ─────────────────────────────────────────────────
 
@@ -426,6 +471,59 @@ class WebApp:
             try:
                 status = self.nav_stack.restart()
             except behaviour_runner.RunnerError as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "restart": self.nav_stack.status()}), 409
+            return jsonify({"ok": True, "restart": status})
+
+        # ── maps API ─────────────────────────────────────────────────────
+
+        @app.route("/api/maps")
+        def api_maps():
+            """Return the map folders, the choice, and what nav2 has loaded."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                after = int(request.args.get("after", 0))
+            except (TypeError, ValueError):
+                after = 0
+            return jsonify({
+                "ok": True,
+                **self._map_status(),
+                "stack": node.nav_stack_state(),
+                "restart": self.nav_stack.status(),
+                "log": self.nav_stack.runner.log(after),
+            })
+
+        @app.route("/api/maps/select", methods=["POST"])
+        def api_maps_select():
+            """Choose a map folder, or null for the Wi-Fi, and load it now."""
+            _node, error = self._require_node()
+            if error:
+                return error
+            payload = request.get_json(silent=True) or {}
+            if "map" not in payload:
+                return jsonify({"ok": False, "error": "No map supplied"}), 400
+
+            # Saved before the restart, which launches on its own thread and
+            # reads this file; undone if the restart refuses, so a refusal
+            # leaves nothing waiting to take effect at the next boot.
+            previous = map_store.read_selection(self._map_selection_file)
+            try:
+                map_store.select(self._maps_dir, payload["map"],
+                                 self._map_selection_file)
+            except map_store.MapStoreError as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 400
+            except OSError as exc:
+                return jsonify({
+                    "ok": False,
+                    "error": "Could not save the choice: {}".format(exc),
+                }), 500
+
+            try:
+                status = self.nav_stack.restart()
+            except behaviour_runner.RunnerError as exc:
+                map_store.write_selection(previous, self._map_selection_file)
                 return jsonify({"ok": False, "error": str(exc),
                                 "restart": self.nav_stack.status()}), 409
             return jsonify({"ok": True, "restart": status})

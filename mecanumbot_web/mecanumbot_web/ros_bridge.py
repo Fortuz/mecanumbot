@@ -35,11 +35,12 @@ from functools import partial
 from typing import Dict, List, Optional
 
 import rclpy
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Twist
 from mecanumbot_msgs.srv import GetLedStatus
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
-from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.srv import GetParameters, SetParameters
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -49,7 +50,7 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 
-from . import led_enums, motion, nav_stack
+from . import led_enums, map_store, motion, nav_stack
 from .rate_monitor import RateMonitor, TopicSpec
 
 #: How often the graph is rescanned for topics that have appeared.
@@ -81,6 +82,10 @@ ODOM_STALE_AFTER = 2.0
 
 #: Minimum gap between odometry deserialisations.  See _on_odom.
 ODOM_DECIMATE = 0.2
+
+#: Seconds without ``hardware_alerts`` after which nothing is watching the
+#: hardware.  It is published every second, empty when all is well.
+ALERTS_STALE_AFTER = 5.0
 
 
 def _monitor_qos() -> QoSProfile:
@@ -154,6 +159,10 @@ class WebNode(Node):
         self._measured: Optional[tuple] = None
         self._odom_decoded_at = 0.0
 
+        self._alerts_lock = threading.Lock()
+        self._alerts: List[dict] = []
+        self._alerts_stamp: Optional[float] = None
+
         group = ReentrantCallbackGroup()
         self._group = group
         # Created on first sight of each manager, which may be in any
@@ -192,6 +201,10 @@ class WebNode(Node):
             self.create_subscription(
                 Odometry, self._odom_topic, self._on_odom, _monitor_qos(),
                 raw=True, callback_group=group)
+
+        self.create_subscription(
+            DiagnosticArray, "hardware_alerts", self._on_hardware_alerts,
+            _monitor_qos(), callback_group=group)
 
         self.create_timer(DISCOVERY_PERIOD, self._discover, callback_group=group)
         self._discover()
@@ -398,6 +411,32 @@ class WebNode(Node):
                           if nav_stack.bare(name) in nav_stack.STACK_NODES]
         return state
 
+    def loaded_map(self) -> Optional[str]:
+        """
+        Return the map folder the running map server was given, or None.
+
+        Asked of the server rather than remembered from the page: the stack
+        the base launch started, or one started from a terminal, is on
+        whatever it chose then, whatever the page has been told since.
+        """
+        for qualified in self.node_names():
+            if nav_stack.bare(qualified) != "map_server":
+                continue
+            with self._manager_lock:
+                client = self._manager_clients.get(qualified)
+                if client is None:
+                    client = self.create_client(
+                        GetParameters, "{}/get_parameters".format(qualified),
+                        callback_group=self._group)
+                    self._manager_clients[qualified] = client
+            request = GetParameters.Request()
+            request.names = ["yaml_filename"]
+            result = self._call(client, request, timeout=MANAGER_TIMEOUT)
+            if result is None or not result.values:
+                return None
+            return map_store.name_from_yaml_path(result.values[0].string_value)
+        return None
+
     # ── LED state ────────────────────────────────────────────────────────
 
     def _poll_led(self) -> None:
@@ -477,6 +516,33 @@ class WebNode(Node):
                 "stale": age > LED_STALE_AFTER,
             })
         return state
+
+    # ── hardware alerts ──────────────────────────────────────────────────
+
+    def _on_hardware_alerts(self, message: DiagnosticArray) -> None:
+        """Cache the faults that are up, as the monitoring node judged them."""
+        alerts = [{
+            "severity": "error" if status.level == DiagnosticStatus.ERROR else "warn",
+            "key": status.name,
+            "message": status.message,
+        } for status in message.status]
+        with self._alerts_lock:
+            self._alerts = alerts
+            self._alerts_stamp = time.monotonic()
+
+    def hardware_alerts(self) -> dict:
+        """
+        Return the faults that are up, and whether anything is watching for them.
+
+        ``monitored`` false means the list says nothing: no alerts is only
+        good news while the monitoring node is there to report them.
+        """
+        with self._alerts_lock:
+            stamp = self._alerts_stamp
+            alerts = list(self._alerts)
+        if stamp is None or time.monotonic() - stamp > ALERTS_STALE_AFTER:
+            return {"monitored": False, "alerts": []}
+        return {"monitored": True, "alerts": alerts}
 
     # ── movement state ───────────────────────────────────────────────────
 

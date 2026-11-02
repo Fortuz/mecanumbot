@@ -97,6 +97,8 @@ class _ParamReader(Node):
         self.declare_parameter(
             "diagnostics_config",
             _share("mecanumbot_web", "config", "diagnostics_topics.yaml"))
+        self.declare_parameter(
+            "maps_dir", _share("mecanumbot_description", "maps"))
         self.declare_parameter("joy_node", "/mecanumbot/mecanumbot_joy_node")
         self.declare_parameter("joy_topic", "/mecanumbot/joy")
         self.declare_parameter("backup_root", DEFAULT_BACKUP_ROOT)
@@ -117,7 +119,7 @@ class _ParamReader(Node):
                 "host", "port", "joystick_config_dir", "behaviour_config_dir",
                 "ostensive_config_dir", "demo_config_dir", "seek_config_dir",
                 "fetch_config_dir", "autoslam_config_dir",
-                "diagnostics_config", "joy_node", "joy_topic", "backup_root",
+                "diagnostics_config", "maps_dir", "joy_node", "joy_topic", "backup_root",
                 "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
             )
         }
@@ -169,6 +171,7 @@ def main(args=None):
             behaviour_dir=settings["behaviour_config_dir"],
             behaviour_dirs=behaviour_dirs,
             backup_root=settings["backup_root"],
+            maps_dir=settings["maps_dir"],
         )
 
         threading.Thread(

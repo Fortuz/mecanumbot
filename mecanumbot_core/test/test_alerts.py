@@ -2,8 +2,10 @@
 
 from mecanumbot_core.alerts import (
     BATTERY_LOW,
-    DXL_BUS_SILENT,
+    ERROR,
+    WARN,
     Debounce,
+    active_alerts,
     choose_alarm,
     dxl_bus_silent,
 )
@@ -65,12 +67,40 @@ class TestDebounce:
 
 class TestChoice:
     def test_nothing_up_shows_nothing(self):
-        assert choose_alarm(False, False) is None
+        assert choose_alarm(False) is None
 
-    def test_each_alarm_has_its_own_look(self):
-        assert choose_alarm(True, False) == BATTERY_LOW
-        assert choose_alarm(False, True) == DXL_BUS_SILENT
-        assert BATTERY_LOW != DXL_BUS_SILENT
+    def test_a_low_battery_blinks_red(self):
+        assert choose_alarm(True) == BATTERY_LOW
 
-    def test_the_battery_wins(self):
-        assert choose_alarm(True, True) == BATTERY_LOW
+
+class TestAlertLines:
+    def test_a_healthy_robot_has_none(self):
+        assert active_alerts(False, None, {}) == []
+
+    def test_silent_motors_are_a_warning(self):
+        (severity, key, message), = active_alerts(True, None, {})
+        assert (severity, key) == (WARN, "motors_silent")
+        assert "Motors not responding" in message
+
+    def test_a_silent_opencr_is_an_error_that_says_for_how_long(self):
+        (severity, key, message), = active_alerts(False, 12.4, {})
+        assert (severity, key) == (ERROR, "opencr_silent")
+        assert "12 s" in message
+
+    def test_a_silent_opencr_hides_its_last_word_about_the_bus(self):
+        keys = [alert[1] for alert in active_alerts(True, 5.0, {})]
+        assert keys == ["opencr_silent"]
+
+    def test_each_low_battery_gets_a_line(self):
+        alerts = active_alerts(False, None, {"opencr": 9.41, "orin": 9.2})
+        assert [alert[1] for alert in alerts] == ["battery_opencr", "battery_orin"]
+        assert all(alert[0] == ERROR for alert in alerts)
+        assert "9.4 V" in alerts[0][2]
+
+    def test_an_opencr_on_usb_alone_is_not_called_a_low_battery(self):
+        (_severity, _key, message), = active_alerts(False, None, {"opencr": 0.2})
+        assert message.startswith("No main power")
+
+    def test_errors_come_before_warnings(self):
+        alerts = active_alerts(True, None, {"opencr": 9.0})
+        assert [alert[0] for alert in alerts] == [ERROR, WARN]

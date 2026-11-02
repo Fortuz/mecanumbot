@@ -48,8 +48,9 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from . import behaviour_runner
 
-#: How the stack is started. The launch file re-reads the SSID, so a restart
-#: after moving rooms picks up the other room's map.
+#: How the stack is started. The launch file re-reads the maps page's choice
+#: and the SSID, so a restart loads the chosen map, or with none chosen, the
+#: map of whichever room the robot has moved to.
 COMMAND = ("ros2", "launch", "mecanumbot_bringup", "nav2.launch.py")
 
 LOCALIZATION = ("lifecycle_manager_localization", "map_server", "amcl")
