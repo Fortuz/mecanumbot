@@ -103,6 +103,9 @@ class Mecanumbot_Sensorproc_Node(Node):
                 ("use_state_stamp_for_dt", False),
                 ("require_state_stamp", False),
                 ("has_object_threshold", 250.0),
+                # below this [cm] the object is too close for the HC-SR04
+                # to range, so a held object reads as a tiny distance
+                ("has_object_min_threshold", 5.0),
             ],
         )
 
@@ -151,6 +154,9 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2
 
         self.has_object_threshold = self.get_parameter("has_object_threshold").value
+        self.has_object_min_threshold = self.get_parameter(
+            "has_object_min_threshold"
+        ).value
 
         # Initialize messages
 
@@ -162,7 +168,9 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.cr_battery_state = BatteryState()
         self.orin_battery_state = BatteryState()
 
-        self.dms_buffer = [0] * 11
+        # seeded with a reading that means "nothing held": a 0 would now
+        # count as an object and report one for the first few samples
+        self.dms_buffer = [self.has_object_min_threshold] * 11
         self.has_object = False
         # Publishers
 
@@ -522,7 +530,8 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.dms_buffer.pop(0)
         self.has_object = (
             sum(
-                dms > self.has_object_threshold or dms == -1.0
+                dms > self.has_object_threshold
+                or dms < self.has_object_min_threshold
                 for dms in self.dms_buffer
             )
             > len(self.dms_buffer) / 2
