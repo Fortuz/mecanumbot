@@ -220,9 +220,15 @@ Three controls, each going to the interface the joystick node already uses:
 
 | Control | Goes to | How |
 | --- | --- | --- |
-| Drive pad, ⟲/⟳ hold buttons, optional `WASD`+`QE` keys | `cmd_vel_topic` (`/cmd_vel`), `Twist` | streamed under a dead-man lease |
+| Three signed scales (`vx`, `vy`, `wz`), *Hold to drive* button or held `Space` | `cmd_vel_topic` (`/cmd_vel`), `Twist` | streamed under a dead-man lease while held |
 | Neck, left and right grabber sliders; Open / Front / Close | `accessory_topic` (`/cmd_accessory_pos`), `AccessMotorCmd` | one message per change |
-| LED corners, colour palette, mode | `led_set_service` (`set_led_status`), `SetLedStatus` | one blocking call per change |
+| A colour and a mode per corner, *Apply* | `led_set_service` (`set_led_status`), `SetLedStatus` | one blocking call per *Apply* |
+
+**The scales set the command; the hold button sends it.** Each scale runs
+from minus to plus its limit with zero in the middle (double-click one to zero
+it, *Zero all* for all three), and a number box beside it takes an exact value.
+Nothing moves until *Hold to drive* (or `Space`) is held, and the scales can be
+moved while it is.
 
 **Velocity is a lease** (`teleop.py`). While a control is held the page re-sends
 the command every 100 ms. Each send renews a 0.4 s lease, and the node publishes
@@ -235,16 +241,19 @@ Wi-Fi all end up at the same stop. The commands bypass Nav2 and its costmap.
 
 **The limits are `mecanumbot_joy`'s**, imported from `mecanumbot_joy.profile`
 (`DEFAULT_LIMITS`, `DEFAULT_NECK`, `DEFAULT_GRIPPER`). The page clamps per axis
-to `max_lin_vel` / `max_ang_vel`, scaled by its speed slider, and clamps the
+to `max_lin_vel` / `max_ang_vel` (the scales' ends), and clamps the
 accessories to the neck and gripper ranges. Open / Close are the joystick's
 `gripper_open` / `gripper_close` positions. The mirror checkbox moves the two
 grabbers in equal and opposite steps about `front`. The sliders start at the
 profile defaults, not at the servos' real positions, so nothing is sent until
 one of them moves. After that, all three positions go out together.
 
-**The LED call always sets all four corners** (that is the shape of
-`SetLedStatus`). The corners you leave unselected are re-sent as the page shows
-them, seeded from the last `get_led_status` reading. `progress` is sent as 0.
+**LED changes are staged until *Apply*.** Each corner has its own colour and
+mode; *Fill* copies one pair into all four. Corners that differ from what was
+last applied are outlined, and *Revert* undoes them. The staged corners start
+from the last `get_led_status` reading, so a corner you did not change is sent
+as it already is: the service always carries all four corners. Under each
+corner is the controller's own reading. `progress` is sent as 0.
 A successful set triggers an immediate re-poll, so the diagnostics panel
 catches up straight away.
 

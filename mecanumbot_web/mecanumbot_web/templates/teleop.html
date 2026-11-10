@@ -10,48 +10,29 @@
 .teleop-grid .card { margin-bottom: 0; }
 .card > h3 { display: flex; align-items: baseline; gap: 10px; }
 .card > h3 .spacer { flex: 1; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
 
 /* ── Drive ────────────────────────────────────────────────────────── */
-.drive-body { display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
-              justify-content: center; }
-.pad {
-  width: 200px; height: 200px; border-radius: 50%; flex: none;
-  background: radial-gradient(circle, var(--panel2) 0 60%, var(--panel) 100%);
-  border: 1px solid var(--line); position: relative;
-  touch-action: none; user-select: none; cursor: grab;
+/* One signed scale per axis. The track is centred on zero, so the
+   negative half is the left of the slider and positive the right. */
+.axis { margin-bottom: 14px; }
+.axis-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.axis-head .name { font-weight: 600; }
+.axis-head input[type=number] { width: 86px; margin-left: auto; }
+.axis-ends { display: flex; justify-content: space-between; font-size: 11px;
+             color: var(--dim); }
+.axis-ends .zero { color: var(--text); }
+.drive-buttons { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;
+                 margin: 6px 0 10px; }
+.drive-buttons button { padding: 12px 6px; }
+button.hold {
+  font-weight: 700; letter-spacing: .3px; touch-action: none; user-select: none;
+  border-color: var(--accent2); color: var(--accent2);
 }
-.pad.held { border-color: var(--accent2); cursor: grabbing; }
-.pad::before, .pad::after {
-  content: ""; position: absolute; background: var(--line);
-}
-.pad::before { left: 50%; top: 10px; bottom: 10px; width: 1px; }
-.pad::after  { top: 50%; left: 10px; right: 10px; height: 1px; }
-.pad .knob {
-  position: absolute; width: 46px; height: 46px; border-radius: 50%;
-  left: calc(50% - 23px); top: calc(50% - 23px); z-index: 1;
-  background: var(--accent2); box-shadow: 0 0 14px -2px var(--accent2);
-  pointer-events: none;
-}
-.pad .front {
-  position: absolute; top: -20px; left: 0; right: 0; text-align: center;
-  font-size: 11px; letter-spacing: .5px; text-transform: uppercase;
-  color: var(--dim);
-}
-.drive-side { display: flex; flex-direction: column; gap: 10px; min-width: 150px; }
-.turn-row { display: flex; gap: 8px; }
-.turn-row button { flex: 1; padding: 12px 6px; font-size: 18px;
-                   touch-action: none; user-select: none; }
-.turn-row button.held { border-color: var(--accent2); background: var(--panel); }
+button.hold.held { background: var(--accent2); color: var(--accent2-ink); }
 button.stop {
-  padding: 12px; font-weight: 700; letter-spacing: .5px;
+  font-weight: 700; letter-spacing: .5px;
   background: var(--bad); border-color: var(--bad); color: #fff;
-}
-.cmd-readout td { padding: 3px 6px; border-bottom: none; }
-input[type=range] { width: 100%; accent-color: var(--accent); }
-kbd {
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px;
-  padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px;
-  background: var(--panel2);
 }
 
 /* ── Accessories ──────────────────────────────────────────────────── */
@@ -65,24 +46,21 @@ kbd {
   text-transform: uppercase; color: var(--dim); margin-bottom: 6px;
 }
 .corner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-               max-width: 300px; margin: 0 auto 14px; }
+               margin-bottom: 12px; }
 .corner {
-  display: flex; align-items: center; gap: 10px; padding: 8px;
-  border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);
-  cursor: pointer; text-align: left; color: var(--text);
+  padding: 8px; border-radius: 8px; background: var(--panel2);
+  border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px;
 }
-.corner.fr, .corner.br { flex-direction: row-reverse; text-align: right; }
-.corner[aria-pressed="true"] { border-color: var(--accent);
-                               box-shadow: 0 0 0 1px var(--accent) inset; }
-.dot { width: 24px; height: 24px; border-radius: 50%; flex: none;
+.corner.changed { border-color: var(--accent2);
+                  box-shadow: 0 0 0 1px var(--accent2) inset; }
+.corner .title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.corner select { width: 100%; padding: 4px 6px; }
+.corner .robot { font-size: 11.5px; color: var(--dim); }
+.dot { width: 20px; height: 20px; border-radius: 50%; flex: none;
        border: 1px solid var(--line); background: var(--led, transparent);
        box-shadow: 0 0 10px -2px var(--led, transparent); }
-.palette { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.palette button {
-  width: 38px; height: 38px; border-radius: 50%; padding: 0;
-  background: var(--led); border: 2px solid var(--line);
-}
-.palette button:hover:not(:disabled) { border-color: var(--text); }
+.all-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 6px;
+           align-items: center; margin-bottom: 10px; }
 </style>
 {% endblock %}
 
@@ -90,9 +68,9 @@ kbd {
 <h1>Teleop</h1>
 <p class="sub">
   Drive the robot, move the neck and grabbers, and set the LEDs from the browser.
-  Driving is dead-man: a command lasts {{ '%.1f'|format(limits.lease_seconds) }}&nbsp;s
-  unless the page renews it, so letting go, switching tab or losing Wi-Fi
-  stops the wheels.
+  Driving is dead-man: the robot only moves while <em>Hold to drive</em> is held,
+  and a command lasts {{ '%.1f'|format(limits.lease_seconds) }}&nbsp;s unless the
+  page renews it, so letting go, switching tab or losing Wi-Fi stops the wheels.
 </p>
 
 <div id="notice"></div>
@@ -102,38 +80,44 @@ kbd {
     <h3>Drive <span class="spacer"></span>
       <span id="lease-pill" class="pill IDLE">idle</span></h3>
     <div id="drive-notice"></div>
-    <div class="drive-body">
-      <div class="pad" id="pad" aria-label="Drag to translate; robot faces up">
-        <div class="front">front</div>
-        <div class="knob" id="knob"></div>
+
+    <div class="axis">
+      <div class="axis-head">
+        <span class="name">vx</span><span class="small dim">forward / backward, m/s</span>
+        <input type="number" id="vx-num" step="0.01">
       </div>
-      <div class="drive-side">
-        <div class="turn-row">
-          <button id="turn-left" title="Rotate left (Q)">⟲</button>
-          <button id="turn-right" title="Rotate right (E)">⟳</button>
-        </div>
-        <button class="stop" onclick="stopDriving()">STOP</button>
-        <table class="cmd-readout small mono">
-          <tr><td class="dim">vx</td><td class="num" id="out-vx">0.000</td><td class="dim">m/s</td></tr>
-          <tr><td class="dim">vy</td><td class="num" id="out-vy">0.000</td><td class="dim">m/s</td></tr>
-          <tr><td class="dim">wz</td><td class="num" id="out-wz">0.000</td><td class="dim">rad/s</td></tr>
-        </table>
+      <input type="range" id="vx" step="any">
+      <div class="axis-ends"><span>backward</span><span class="zero">0</span><span>forward</span></div>
+    </div>
+    <div class="axis">
+      <div class="axis-head">
+        <span class="name">vy</span><span class="small dim">strafe, + is left, m/s</span>
+        <input type="number" id="vy-num" step="0.01">
       </div>
+      <input type="range" id="vy" step="any">
+      <div class="axis-ends"><span>right</span><span class="zero">0</span><span>left</span></div>
     </div>
-    <div class="slider-row" style="margin-top:16px">
-      <label for="speed">Speed</label>
-      <input type="range" id="speed" min="10" max="100" step="5" value="50">
-      <span class="val mono" id="speed-val">50%</span>
+    <div class="axis">
+      <div class="axis-head">
+        <span class="name">wz</span><span class="small dim">rotate, + is left (CCW), rad/s</span>
+        <input type="number" id="wz-num" step="0.05">
+      </div>
+      <input type="range" id="wz" step="any">
+      <div class="axis-ends"><span>right (CW)</span><span class="zero">0</span><span>left (CCW)</span></div>
     </div>
-    <label class="small"><input type="checkbox" id="keys-on"> Keyboard driving:
-      <kbd>W</kbd><kbd>S</kbd> forward/back, <kbd>A</kbd><kbd>D</kbd> strafe,
-      <kbd>Q</kbd><kbd>E</kbd> rotate, <kbd>Space</kbd> stop</label>
+
+    <div class="drive-buttons">
+      <button class="hold" id="hold">Hold to drive</button>
+      <button onclick="zeroAxes()">Zero all</button>
+      <button class="stop" onclick="stopDriving()">STOP</button>
+    </div>
     <p class="small dim" style="margin-bottom:0">
-      Full speed is the joystick's limit:
-      {{ '%.3f'|format(limits.max_lin_vel) }}&nbsp;m/s,
-      {{ '%.3f'|format(limits.max_ang_vel) }}&nbsp;rad/s.
-      Commands go to <code id="topic-vel">/cmd_vel</code> directly, bypassing Nav2
-      and its costmap: nothing here avoids obstacles.
+      Set the three speeds, then press and hold <em>Hold to drive</em> (or hold
+      <kbd>Space</kbd>). The scales can be moved while driving. Limits are the
+      joystick's: ±{{ '%.3f'|format(limits.max_lin_vel) }}&nbsp;m/s,
+      ±{{ '%.3f'|format(limits.max_ang_vel) }}&nbsp;rad/s. Commands go to
+      <code id="topic-vel">/cmd_vel</code> directly, bypassing Nav2 and its
+      costmap: nothing here avoids obstacles.
     </p>
   </div>
 
@@ -175,38 +159,34 @@ kbd {
     </p>
   </div>
 
+
   <div class="card">
     <h3>LEDs <span class="spacer"></span>
-      <span id="led-sent" class="small dim"></span></h3>
+      <span id="led-read" class="small dim"></span></h3>
     <div id="led-notice"></div>
     <div class="led-front">front</div>
     <div class="corner-grid" id="corners"></div>
-    <div class="row small dim" style="margin-bottom:8px">
-      <span class="grow">Click corners to choose which a colour applies to.</span>
-      <button onclick="selectCorners(true)">All</button>
-      <button onclick="selectCorners(false)">None</button>
-    </div>
-    <div class="palette" id="palette">
-      {% for color in colors %}
-      <button style="--led: {{ color.hex }}" title="{{ color.name }}"
-              aria-label="{{ color.name }}" data-color="{{ color.value }}"></button>
-      {% endfor %}
+    <div class="all-row small">
+      <span class="dim">All corners:</span>
+      <select id="all-color">
+        {% for color in colors %}<option value="{{ color.value }}">{{ color.name }}</option>{% endfor %}
+      </select>
+      <select id="all-mode">
+        {% for mode in modes %}<option value="{{ mode.value }}" {{ 'selected' if mode.value == 4 }}>{{ mode.name }}</option>{% endfor %}
+      </select>
+      <button onclick="fillAll()">Fill</button>
     </div>
     <div class="row">
-      <label for="led-mode">Mode</label>
-      <select id="led-mode">
-        {% for mode in modes %}
-        <option value="{{ mode.value }}" {{ 'selected' if mode.value == 4 }}>{{ mode.name }}</option>
-        {% endfor %}
-      </select>
-      <span class="grow"></span>
-      <button onclick="ledsOff()">All off</button>
+      <button class="primary" id="led-apply" onclick="applyLeds()">Apply</button>
+      <button id="led-revert" onclick="revertLeds()">Revert</button>
+      <span id="led-pending" class="small dim grow"></span>
     </div>
     <p class="small dim" style="margin-bottom:0">
-      <code>set_led_status</code> always sets all four corners, so the corners
-      you did not select are re-sent as shown here, seeded from the controller's
-      last reading. A running behaviour tree drives the LEDs too and will
-      overwrite this.
+      Nothing is sent until <em>Apply</em>. Changed corners are outlined.
+      <code>set_led_status</code> always carries all four corners, so a corner
+      you did not change is sent as it is now, so it stays as it is. Under each
+      corner is what the controller last reported. A running behaviour tree
+      drives the LEDs too and will overwrite this.
     </p>
   </div>
 </div>
@@ -223,51 +203,55 @@ const CORNER_LABELS = {fl: 'front left', fr: 'front right',
 const RENEW_MS = 100;
 
 // ── Drive ─────────────────────────────────────────────────────────────
-// Each input contributes to one shared command; the loop below sends it
-// while anything is held, and one stop goes out when the last input lets go.
-const input = {pad: [0, 0], turn: 0, keys: {}};
+// Three signed scales set the command; only the hold button (or Space)
+// sends it, renewing the lease while held.
+const AXES = {vx: LIMITS.max_lin_vel, vy: LIMITS.max_lin_vel, wz: LIMITS.max_ang_vel};
 let driving = false;
 let renewTimer = null;
 let inFlight = false;
 
-function speedScale() {
-  return Number(document.getElementById('speed').value) / 100;
+function clampAxis(axis, value) {
+  const limit = AXES[axis];
+  value = Number(value);
+  if (!isFinite(value)) value = 0;
+  return Math.max(-limit, Math.min(limit, value));
+}
+
+function setAxis(axis, value) {
+  value = clampAxis(axis, value);
+  document.getElementById(axis).value = value;
+  document.getElementById(axis + '-num').value = value.toFixed(3);
+}
+
+Object.keys(AXES).forEach(function (axis) {
+  const range = document.getElementById(axis);
+  const number = document.getElementById(axis + '-num');
+  range.min = -AXES[axis]; range.max = AXES[axis];
+  number.min = -AXES[axis]; number.max = AXES[axis];
+  range.addEventListener('input', function () { setAxis(axis, range.value); });
+  number.addEventListener('change', function () { setAxis(axis, number.value); });
+  // Double-click a scale to put that axis back to zero.
+  range.addEventListener('dblclick', function () { setAxis(axis, 0); });
+  setAxis(axis, 0);
+});
+
+function zeroAxes() {
+  Object.keys(AXES).forEach(function (axis) { setAxis(axis, 0); });
 }
 
 function currentCommand() {
-  const scale = speedScale();
-  let vx = input.pad[0], vy = input.pad[1], wz = input.turn;
-  const k = input.keys;
-  if (k.w) vx += 1; if (k.s) vx -= 1;
-  if (k.a) vy += 1; if (k.d) vy -= 1;
-  if (k.q) wz += 1; if (k.e) wz -= 1;
-  const clip = function (v) { return Math.max(-1, Math.min(1, v)); };
-  return {vx: clip(vx) * scale * LIMITS.max_lin_vel,
-          vy: clip(vy) * scale * LIMITS.max_lin_vel,
-          wz: clip(wz) * scale * LIMITS.max_ang_vel};
-}
-
-function anyInput() {
-  const k = input.keys;
-  return input.pad[0] !== 0 || input.pad[1] !== 0 || input.turn !== 0 ||
-         k.w || k.s || k.a || k.d || k.q || k.e;
-}
-
-function showCommand(cmd) {
-  document.getElementById('out-vx').textContent = cmd.vx.toFixed(3);
-  document.getElementById('out-vy').textContent = cmd.vy.toFixed(3);
-  document.getElementById('out-wz').textContent = cmd.wz.toFixed(3);
+  return {vx: clampAxis('vx', document.getElementById('vx').value),
+          vy: clampAxis('vy', document.getElementById('vy').value),
+          wz: clampAxis('wz', document.getElementById('wz').value)};
 }
 
 async function sendDrive() {
-  const cmd = currentCommand();
-  showCommand(cmd);
   // Never queue: a request still in flight means the link is slow, and a
   // backlog would replay old commands after the operator let go.
-  if (inFlight) return;
+  if (inFlight || !driving) return;
   inFlight = true;
   try {
-    const result = await post('/api/teleop/velocity', cmd);
+    const result = await post('/api/teleop/velocity', currentCommand());
     if (!result.ok) {
       banner('drive-notice', 'err', result.body.error || 'The robot refused the command.');
     } else {
@@ -280,28 +264,44 @@ async function sendDrive() {
   }
 }
 
-function inputChanged() {
-  if (anyInput()) {
-    if (!driving) {
-      driving = true;
-      sendDrive();
-      renewTimer = setInterval(sendDrive, RENEW_MS);
-    }
-  } else if (driving) {
-    stopDriving();
-  }
+function startDriving() {
+  if (driving) return;
+  driving = true;
+  document.getElementById('hold').classList.add('held');
+  sendDrive();
+  renewTimer = setInterval(sendDrive, RENEW_MS);
 }
 
 function stopDriving() {
   driving = false;
   if (renewTimer) clearInterval(renewTimer);
   renewTimer = null;
-  input.pad = [0, 0]; input.turn = 0; input.keys = {};
-  resetKnob();
-  document.querySelectorAll('.held').forEach(function (n) { n.classList.remove('held'); });
-  showCommand({vx: 0, vy: 0, wz: 0});
+  document.getElementById('hold').classList.remove('held');
   post('/api/teleop/stop').catch(function () {});
 }
+
+const hold = document.getElementById('hold');
+hold.addEventListener('pointerdown', function (event) {
+  hold.setPointerCapture(event.pointerId);
+  startDriving();
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
+  hold.addEventListener(name, function () { if (driving) stopDriving(); });
+});
+// A held button must not also fire a click on keyboard release.
+hold.addEventListener('keydown', function (event) {
+  if (event.key === ' ' || event.key === 'Enter') event.preventDefault();
+});
+
+document.addEventListener('keydown', function (event) {
+  if (event.key !== ' ' || event.repeat) return;
+  if (event.target.closest('input, select, textarea')) return;
+  event.preventDefault();
+  startDriving();
+});
+document.addEventListener('keyup', function (event) {
+  if (event.key === ' ' && driving) stopDriving();
+});
 
 // Leaving the page must stop the robot even if no further request gets out:
 // sendBeacon is the one request a closing tab still delivers.
@@ -309,6 +309,7 @@ function beaconStop() {
   if (!driving) return;
   driving = false;
   if (renewTimer) clearInterval(renewTimer);
+  document.getElementById('hold').classList.remove('held');
   try { navigator.sendBeacon('/api/teleop/stop'); } catch (e) { /* lease expires anyway */ }
 }
 document.addEventListener('visibilitychange', function () {
@@ -316,79 +317,6 @@ document.addEventListener('visibilitychange', function () {
 });
 window.addEventListener('pagehide', beaconStop);
 window.addEventListener('blur', function () { if (driving) stopDriving(); });
-
-// The pad: up is forward (+vx), left is +vy, REP-103.
-const pad = document.getElementById('pad');
-const knob = document.getElementById('knob');
-function resetKnob() { knob.style.transform = ''; pad.classList.remove('held'); }
-function padMove(event) {
-  const rect = pad.getBoundingClientRect();
-  const radius = rect.width / 2 - 23;
-  let dx = event.clientX - (rect.left + rect.width / 2);
-  let dy = event.clientY - (rect.top + rect.height / 2);
-  const length = Math.hypot(dx, dy);
-  if (length > radius) { dx *= radius / length; dy *= radius / length; }
-  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-  input.pad = [-dy / radius, -dx / radius];
-  inputChanged();
-}
-pad.addEventListener('pointerdown', function (event) {
-  pad.setPointerCapture(event.pointerId);
-  pad.classList.add('held');
-  padMove(event);
-});
-pad.addEventListener('pointermove', function (event) {
-  if (pad.hasPointerCapture(event.pointerId)) padMove(event);
-});
-['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
-  pad.addEventListener(name, function () {
-    resetKnob();
-    input.pad = [0, 0];
-    inputChanged();
-  });
-});
-
-function holdButton(id, value) {
-  const button = document.getElementById(id);
-  button.addEventListener('pointerdown', function (event) {
-    button.setPointerCapture(event.pointerId);
-    button.classList.add('held');
-    input.turn = value;
-    inputChanged();
-  });
-  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
-    button.addEventListener(name, function () {
-      button.classList.remove('held');
-      if (input.turn === value) input.turn = 0;
-      inputChanged();
-    });
-  });
-}
-holdButton('turn-left', 1);
-holdButton('turn-right', -1);
-
-const KEYS = ['w', 'a', 's', 'd', 'q', 'e'];
-document.addEventListener('keydown', function (event) {
-  if (!document.getElementById('keys-on').checked) return;
-  if (event.target.closest('input[type=text], input[type=number], select')) return;
-  const key = event.key.toLowerCase();
-  if (key === ' ') { event.preventDefault(); stopDriving(); return; }
-  if (KEYS.indexOf(key) < 0 || event.repeat) return;
-  event.preventDefault();
-  input.keys[key] = true;
-  inputChanged();
-});
-document.addEventListener('keyup', function (event) {
-  const key = event.key.toLowerCase();
-  if (KEYS.indexOf(key) < 0) return;
-  input.keys[key] = false;
-  inputChanged();
-});
-
-const speed = document.getElementById('speed');
-speed.addEventListener('input', function () {
-  document.getElementById('speed-val').textContent = speed.value + '%';
-});
 
 // ── Neck and grabbers ────────────────────────────────────────────────
 const sliders = {neck: document.getElementById('neck'),
@@ -458,10 +386,13 @@ function gripPreset(name) {
 }
 
 // ── LEDs ─────────────────────────────────────────────────────────────
-const ledModel = {};
-CORNERS.forEach(function (c) { ledModel[c] = {mode: 4, color: 0}; });
-const selected = {fl: true, fr: true, bl: true, br: true};
-let ledSeeded = false;
+// `staged` is what the page will send on Apply; `applied` is what it last
+// sent (or read back, before the first Apply). A corner is changed when
+// the two differ, and only Apply sends anything.
+const staged = {};
+let applied = null;
+let robot = null;
+let ledTouched = false;  // edited before the first reading arrived
 
 function colorHex(value) {
   const found = COLORS.find(function (c) { return c.value === value; });
@@ -475,85 +406,121 @@ function modeName(value) {
   const found = MODES.find(function (m) { return m.value === value; });
   return found ? found.name : 'mode ' + value;
 }
+function sameCorner(a, b) {
+  return !!a && !!b && a.mode === b.mode && a.color === b.color;
+}
+function changedCorners() {
+  return CORNERS.filter(function (c) { return !applied || !sameCorner(staged[c], applied[c]); });
+}
+
+function options(list, value) {
+  return list.map(function (item) {
+    const option = el('option', {value: item.value, text: item.name});
+    if (item.value === value) option.selected = true;
+    return option;
+  });
+}
 
 function renderCorners() {
   const host = document.getElementById('corners');
+  const changed = changedCorners();
   host.replaceChildren(...CORNERS.map(function (corner) {
-    const state = ledModel[corner];
+    const state = staged[corner];
     const dot = el('span', {class: 'dot'});
     const hex = colorHex(state.color);
     if (hex) dot.style.setProperty('--led', hex);
-    return el('button', {
-      class: 'corner ' + corner, 'aria-pressed': selected[corner] ? 'true' : 'false',
-      onclick: function () { selected[corner] = !selected[corner]; renderCorners(); }
-    }, [dot, el('span', {class: 'grow'}, [
-      el('div', {text: colorName(state.color) + ' · ' + modeName(state.mode)}),
-      el('div', {class: 'small dim', text: CORNER_LABELS[corner]})
-    ])]);
+
+    const color = el('select', {'aria-label': CORNER_LABELS[corner] + ' colour',
+      onchange: function () { ledTouched = true; staged[corner].color = Number(color.value); renderCorners(); }},
+      options(COLORS, state.color));
+    const mode = el('select', {'aria-label': CORNER_LABELS[corner] + ' mode',
+      onchange: function () { ledTouched = true; staged[corner].mode = Number(mode.value); renderCorners(); }},
+      options(MODES, state.mode));
+
+    const read = robot && robot[corner] && robot[corner].known
+      ? 'robot: ' + robot[corner].color_name + ' · ' + robot[corner].mode_name
+      : 'robot: unknown';
+    return el('div', {class: 'corner ' + corner +
+                      (changed.indexOf(corner) >= 0 ? ' changed' : '')}, [
+      el('div', {class: 'title'}, [dot, el('span', {text: CORNER_LABELS[corner]})]),
+      color, mode,
+      el('div', {class: 'robot', text: read})
+    ]);
   }));
+
+  document.getElementById('led-pending').textContent = changed.length
+    ? changed.length + ' corner' + (changed.length > 1 ? 's' : '') + ' not applied'
+    : 'nothing to apply';
+  document.getElementById('led-apply').disabled = !changed.length;
+  document.getElementById('led-revert').disabled = !changed.length || !applied;
 }
 
-function selectCorners(all) {
-  CORNERS.forEach(function (c) { selected[c] = all; });
+function fillAll() {
+  const color = Number(document.getElementById('all-color').value);
+  const mode = Number(document.getElementById('all-mode').value);
+  CORNERS.forEach(function (c) { staged[c] = {mode: mode, color: color}; });
+  ledTouched = true;
   renderCorners();
 }
 
-async function sendLeds() {
+function revertLeds() {
+  if (!applied) return;
+  CORNERS.forEach(function (c) { staged[c] = Object.assign({}, applied[c]); });
+  renderCorners();
+}
+
+async function applyLeds() {
   const body = {corners: {}};
-  CORNERS.forEach(function (c) { body.corners[c] = ledModel[c]; });
+  CORNERS.forEach(function (c) { body.corners[c] = Object.assign({}, staged[c]); });
+  document.getElementById('led-apply').disabled = true;
   const result = await post('/api/teleop/led', body)
     .catch(function () { return {ok: false, body: {message: 'Lost contact with the robot.'}}; });
   if (result.ok) {
-    banner('led-notice', 'ok', null, []);
-    document.getElementById('led-sent').textContent = 'set';
+    applied = body.corners;
+    banner('led-notice', 'ok', 'Applied.', []);
   } else {
     banner('led-notice', 'err', result.body.message || result.body.error ||
            'The LEDs could not be set.');
   }
-}
-
-function applyColor(color) {
-  const mode = Number(document.getElementById('led-mode').value);
-  const targets = CORNERS.filter(function (c) { return selected[c]; });
-  if (!targets.length) {
-    banner('led-notice', 'warn', 'Select at least one corner first.');
-    return;
-  }
-  targets.forEach(function (c) { ledModel[c] = {mode: mode, color: color}; });
-  ledSeeded = true;
   renderCorners();
-  sendLeds();
 }
 
-function ledsOff() {
-  CORNERS.forEach(function (c) { ledModel[c] = {mode: 4, color: 0}; });
-  ledSeeded = true;
-  renderCorners();
-  sendLeds();
-}
-
-document.querySelectorAll('#palette button').forEach(function (button) {
-  button.addEventListener('click', function () {
-    applyColor(Number(button.dataset.color));
+function currentRobot(corners) {
+  const out = {};
+  CORNERS.forEach(function (c) {
+    out[c] = corners[c] && corners[c].known
+      ? {mode: corners[c].mode, color: corners[c].color} : {mode: -1, color: -1};
   });
-});
+  return out;
+}
 
-// Seed the corners the operator does not touch from what the controller
-// last reported, so changing one corner does not blank the other three.
-async function seedLeds() {
+// The staged corners start from what the controller reports, so Apply
+// with nothing changed would leave the strips as they are.
+function startFrom(corners) {
+  CORNERS.forEach(function (c) {
+    staged[c] = corners && corners[c] && corners[c].known
+      ? {mode: corners[c].mode, color: corners[c].color}
+      : {mode: 4, color: 0};
+  });
+  applied = corners ? JSON.parse(JSON.stringify(staged)) : null;
+}
+
+async function refreshLeds() {
   try {
     const result = await api('/api/diagnostics');
-    const corners = result.body.led && result.body.led.corners;
-    if (corners && !ledSeeded) {
-      CORNERS.forEach(function (c) {
-        if (corners[c] && corners[c].known) {
-          ledModel[c] = {mode: corners[c].mode, color: corners[c].color};
-        }
-      });
-      ledSeeded = true;
-      renderCorners();
+    const led = result.body.led || {};
+    robot = led.corners || null;
+    if (!applied && robot) {
+      if (ledTouched) applied = JSON.parse(JSON.stringify(currentRobot(robot)));
+      else startFrom(robot);
     }
-  } catch (e) { /* stays on the default */ }
+    document.getElementById('led-read').textContent =
+      led.age_s !== null && led.age_s !== undefined
+        ? 'read ' + led.age_s.toFixed(1) + 's ago' + (led.stale ? ' · stale' : '')
+        : (led.error || '');
+    renderCorners();
+  } catch (e) { /* keep the last reading */ }
+  setTimeout(refreshLeds, 2000);
 }
 
 // ── Status ───────────────────────────────────────────────────────────
@@ -597,8 +564,9 @@ async function refresh() {
 }
 
 showSliders();
+startFrom(null);
 renderCorners();
-seedLeds();
+refreshLeds();
 refresh();
 </script>
 {% endblock %}
