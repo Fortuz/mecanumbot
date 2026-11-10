@@ -1,5 +1,5 @@
 """
-The robot-hosted web GUI: four pages, no database, no login.
+The robot-hosted web GUI: five pages, no database, no login.
 
 Flask only.  Runs on the robot itself, served from a daemon thread beside
 the rclpy executor (see :mod:`mecanumbot_web.web_node`).
@@ -12,11 +12,12 @@ only to arbitrate between those two copies.  With the GUI on the robot
 there is one copy -- the YAML files in the packages themselves -- so the
 distinction has nothing left to describe.
 
-Four pages:
+Five pages:
 
 ``/joystick``     edit and reload the joystick profile
 ``/diagnostics``  measured publish rate of every important topic, and the
                   navigation stack, with a restart
+``/teleop``       drive the robot, move the neck and grabbers, set the LEDs
 ``/behaviour``    choose a behaviour tree, edit its constants, run it
 ``/maps``         choose the map folder nav2 loads, and load it
 
@@ -35,7 +36,8 @@ from typing import Dict, List, Optional
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from . import (behaviour_catalog, behaviour_runner, behaviour_store,
-               flat_store, joystick_store, map_store, nav_stack, yaml_io)
+               flat_store, joystick_store, led_enums, map_store, nav_stack,
+               teleop, yaml_io)
 
 #: Wi-Fi SSID to behaviour constants file, for the leading behaviour.
 #: Held in the catalog, which mirrors what each behaviour's own launch
@@ -74,6 +76,18 @@ def current_ssid() -> Optional[str]:
 def behaviour_file_for_ssid(ssid: Optional[str]) -> str:
     """Return the leading-behaviour file the current SSID selects."""
     return behaviour_catalog.LEADING.file_for_ssid(ssid)
+
+
+def led_colors() -> List[dict]:
+    """Return the LED colour vocabulary, for the teleop page's swatches."""
+    return [{"value": value, "name": name, "hex": led_enums.COLOR_HEX.get(value)}
+            for value, name in sorted(led_enums.COLOR_NAMES.items())]
+
+
+def led_modes() -> List[dict]:
+    """Return the LED mode vocabulary, for the teleop page's selector."""
+    return [{"value": value, "name": name}
+            for value, name in sorted(led_enums.MODE_NAMES.items())]
 
 
 class WebApp:
@@ -287,6 +301,14 @@ class WebApp:
             return render_template(
                 "diagnostics.html", page="diagnostics", specs=specs)
 
+        @app.route("/teleop")
+        def teleop_page():
+            """Render the teleop surface."""
+            return render_template(
+                "teleop.html", page="teleop",
+                limits=teleop.default_limits(),
+                colors=led_colors(), modes=led_modes())
+
         @app.route("/behaviour")
         def behaviour_page():
             """Render the behaviour runner and constants editor."""
@@ -442,6 +464,64 @@ class WebApp:
                 return error
             node.reset_rates()
             return jsonify({"ok": True})
+
+        # ── teleop API ───────────────────────────────────────────────────
+
+        @app.route("/api/teleop")
+        def api_teleop():
+            """Return limits, the velocity lease, and any tree that would fight it."""
+            node, error = self._require_node()
+            if error:
+                return error
+            return jsonify({"ok": True, **node.teleop_state(),
+                            "behaviour": self._run_status()})
+
+        @app.route("/api/teleop/velocity", methods=["POST"])
+        def api_teleop_velocity():
+            """Renew the velocity lease. The page re-sends this while held."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                command = teleop.parse_velocity(request.get_json(silent=True) or {})
+                lease = node.teleop_drive(command)
+            except teleop.TeleopError as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 400
+            return jsonify({"ok": True, "lease": lease})
+
+        @app.route("/api/teleop/stop", methods=["POST"])
+        def api_teleop_stop():
+            """End the velocity lease now."""
+            node, error = self._require_node()
+            if error:
+                return error
+            return jsonify({"ok": True, "lease": node.teleop_stop()})
+
+        @app.route("/api/teleop/accessory", methods=["POST"])
+        def api_teleop_accessory():
+            """Send the neck and both grabbers to one position."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                positions = teleop.parse_accessory(request.get_json(silent=True) or {})
+                sent = node.teleop_accessory(positions)
+            except teleop.TeleopError as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 400
+            return jsonify({"ok": True, "sent": sent})
+
+        @app.route("/api/teleop/led", methods=["POST"])
+        def api_teleop_led():
+            """Set the four LED corners."""
+            node, error = self._require_node()
+            if error:
+                return error
+            try:
+                corners = teleop.parse_led(request.get_json(silent=True) or {})
+            except teleop.TeleopError as exc:
+                return jsonify({"ok": False, "error": str(exc)}), 400
+            ok, message = node.teleop_led(corners)
+            return jsonify({"ok": ok, "message": message}), (200 if ok else 502)
 
         # ── navigation stack API ─────────────────────────────────────────
 

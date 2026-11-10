@@ -110,6 +110,10 @@ class _ParamReader(Node):
         self.declare_parameter("led_poll_period", LED_POLL_PERIOD)
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("odom_topic", "odom")
+        # Teleop page outputs. Absolute, matching the base launch's remap
+        # of the joy node; empty disables that control.
+        self.declare_parameter("accessory_topic", "/cmd_accessory_pos")
+        self.declare_parameter("led_set_service", "set_led_status")
 
     def values(self) -> dict:
         """Return every parameter as a plain dict."""
@@ -121,6 +125,7 @@ class _ParamReader(Node):
                 "fetch_config_dir", "autoslam_config_dir",
                 "diagnostics_config", "maps_dir", "joy_node", "joy_topic", "backup_root",
                 "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
+                "accessory_topic", "led_set_service",
             )
         }
 
@@ -146,6 +151,8 @@ def main(args=None):
             led_poll_period=float(settings["led_poll_period"]),
             cmd_vel_topic=settings["cmd_vel_topic"],
             odom_topic=settings["odom_topic"],
+            accessory_topic=settings["accessory_topic"],
+            led_set_service=settings["led_set_service"],
         )
 
         # One entry per catalog key. A package missing from the checkout

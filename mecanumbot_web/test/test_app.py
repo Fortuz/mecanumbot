@@ -134,6 +134,33 @@ class StubNode:
         """Return a logger the way rclpy's Node does."""
         return self
 
+    def teleop_state(self):
+        """Return idle teleop state."""
+        self.calls.append("teleop_state")
+        return {"limits": {}, "presets": {}, "lease": {"active": False},
+                "accessory_sent": None, "led_sent": None,
+                "topics": {"cmd_vel": "/cmd_vel"}, "led_service_ready": True}
+
+    def teleop_drive(self, command):
+        """Record a velocity renewal."""
+        self.calls.append(("teleop_drive", tuple(command)))
+        return {"active": True, "command": list(command)}
+
+    def teleop_stop(self):
+        """Record a stop."""
+        self.calls.append("teleop_stop")
+        return {"active": False, "command": None}
+
+    def teleop_accessory(self, positions):
+        """Record an accessory position."""
+        self.calls.append(("teleop_accessory", tuple(positions)))
+        return {"n_pos": positions[0], "gl_pos": positions[1], "gr_pos": positions[2]}
+
+    def teleop_led(self, corners):
+        """Record an LED set."""
+        self.calls.append(("teleop_led", corners))
+        return True, "LEDs set"
+
     def nav_stack_state(self):
         """Return a healthy study nav2 stack."""
         self.calls.append("nav_stack_state")
@@ -251,9 +278,9 @@ def test_root_redirects_to_diagnostics(context):
     assert "/diagnostics" in response.headers["Location"]
 
 
-@pytest.mark.parametrize("path", ["/joystick", "/diagnostics", "/behaviour"])
+@pytest.mark.parametrize("path", ["/joystick", "/diagnostics", "/behaviour", "/teleop"])
 def test_pages_render(context, path):
-    """All three pages return HTML."""
+    """Every page returns HTML."""
     response = context["client"].get(path)
     assert response.status_code == 200
     assert b"Mecanumbot" in response.data
@@ -481,7 +508,7 @@ def test_alerts_without_a_node_say_nothing_is_watching(tmp_path):
     assert response.get_json()["monitored"] is False
 
 
-@pytest.mark.parametrize("page", ["joystick", "diagnostics", "behaviour", "maps"])
+@pytest.mark.parametrize("page", ["joystick", "diagnostics", "behaviour", "maps", "teleop"])
 def test_every_page_has_the_alert_lines_under_its_tabs(context, page):
     html = context["client"].get("/" + page).data.decode()
     assert html.index("</nav>") < html.index('id="hw-alerts"') < html.index("<main>")
@@ -908,3 +935,73 @@ def test_scalar_metadata_matches_the_store():
     """The page's threshold list stays in step with what is validated."""
     names = {name for name, _unit, _doc in behaviour_store.SCALAR_PARAMS}
     assert names == set(behaviour_store.SCALAR_NAMES)
+
+
+# ── teleop API ───────────────────────────────────────────────────────────
+
+def test_teleop_is_in_the_navigation(context):
+    html = context["client"].get("/diagnostics").data.decode()
+    assert 'href="/teleop"' in html
+
+
+def test_teleop_velocity_is_clamped_to_the_joystick_limits(context):
+    from mecanumbot_web import teleop
+    limits = teleop.default_limits()
+    response = context["client"].post(
+        "/api/teleop/velocity", json={"vx": 9.0, "vy": -9.0, "wz": 0.5})
+    assert response.status_code == 200
+    call = [c for c in context["node"].calls if c[0] == "teleop_drive"][-1]
+    assert call[1] == (limits["max_lin_vel"], -limits["max_lin_vel"], 0.5)
+
+
+def test_teleop_velocity_rejects_garbage(context):
+    response = context["client"].post("/api/teleop/velocity", json={"vx": "fast"})
+    assert response.status_code == 400
+    assert not any(c[0] == "teleop_drive" for c in context["node"].calls
+                   if isinstance(c, tuple))
+
+
+def test_teleop_stop(context):
+    response = context["client"].post("/api/teleop/stop")
+    assert response.status_code == 200
+    assert "teleop_stop" in context["node"].calls
+
+
+def test_teleop_accessory_needs_all_three(context):
+    response = context["client"].post("/api/teleop/accessory", json={"n_pos": 5.0})
+    assert response.status_code == 400
+
+
+def test_teleop_accessory_is_sent(context):
+    response = context["client"].post(
+        "/api/teleop/accessory", json={"n_pos": 5.0, "gl_pos": 5.12, "gr_pos": 5.12})
+    assert response.status_code == 200
+    assert ("teleop_accessory", (5.0, 5.12, 5.12)) in context["node"].calls
+
+
+def test_teleop_led_applies_one_pair_to_every_corner(context):
+    response = context["client"].post("/api/teleop/led", json={"mode": 4, "color": 3})
+    assert response.status_code == 200
+    call = [c for c in context["node"].calls
+            if isinstance(c, tuple) and c[0] == "teleop_led"][-1]
+    assert set(call[1]) == {"fl", "fr", "bl", "br"}
+    assert all(v == {"mode": 4, "color": 3} for v in call[1].values())
+
+
+def test_teleop_led_refuses_an_unknown_colour(context):
+    response = context["client"].post("/api/teleop/led", json={"mode": 4, "color": 42})
+    assert response.status_code == 400
+
+
+def test_teleop_state_reports_a_running_tree(context):
+    context["runner"].running = True
+    context["runner"].started = ("leading", {})
+    body = context["client"].get("/api/teleop").get_json()
+    assert body["ok"] is True
+    assert body["behaviour"]["running"] is True
+
+
+def test_teleop_routes_need_the_node(tmp_path):
+    web = WebApp(node=None, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path))
+    response = web.app.test_client().post("/api/teleop/velocity", json={"vx": 0.1})
+    assert response.status_code == 503

@@ -1,5 +1,5 @@
 """
-The ROS side of the web GUI: rate monitoring, robot state, joy control.
+The ROS side of the web GUI: rate monitoring, robot state, joy control, teleop.
 
 Runs as a normal rclpy node under a ``MultiThreadedExecutor``.  Flask
 serves from a daemon thread and reaches in here through the accessors
@@ -37,7 +37,8 @@ from typing import Dict, List, Optional
 import rclpy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Twist
-from mecanumbot_msgs.srv import GetLedStatus
+from mecanumbot_msgs.msg import AccessMotorCmd
+from mecanumbot_msgs.srv import GetLedStatus, SetLedStatus
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import GetParameters, SetParameters
@@ -50,7 +51,7 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 
-from . import led_enums, map_store, motion, nav_stack
+from . import led_enums, map_store, motion, nav_stack, teleop
 from .rate_monitor import RateMonitor, TopicSpec
 
 #: How often the graph is rescanned for topics that have appeared.
@@ -116,6 +117,8 @@ class WebNode(Node):
         led_poll_period: float = LED_POLL_PERIOD,
         cmd_vel_topic: Optional[str] = None,
         odom_topic: Optional[str] = None,
+        accessory_topic: Optional[str] = None,
+        led_set_service: str = "",
     ):
         """Create the node, its monitor and its clients to the robot."""
         super().__init__("mecanumbot_web_node")
@@ -205,6 +208,8 @@ class WebNode(Node):
         self.create_subscription(
             DiagnosticArray, "hardware_alerts", self._on_hardware_alerts,
             _monitor_qos(), callback_group=group)
+
+        self._setup_teleop(accessory_topic, led_set_service)
 
         self.create_timer(DISCOVERY_PERIOD, self._discover, callback_group=group)
         self._discover()
@@ -639,6 +644,135 @@ class WebNode(Node):
             "source": source,
             "commanded": commanded_slot,
             "measured": measured_slot,
+        }
+
+    # ── teleop ───────────────────────────────────────────────────────────
+
+    def _setup_teleop(self, accessory_topic, led_set_service) -> None:
+        """
+        Create the teleop publishers, the LED setter and the lease timer.
+
+        The publishers are created up front rather than on first use: an
+        accessory position is sent once, and a publisher created for it
+        would lose that one message to DDS discovery.  Holding them costs
+        nothing on the diagnostics page, whose command topics are judged
+        by their subscribers rather than their publishers.
+
+        The topics are the same absolute ones the joy node is remapped
+        onto, so the io node hears both on one topic each.
+        """
+        self._accessory_topic = (
+            "/cmd_accessory_pos" if accessory_topic is None else accessory_topic)
+        self._led_set_service = led_set_service or "set_led_status"
+        self._teleop_limits = teleop.default_limits()
+        self._teleop_lock = threading.Lock()
+        self._lease = teleop.VelocityLease()
+        self._accessory_sent: Optional[dict] = None
+        self._led_sent: Optional[dict] = None
+
+        qos = QoSProfile(depth=10)
+        self._teleop_vel_pub = (
+            self.create_publisher(Twist, self._cmd_vel_topic, qos)
+            if self._cmd_vel_topic else None)
+        self._teleop_accessory_pub = (
+            self.create_publisher(AccessMotorCmd, self._accessory_topic, qos)
+            if self._accessory_topic else None)
+        self._led_set_client = self.create_client(
+            SetLedStatus, self._led_set_service, callback_group=self._group)
+        self.create_timer(
+            1.0 / teleop.PUBLISH_HZ, self._teleop_tick, callback_group=self._group)
+
+    def _teleop_tick(self) -> None:
+        """Publish the leased velocity, its zero tail, or nothing."""
+        with self._teleop_lock:
+            command = self._lease.tick(time.monotonic())
+        if command is None or self._teleop_vel_pub is None:
+            return
+        message = Twist()
+        message.linear.x, message.linear.y, message.angular.z = command
+        self._teleop_vel_pub.publish(message)
+
+    def teleop_drive(self, command) -> dict:
+        """Renew the velocity lease with an already-clamped command."""
+        if self._teleop_vel_pub is None:
+            raise teleop.TeleopError("Velocity teleop is disabled (no cmd_vel topic)")
+        now = time.monotonic()
+        with self._teleop_lock:
+            self._lease.renew(command, now)
+            return self._lease.state(now)
+
+    def teleop_stop(self) -> dict:
+        """End the velocity lease; the zero tail stops the wheels."""
+        with self._teleop_lock:
+            self._lease.stop()
+            return self._lease.state(time.monotonic())
+
+    def teleop_accessory(self, positions) -> dict:
+        """Publish one accessory position triple."""
+        if self._teleop_accessory_pub is None:
+            raise teleop.TeleopError("Accessory teleop is disabled (no accessory topic)")
+        message = AccessMotorCmd()
+        message.n_pos, message.gl_pos, message.gr_pos = (float(v) for v in positions)
+        self._teleop_accessory_pub.publish(message)
+        sent = {"n_pos": message.n_pos, "gl_pos": message.gl_pos,
+                "gr_pos": message.gr_pos, "stamp": time.monotonic()}
+        with self._teleop_lock:
+            self._accessory_sent = sent
+        return self._public_sent(sent)
+
+    def teleop_led(self, corners):
+        """
+        Set all four LED corners. Returns (ok, message).
+
+        Blocking, from the Flask thread, so the page can say whether the
+        controller took it.  A successful set also re-polls the LED state,
+        so the diagnostics panel catches up without waiting a period.
+        """
+        request = SetLedStatus.Request()
+        for corner in led_enums.LED_CORNERS:
+            setattr(request, "{}_mode".format(corner), int(corners[corner]["mode"]))
+            setattr(request, "{}_color".format(corner), int(corners[corner]["color"]))
+        request.progress = 0
+        request.progress_color = 0
+
+        result = self._call(self._led_set_client, request)
+        if result is None:
+            return False, "The LED node did not respond (is mecanumbot_led running?)"
+        if result.success:
+            with self._teleop_lock:
+                self._led_sent = {"corners": corners, "stamp": time.monotonic()}
+            self._poll_led()
+        return bool(result.success), result.message or (
+            "LEDs set" if result.success else "The LED node refused the request")
+
+    @staticmethod
+    def _public_sent(sent):
+        """Return a sent record with its monotonic stamp turned into an age."""
+        if sent is None:
+            return None
+        public = {key: value for key, value in sent.items() if key != "stamp"}
+        public["age_s"] = round(time.monotonic() - sent["stamp"], 1)
+        return public
+
+    def teleop_state(self) -> dict:
+        """Return the limits, the lease and what was last sent, for the page."""
+        with self._teleop_lock:
+            lease = self._lease.state(time.monotonic())
+            accessory = self._accessory_sent
+            led = self._led_sent
+        return {
+            "limits": self._teleop_limits,
+            "presets": {name: list(pair) for name, pair in
+                        teleop.gripper_presets(self._teleop_limits).items()},
+            "lease": lease,
+            "accessory_sent": self._public_sent(accessory),
+            "led_sent": self._public_sent(led),
+            "topics": {
+                "cmd_vel": self._cmd_vel_topic,
+                "accessory": self._accessory_topic,
+                "led_service": self._led_set_service,
+            },
+            "led_service_ready": self._led_set_client.service_is_ready(),
         }
 
     # ── joystick node state ──────────────────────────────────────────────

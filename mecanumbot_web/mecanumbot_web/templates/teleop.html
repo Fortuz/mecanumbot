@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+{% block title %}Teleop — Mecanumbot{% endblock %}
+
+{% block styles %}
+<style>
+.teleop-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 16px; align-items: start;
+}
+.teleop-grid .card { margin-bottom: 0; }
+.card > h3 { display: flex; align-items: baseline; gap: 10px; }
+.card > h3 .spacer { flex: 1; }
+
+/* ── Drive ────────────────────────────────────────────────────────── */
+.drive-body { display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+              justify-content: center; }
+.pad {
+  width: 200px; height: 200px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle, var(--panel2) 0 60%, var(--panel) 100%);
+  border: 1px solid var(--line); position: relative;
+  touch-action: none; user-select: none; cursor: grab;
+}
+.pad.held { border-color: var(--accent2); cursor: grabbing; }
+.pad::before, .pad::after {
+  content: ""; position: absolute; background: var(--line);
+}
+.pad::before { left: 50%; top: 10px; bottom: 10px; width: 1px; }
+.pad::after  { top: 50%; left: 10px; right: 10px; height: 1px; }
+.pad .knob {
+  position: absolute; width: 46px; height: 46px; border-radius: 50%;
+  left: calc(50% - 23px); top: calc(50% - 23px); z-index: 1;
+  background: var(--accent2); box-shadow: 0 0 14px -2px var(--accent2);
+  pointer-events: none;
+}
+.pad .front {
+  position: absolute; top: -20px; left: 0; right: 0; text-align: center;
+  font-size: 11px; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--dim);
+}
+.drive-side { display: flex; flex-direction: column; gap: 10px; min-width: 150px; }
+.turn-row { display: flex; gap: 8px; }
+.turn-row button { flex: 1; padding: 12px 6px; font-size: 18px;
+                   touch-action: none; user-select: none; }
+.turn-row button.held { border-color: var(--accent2); background: var(--panel); }
+button.stop {
+  padding: 12px; font-weight: 700; letter-spacing: .5px;
+  background: var(--bad); border-color: var(--bad); color: #fff;
+}
+.cmd-readout td { padding: 3px 6px; border-bottom: none; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+kbd {
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px;
+  padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--panel2);
+}
+
+/* ── Accessories ──────────────────────────────────────────────────── */
+.slider-row { display: grid; grid-template-columns: 110px 1fr 56px;
+              gap: 10px; align-items: center; margin-bottom: 10px; }
+.slider-row .val { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── LEDs ─────────────────────────────────────────────────────────── */
+.led-front {
+  text-align: center; font-size: 11px; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 6px;
+}
+.corner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+               max-width: 300px; margin: 0 auto 14px; }
+.corner {
+  display: flex; align-items: center; gap: 10px; padding: 8px;
+  border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);
+  cursor: pointer; text-align: left; color: var(--text);
+}
+.corner.fr, .corner.br { flex-direction: row-reverse; text-align: right; }
+.corner[aria-pressed="true"] { border-color: var(--accent);
+                               box-shadow: 0 0 0 1px var(--accent) inset; }
+.dot { width: 24px; height: 24px; border-radius: 50%; flex: none;
+       border: 1px solid var(--line); background: var(--led, transparent);
+       box-shadow: 0 0 10px -2px var(--led, transparent); }
+.palette { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.palette button {
+  width: 38px; height: 38px; border-radius: 50%; padding: 0;
+  background: var(--led); border: 2px solid var(--line);
+}
+.palette button:hover:not(:disabled) { border-color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Teleop</h1>
+<p class="sub">
+  Drive the robot, move the neck and grabbers, and set the LEDs from the browser.
+  Driving is dead-man: a command lasts {{ '%.1f'|format(limits.lease_seconds) }}&nbsp;s
+  unless the page renews it, so letting go, switching tab or losing Wi-Fi
+  stops the wheels.
+</p>
+
+<div id="notice"></div>
+
+<div class="teleop-grid">
+  <div class="card">
+    <h3>Drive <span class="spacer"></span>
+      <span id="lease-pill" class="pill IDLE">idle</span></h3>
+    <div id="drive-notice"></div>
+    <div class="drive-body">
+      <div class="pad" id="pad" aria-label="Drag to translate; robot faces up">
+        <div class="front">front</div>
+        <div class="knob" id="knob"></div>
+      </div>
+      <div class="drive-side">
+        <div class="turn-row">
+          <button id="turn-left" title="Rotate left (Q)">⟲</button>
+          <button id="turn-right" title="Rotate right (E)">⟳</button>
+        </div>
+        <button class="stop" onclick="stopDriving()">STOP</button>
+        <table class="cmd-readout small mono">
+          <tr><td class="dim">vx</td><td class="num" id="out-vx">0.000</td><td class="dim">m/s</td></tr>
+          <tr><td class="dim">vy</td><td class="num" id="out-vy">0.000</td><td class="dim">m/s</td></tr>
+          <tr><td class="dim">wz</td><td class="num" id="out-wz">0.000</td><td class="dim">rad/s</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="slider-row" style="margin-top:16px">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="10" max="100" step="5" value="50">
+      <span class="val mono" id="speed-val">50%</span>
+    </div>
+    <label class="small"><input type="checkbox" id="keys-on"> Keyboard driving:
+      <kbd>W</kbd><kbd>S</kbd> forward/back, <kbd>A</kbd><kbd>D</kbd> strafe,
+      <kbd>Q</kbd><kbd>E</kbd> rotate, <kbd>Space</kbd> stop</label>
+    <p class="small dim" style="margin-bottom:0">
+      Full speed is the joystick's limit:
+      {{ '%.3f'|format(limits.max_lin_vel) }}&nbsp;m/s,
+      {{ '%.3f'|format(limits.max_ang_vel) }}&nbsp;rad/s.
+      Commands go to <code id="topic-vel">/cmd_vel</code> directly, bypassing Nav2
+      and its costmap: nothing here avoids obstacles.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Neck and grabbers <span class="spacer"></span>
+      <span id="acc-sent" class="small dim"></span></h3>
+    <div id="acc-notice"></div>
+    <div class="slider-row">
+      <label for="neck">Neck</label>
+      <input type="range" id="neck" min="{{ limits.neck.min }}" max="{{ limits.neck.max }}"
+             step="0.05" value="{{ limits.neck.default }}">
+      <span class="val mono" id="neck-val"></span>
+    </div>
+    <div class="slider-row">
+      <label for="gl">Left grabber</label>
+      <input type="range" id="gl" min="{{ limits.gripper.min }}" max="{{ limits.gripper.max }}"
+             step="0.02" value="{{ limits.gripper.default }}">
+      <span class="val mono" id="gl-val"></span>
+    </div>
+    <div class="slider-row">
+      <label for="gr">Right grabber</label>
+      <input type="range" id="gr" min="{{ limits.gripper.min }}" max="{{ limits.gripper.max }}"
+             step="0.02" value="{{ limits.gripper.default }}">
+      <span class="val mono" id="gr-val"></span>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <label class="small grow"><input type="checkbox" id="mirror" checked>
+        Move the grabbers together (mirrored)</label>
+      <button onclick="gripPreset('open')">Open</button>
+      <button onclick="gripPreset('front')">Front</button>
+      <button onclick="gripPreset('close')">Close</button>
+    </div>
+    <p class="small dim" style="margin-bottom:0">
+      The sliders start at the joystick profile's defaults, not at where the
+      servos are: nothing is sent until one is moved, and then all three
+      positions go out together on <code id="topic-acc">/cmd_accessory_pos</code>.
+      A connected joystick re-sends its own positions once a second and will
+      take the servos back.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>LEDs <span class="spacer"></span>
+      <span id="led-sent" class="small dim"></span></h3>
+    <div id="led-notice"></div>
+    <div class="led-front">front</div>
+    <div class="corner-grid" id="corners"></div>
+    <div class="row small dim" style="margin-bottom:8px">
+      <span class="grow">Click corners to choose which a colour applies to.</span>
+      <button onclick="selectCorners(true)">All</button>
+      <button onclick="selectCorners(false)">None</button>
+    </div>
+    <div class="palette" id="palette">
+      {% for color in colors %}
+      <button style="--led: {{ color.hex }}" title="{{ color.name }}"
+              aria-label="{{ color.name }}" data-color="{{ color.value }}"></button>
+      {% endfor %}
+    </div>
+    <div class="row">
+      <label for="led-mode">Mode</label>
+      <select id="led-mode">
+        {% for mode in modes %}
+        <option value="{{ mode.value }}" {{ 'selected' if mode.value == 4 }}>{{ mode.name }}</option>
+        {% endfor %}
+      </select>
+      <span class="grow"></span>
+      <button onclick="ledsOff()">All off</button>
+    </div>
+    <p class="small dim" style="margin-bottom:0">
+      <code>set_led_status</code> always sets all four corners, so the corners
+      you did not select are re-sent as shown here, seeded from the controller's
+      last reading. A running behaviour tree drives the LEDs too and will
+      overwrite this.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const LIMITS = {{ limits|tojson }};
+const COLORS = {{ colors|tojson }};
+const MODES = {{ modes|tojson }};
+const CORNERS = ['fl', 'fr', 'bl', 'br'];
+const CORNER_LABELS = {fl: 'front left', fr: 'front right',
+                       bl: 'back left',  br: 'back right'};
+const RENEW_MS = 100;
+
+// ── Drive ─────────────────────────────────────────────────────────────
+// Each input contributes to one shared command; the loop below sends it
+// while anything is held, and one stop goes out when the last input lets go.
+const input = {pad: [0, 0], turn: 0, keys: {}};
+let driving = false;
+let renewTimer = null;
+let inFlight = false;
+
+function speedScale() {
+  return Number(document.getElementById('speed').value) / 100;
+}
+
+function currentCommand() {
+  const scale = speedScale();
+  let vx = input.pad[0], vy = input.pad[1], wz = input.turn;
+  const k = input.keys;
+  if (k.w) vx += 1; if (k.s) vx -= 1;
+  if (k.a) vy += 1; if (k.d) vy -= 1;
+  if (k.q) wz += 1; if (k.e) wz -= 1;
+  const clip = function (v) { return Math.max(-1, Math.min(1, v)); };
+  return {vx: clip(vx) * scale * LIMITS.max_lin_vel,
+          vy: clip(vy) * scale * LIMITS.max_lin_vel,
+          wz: clip(wz) * scale * LIMITS.max_ang_vel};
+}
+
+function anyInput() {
+  const k = input.keys;
+  return input.pad[0] !== 0 || input.pad[1] !== 0 || input.turn !== 0 ||
+         k.w || k.s || k.a || k.d || k.q || k.e;
+}
+
+function showCommand(cmd) {
+  document.getElementById('out-vx').textContent = cmd.vx.toFixed(3);
+  document.getElementById('out-vy').textContent = cmd.vy.toFixed(3);
+  document.getElementById('out-wz').textContent = cmd.wz.toFixed(3);
+}
+
+async function sendDrive() {
+  const cmd = currentCommand();
+  showCommand(cmd);
+  // Never queue: a request still in flight means the link is slow, and a
+  // backlog would replay old commands after the operator let go.
+  if (inFlight) return;
+  inFlight = true;
+  try {
+    const result = await post('/api/teleop/velocity', cmd);
+    if (!result.ok) {
+      banner('drive-notice', 'err', result.body.error || 'The robot refused the command.');
+    } else {
+      banner('drive-notice', 'ok', null, []);
+    }
+  } catch (e) {
+    banner('drive-notice', 'err', 'Lost contact with the robot; it stops on its own.');
+  } finally {
+    inFlight = false;
+  }
+}
+
+function inputChanged() {
+  if (anyInput()) {
+    if (!driving) {
+      driving = true;
+      sendDrive();
+      renewTimer = setInterval(sendDrive, RENEW_MS);
+    }
+  } else if (driving) {
+    stopDriving();
+  }
+}
+
+function stopDriving() {
+  driving = false;
+  if (renewTimer) clearInterval(renewTimer);
+  renewTimer = null;
+  input.pad = [0, 0]; input.turn = 0; input.keys = {};
+  resetKnob();
+  document.querySelectorAll('.held').forEach(function (n) { n.classList.remove('held'); });
+  showCommand({vx: 0, vy: 0, wz: 0});
+  post('/api/teleop/stop').catch(function () {});
+}
+
+// Leaving the page must stop the robot even if no further request gets out:
+// sendBeacon is the one request a closing tab still delivers.
+function beaconStop() {
+  if (!driving) return;
+  driving = false;
+  if (renewTimer) clearInterval(renewTimer);
+  try { navigator.sendBeacon('/api/teleop/stop'); } catch (e) { /* lease expires anyway */ }
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) beaconStop();
+});
+window.addEventListener('pagehide', beaconStop);
+window.addEventListener('blur', function () { if (driving) stopDriving(); });
+
+// The pad: up is forward (+vx), left is +vy, REP-103.
+const pad = document.getElementById('pad');
+const knob = document.getElementById('knob');
+function resetKnob() { knob.style.transform = ''; pad.classList.remove('held'); }
+function padMove(event) {
+  const rect = pad.getBoundingClientRect();
+  const radius = rect.width / 2 - 23;
+  let dx = event.clientX - (rect.left + rect.width / 2);
+  let dy = event.clientY - (rect.top + rect.height / 2);
+  const length = Math.hypot(dx, dy);
+  if (length > radius) { dx *= radius / length; dy *= radius / length; }
+  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  input.pad = [-dy / radius, -dx / radius];
+  inputChanged();
+}
+pad.addEventListener('pointerdown', function (event) {
+  pad.setPointerCapture(event.pointerId);
+  pad.classList.add('held');
+  padMove(event);
+});
+pad.addEventListener('pointermove', function (event) {
+  if (pad.hasPointerCapture(event.pointerId)) padMove(event);
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
+  pad.addEventListener(name, function () {
+    resetKnob();
+    input.pad = [0, 0];
+    inputChanged();
+  });
+});
+
+function holdButton(id, value) {
+  const button = document.getElementById(id);
+  button.addEventListener('pointerdown', function (event) {
+    button.setPointerCapture(event.pointerId);
+    button.classList.add('held');
+    input.turn = value;
+    inputChanged();
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
+    button.addEventListener(name, function () {
+      button.classList.remove('held');
+      if (input.turn === value) input.turn = 0;
+      inputChanged();
+    });
+  });
+}
+holdButton('turn-left', 1);
+holdButton('turn-right', -1);
+
+const KEYS = ['w', 'a', 's', 'd', 'q', 'e'];
+document.addEventListener('keydown', function (event) {
+  if (!document.getElementById('keys-on').checked) return;
+  if (event.target.closest('input[type=text], input[type=number], select')) return;
+  const key = event.key.toLowerCase();
+  if (key === ' ') { event.preventDefault(); stopDriving(); return; }
+  if (KEYS.indexOf(key) < 0 || event.repeat) return;
+  event.preventDefault();
+  input.keys[key] = true;
+  inputChanged();
+});
+document.addEventListener('keyup', function (event) {
+  const key = event.key.toLowerCase();
+  if (KEYS.indexOf(key) < 0) return;
+  input.keys[key] = false;
+  inputChanged();
+});
+
+const speed = document.getElementById('speed');
+speed.addEventListener('input', function () {
+  document.getElementById('speed-val').textContent = speed.value + '%';
+});
+
+// ── Neck and grabbers ────────────────────────────────────────────────
+const sliders = {neck: document.getElementById('neck'),
+                 gl: document.getElementById('gl'),
+                 gr: document.getElementById('gr')};
+let accTimer = null;
+let accLast = 0;
+
+function showSliders() {
+  for (const key in sliders) {
+    document.getElementById(key + '-val').textContent =
+      Number(sliders[key].value).toFixed(2);
+  }
+}
+
+async function sendAccessory() {
+  accLast = Date.now();
+  const result = await post('/api/teleop/accessory', {
+    n_pos: Number(sliders.neck.value),
+    gl_pos: Number(sliders.gl.value),
+    gr_pos: Number(sliders.gr.value)
+  }).catch(function () { return {ok: false, body: {error: 'Lost contact with the robot.'}}; });
+  if (result.ok) {
+    banner('acc-notice', 'ok', null, []);
+    document.getElementById('acc-sent').textContent = 'sent';
+  } else {
+    banner('acc-notice', 'err', result.body.error || 'Could not send the positions.');
+  }
+}
+
+// Throttled while dragging, and always once on release.
+function queueAccessory(final) {
+  if (accTimer) clearTimeout(accTimer);
+  const wait = final ? 0 : Math.max(0, 150 - (Date.now() - accLast));
+  accTimer = setTimeout(sendAccessory, wait);
+}
+
+// Mirrored: the grabbers face each other, so the same closing motion is
+// equal and opposite steps about the 'front' position.
+function mirrorFrom(source) {
+  if (!document.getElementById('mirror').checked) return;
+  const front = LIMITS.gripper.front;
+  const other = source === 'gl' ? sliders.gr : sliders.gl;
+  const value = 2 * front - Number(sliders[source].value);
+  other.value = Math.max(LIMITS.gripper.min, Math.min(LIMITS.gripper.max, value));
+}
+
+for (const key in sliders) {
+  sliders[key].addEventListener('input', function () {
+    if (key !== 'neck') mirrorFrom(key);
+    showSliders();
+    queueAccessory(false);
+  });
+  sliders[key].addEventListener('change', function () { queueAccessory(true); });
+}
+
+let PRESETS = null;
+function gripPreset(name) {
+  const g = LIMITS.gripper, f = g.front;
+  const presets = PRESETS || {open: [(g.max + f) / 2, (g.min + f) / 2],
+                              front: [f, f],
+                              close: [(g.min + f) / 2, (g.max + f) / 2]};
+  sliders.gl.value = presets[name][0];
+  sliders.gr.value = presets[name][1];
+  showSliders();
+  queueAccessory(true);
+}
+
+// ── LEDs ─────────────────────────────────────────────────────────────
+const ledModel = {};
+CORNERS.forEach(function (c) { ledModel[c] = {mode: 4, color: 0}; });
+const selected = {fl: true, fr: true, bl: true, br: true};
+let ledSeeded = false;
+
+function colorHex(value) {
+  const found = COLORS.find(function (c) { return c.value === value; });
+  return found ? found.hex : null;
+}
+function colorName(value) {
+  const found = COLORS.find(function (c) { return c.value === value; });
+  return found ? found.name : 'colour ' + value;
+}
+function modeName(value) {
+  const found = MODES.find(function (m) { return m.value === value; });
+  return found ? found.name : 'mode ' + value;
+}
+
+function renderCorners() {
+  const host = document.getElementById('corners');
+  host.replaceChildren(...CORNERS.map(function (corner) {
+    const state = ledModel[corner];
+    const dot = el('span', {class: 'dot'});
+    const hex = colorHex(state.color);
+    if (hex) dot.style.setProperty('--led', hex);
+    return el('button', {
+      class: 'corner ' + corner, 'aria-pressed': selected[corner] ? 'true' : 'false',
+      onclick: function () { selected[corner] = !selected[corner]; renderCorners(); }
+    }, [dot, el('span', {class: 'grow'}, [
+      el('div', {text: colorName(state.color) + ' · ' + modeName(state.mode)}),
+      el('div', {class: 'small dim', text: CORNER_LABELS[corner]})
+    ])]);
+  }));
+}
+
+function selectCorners(all) {
+  CORNERS.forEach(function (c) { selected[c] = all; });
+  renderCorners();
+}
+
+async function sendLeds() {
+  const body = {corners: {}};
+  CORNERS.forEach(function (c) { body.corners[c] = ledModel[c]; });
+  const result = await post('/api/teleop/led', body)
+    .catch(function () { return {ok: false, body: {message: 'Lost contact with the robot.'}}; });
+  if (result.ok) {
+    banner('led-notice', 'ok', null, []);
+    document.getElementById('led-sent').textContent = 'set';
+  } else {
+    banner('led-notice', 'err', result.body.message || result.body.error ||
+           'The LEDs could not be set.');
+  }
+}
+
+function applyColor(color) {
+  const mode = Number(document.getElementById('led-mode').value);
+  const targets = CORNERS.filter(function (c) { return selected[c]; });
+  if (!targets.length) {
+    banner('led-notice', 'warn', 'Select at least one corner first.');
+    return;
+  }
+  targets.forEach(function (c) { ledModel[c] = {mode: mode, color: color}; });
+  ledSeeded = true;
+  renderCorners();
+  sendLeds();
+}
+
+function ledsOff() {
+  CORNERS.forEach(function (c) { ledModel[c] = {mode: 4, color: 0}; });
+  ledSeeded = true;
+  renderCorners();
+  sendLeds();
+}
+
+document.querySelectorAll('#palette button').forEach(function (button) {
+  button.addEventListener('click', function () {
+    applyColor(Number(button.dataset.color));
+  });
+});
+
+// Seed the corners the operator does not touch from what the controller
+// last reported, so changing one corner does not blank the other three.
+async function seedLeds() {
+  try {
+    const result = await api('/api/diagnostics');
+    const corners = result.body.led && result.body.led.corners;
+    if (corners && !ledSeeded) {
+      CORNERS.forEach(function (c) {
+        if (corners[c] && corners[c].known) {
+          ledModel[c] = {mode: corners[c].mode, color: corners[c].color};
+        }
+      });
+      ledSeeded = true;
+      renderCorners();
+    }
+  } catch (e) { /* stays on the default */ }
+}
+
+// ── Status ───────────────────────────────────────────────────────────
+async function refresh() {
+  try {
+    const result = await api('/api/teleop');
+    const body = result.body;
+    if (!result.ok) {
+      banner('notice', 'err', body.error || 'The robot cannot be reached.');
+    } else {
+      PRESETS = body.presets;
+      const lease = body.lease || {};
+      const pill = document.getElementById('lease-pill');
+      pill.className = 'pill ' + (lease.active ? 'accent2' : 'IDLE');
+      pill.textContent = lease.active ? 'driving' : 'idle';
+
+      const topics = body.topics || {};
+      document.getElementById('topic-vel').textContent = topics.cmd_vel || '(disabled)';
+      document.getElementById('topic-acc').textContent = topics.accessory || '(disabled)';
+
+      const warnings = [];
+      const status = body.behaviour || {};
+      const graph = status.graph_nodes || [];
+      if (status.running || graph.length) {
+        warnings.push('A behaviour tree is running (' +
+          (status.running ? (status.label || status.behaviour) : graph.join(', ')) +
+          '). It publishes /cmd_vel, ' +
+          'the neck and the LEDs too, and will fight anything sent from here.');
+      }
+      if (!body.led_service_ready) {
+        warnings.push('The LED service (' + topics.led_service +
+          ') is not on the graph, so the LED controls will fail.');
+      }
+      if (warnings.length) banner('notice', 'warn', null, warnings);
+      else banner('notice', 'ok', null, []);
+    }
+  } catch (e) {
+    banner('notice', 'err', 'Lost contact with the robot.');
+  }
+  setTimeout(refresh, 1000);
+}
+
+showSliders();
+renderCorners();
+seedLeds();
+refresh();
+</script>
+{% endblock %}

@@ -32,6 +32,7 @@ There is no login and no database.
 | --- | --- |
 | `/joystick` | Edit and reload `mecanumbot_joy`'s profile, with a live input readout. |
 | `/diagnostics` | Whether the navigation stack is up, with a restart; what the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
+| `/teleop` | Drive the robot, move the neck and grabbers, and set the LEDs. |
 | `/behaviour` | Choose a behaviour tree, edit the constants it will load, and run it. |
 | `/maps` | Choose the map folder nav2 loads, and load it. |
 
@@ -212,6 +213,47 @@ is `raw=True` like the monitor's and the bytes are deserialised at most every
 here the payload is actually wanted. Set `odom_topic` to an empty string to
 drop the subscription entirely; the panel then says it is showing commanded
 velocity only.
+
+### Teleop
+
+Three controls, each going to the interface the joystick node already uses:
+
+| Control | Goes to | How |
+| --- | --- | --- |
+| Drive pad, ⟲/⟳ hold buttons, optional `WASD`+`QE` keys | `cmd_vel_topic` (`/cmd_vel`), `Twist` | streamed under a dead-man lease |
+| Neck, left and right grabber sliders; Open / Front / Close | `accessory_topic` (`/cmd_accessory_pos`), `AccessMotorCmd` | one message per change |
+| LED corners, colour palette, mode | `led_set_service` (`set_led_status`), `SetLedStatus` | one blocking call per change |
+
+**Velocity is a lease** (`teleop.py`). While a control is held the page re-sends
+the command every 100 ms. Each send renews a 0.4 s lease, and the node publishes
+the leased command at 20 Hz. When the lease runs out, or the page sends a stop,
+the node publishes 5 zero frames and then goes **silent**. It goes silent rather
+than holding zero because Nav2, the joy node and the behaviour trees publish
+`/cmd_vel` too, and an open browser tab must not hold the robot still against them.
+Letting go, switching tab, closing the page (a `sendBeacon` stop) and losing
+Wi-Fi all end up at the same stop. The commands bypass Nav2 and its costmap.
+
+**The limits are `mecanumbot_joy`'s**, imported from `mecanumbot_joy.profile`
+(`DEFAULT_LIMITS`, `DEFAULT_NECK`, `DEFAULT_GRIPPER`). The page clamps per axis
+to `max_lin_vel` / `max_ang_vel`, scaled by its speed slider, and clamps the
+accessories to the neck and gripper ranges. Open / Close are the joystick's
+`gripper_open` / `gripper_close` positions. The mirror checkbox moves the two
+grabbers in equal and opposite steps about `front`. The sliders start at the
+profile defaults, not at the servos' real positions, so nothing is sent until
+one of them moves. After that, all three positions go out together.
+
+**The LED call always sets all four corners** (that is the shape of
+`SetLedStatus`). The corners you leave unselected are re-sent as the page shows
+them, seeded from the last `get_led_status` reading. `progress` is sent as 0.
+A successful set triggers an immediate re-poll, so the diagnostics panel
+catches up straight away.
+
+**Other control surfaces are not locked out.** The page warns when a behaviour
+tree is running, whether this GUI started it or a terminal did (it checks the
+graph). It does not refuse to drive, because the operator may need to step in.
+While a pad is connected, the joystick node re-sends its own accessory positions
+at `accessory_keepalive_hz` (1 Hz), which takes the neck and grabbers back to
+where the pad left them.
 
 ### Maps
 
@@ -437,7 +479,9 @@ complete.
 | `backup_root` | `~/.mecanumbot/config_backups` |
 | `led_service` | `get_led_status` |
 | `led_poll_period` | `2.0` s — `0` disables LED reads |
-| `cmd_vel_topic` | `/cmd_vel` |
+| `cmd_vel_topic` | `/cmd_vel` — also where teleop publishes; empty disables both |
+| `accessory_topic` | `/cmd_accessory_pos` — teleop neck/grabbers; empty disables |
+| `led_set_service` | `set_led_status` — teleop LEDs |
 | `odom_topic` | `odom` — empty disables measured motion |
 
 Every behaviour config directory is resolved leniently: a behaviour whose package
@@ -451,7 +495,7 @@ launch remaps `cmd_vel` out of the namespace so Nav2 and the joy node meet on
 one topic. `web.launch.py` declares `namespace` (`mecanumbot`), `web_host`,
 `web_port`, `joystick_config_dir`, `behaviour_config_dir`, `diagnostics_config`,
 `led_poll_period` and `odom_topic`; the other config directories, `backup_root`
-and the joy/LED/`cmd_vel` names are only node parameters.
+and the joy/LED/`cmd_vel`/accessory names are only node parameters.
 
 ## Dependencies
 
