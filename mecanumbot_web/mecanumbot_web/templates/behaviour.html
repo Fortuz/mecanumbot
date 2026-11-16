@@ -381,10 +381,37 @@ function flatField(entry) {
     const node = el('select', {onchange: function (event) {
       flatEdits[entry.name] = event.target.value; touch();
     }});
+    if (entry.choices.indexOf(entry.value) < 0) {
+      // The file holds a value the tree does not accept (e.g. a mode saved
+      // as "None"). Show it, rather than a select that looks set to the
+      // first choice while the file still says otherwise.
+      node.appendChild(el('option', {value: '', text: JSON.stringify(entry.value) +
+                                     ' (invalid, pick one)', disabled: 'disabled'}));
+      node.classList.add('bad-input');
+    }
     entry.choices.forEach(function (choice) {
       node.appendChild(el('option', {value: choice, text: choice}));
     });
-    node.value = entry.value;
+    node.value = entry.choices.indexOf(entry.value) < 0 ? '' : entry.value;
+    return node;
+  }
+
+  if (entry.kind === 'string') {
+    // A free word (e.g. a class label). Before this branch existed, strings
+    // fell through to a number input: the browser showed it blank, and any
+    // touch sent NaN, which the server wrote back as "None".
+    const node = el('input', {type: 'text', value: entry.value,
+      onchange: function (event) {
+        const text = event.target.value.trim();
+        if (!text) {
+          node.classList.add('bad-input');
+          banner('notice', 'err', entry.name + ': must not be empty.');
+          delete flatEdits[entry.name];
+          return;
+        }
+        node.classList.remove('bad-input');
+        flatEdits[entry.name] = text; touch();
+      }});
     return node;
   }
 
@@ -411,7 +438,17 @@ function flatField(entry) {
     type: 'number', step: entry.kind === 'integer' ? '1' : 'any',
     value: entry.value,
     onchange: function (event) {
-      flatEdits[entry.name] = parseFloat(event.target.value); touch();
+      const number = parseFloat(event.target.value);
+      if (!isFinite(number)) {
+        // An emptied box: send nothing rather than NaN, which JSON turns
+        // into null.
+        event.target.classList.add('bad-input');
+        banner('notice', 'err', entry.name + ': must be a number.');
+        delete flatEdits[entry.name];
+        return;
+      }
+      event.target.classList.remove('bad-input');
+      flatEdits[entry.name] = number; touch();
     }});
 }
 
@@ -731,16 +768,31 @@ async function save() {
     return;
   }
 
-  const result = await post(saveUrl(), payload);
+  let result;
+  try {
+    result = await post(saveUrl(), payload);
+  } catch (err) {
+    result = {body: {ok: false, errors: ['Could not reach the robot: ' + err]}};
+  }
+  // The notice sits at the top of the page and Save near the bottom, so
+  // without this a save -- or a refused one -- looked like nothing happened.
+  const reveal = function () {
+    const host = document.getElementById('notice');
+    if (host) host.scrollIntoView({behavior: 'smooth', block: 'start'});
+  };
   if (!result.body.ok) {
-    showMessages(result.body.errors || ['Save failed.'], result.body.warnings || [], null);
+    showMessages(result.body.errors ||
+                 ['Save failed (HTTP ' + (result.status || '?') + ').'],
+                 result.body.warnings || [], null);
+    reveal();
     return;
   }
   dirty = false;
+  await loadFile(fileName);
   showMessages([], result.body.warnings || [],
                'Saved ' + fileName + '. Applies on the next behaviour tree start.' +
                (result.body.backup ? ' Previous version backed up.' : ''));
-  loadFile(fileName);
+  reveal();
 }
 
 async function restore() {

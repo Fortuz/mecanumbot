@@ -92,6 +92,9 @@ class _ParamReader(Node):
             "fetch_config_dir",
             _share("mecanumbot_fetch_behaviour", "config"))
         self.declare_parameter(
+            "object_choice_config_dir",
+            _share("mecanumbot_object_choice_behaviour", "config"))
+        self.declare_parameter(
             "autoslam_config_dir",
             _share("mecanumbot_autoslam", "config"))
         self.declare_parameter(
@@ -122,7 +125,7 @@ class _ParamReader(Node):
             for name in (
                 "host", "port", "joystick_config_dir", "behaviour_config_dir",
                 "ostensive_config_dir", "demo_config_dir", "seek_config_dir",
-                "fetch_config_dir", "autoslam_config_dir",
+                "fetch_config_dir", "object_choice_config_dir", "autoslam_config_dir",
                 "diagnostics_config", "maps_dir", "joy_node", "joy_topic", "backup_root",
                 "led_service", "led_poll_period", "cmd_vel_topic", "odom_topic",
                 "accessory_topic", "led_set_service",
@@ -163,6 +166,7 @@ def main(args=None):
             "ostensive": settings["ostensive_config_dir"],
             "seek": settings["seek_config_dir"],
             "fetch": settings["fetch_config_dir"],
+            "object_choice": settings["object_choice_config_dir"],
             "autoslam": settings["autoslam_config_dir"],
             "demo": settings["demo_config_dir"],
         }
@@ -216,6 +220,9 @@ def main(args=None):
         # tree from outliving the stack it was driving.
         if web is not None:
             web.runner.shutdown()
+            # SLAM is a child too, and must not outlive the drivers.
+            if web.mapping is not None:
+                web.mapping.shutdown()
             # The same holds for a nav2 stack this node relaunched, and it
             # goes second: the tree above was using it.
             if web.nav_stack is not None:

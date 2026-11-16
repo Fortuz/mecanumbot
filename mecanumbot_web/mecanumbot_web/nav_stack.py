@@ -95,6 +95,7 @@ STOPPING = "stopping"
 WAITING = "waiting"
 STARTING = "starting"
 STARTED = "started"
+STOPPED = "stopped"
 FAILED = "failed"
 
 
@@ -277,6 +278,11 @@ class NavStackRestarter:
         self._requested_at: Optional[float] = None
         self._closed = False
 
+        #: Set by the app to the mapping session's ``active``: a session has
+        #: stopped nav2 on purpose, and a restart would put AMCL back beside
+        #: slam_toolbox.
+        self.mapping_active: Callable[[], bool] = lambda: False
+
     # ── restarting ───────────────────────────────────────────────────────
 
     def restart(self) -> dict:
@@ -286,6 +292,11 @@ class NavStackRestarter:
         Raises :class:`~.behaviour_runner.RunnerError` when a restart is
         already under way or something on the graph forbids one.
         """
+        if self.mapping_active():
+            raise behaviour_runner.RunnerError(
+                "A mapping session is running from the Maps page, and nav2 is "
+                "stopped for it. Finish the mapping session instead; it restarts "
+                "navigation.")
         live = list(self._live_nodes())
         reasons = blockers(live, self._behaviour_status(), self._tree_nodes)
         with self._lock:
@@ -304,6 +315,28 @@ class NavStackRestarter:
                 target=self._run, daemon=True, name="mecanumbot_web_nav_restart")
             self._thread.start()
         return self.status()
+
+    def stop_stack(self) -> List[str]:
+        """
+        Stop the study stack and wait for its names to leave the graph.
+
+        Blocking, for a caller already on its own thread (a mapping session).
+        Returns the names still on the graph, empty when it is clear.
+        """
+        with self._lock:
+            if self._thread is not None and self._thread.is_alive():
+                raise behaviour_runner.RunnerError(
+                    "A navigation restart is in progress; wait for it.")
+        self.runner.note("--- navigation stop requested (mapping) ---")
+        self._set(STOPPING, "Stopping the navigation stack for mapping")
+        self._stop_everything()
+        self._set(WAITING, "Waiting for the old nodes to leave the ROS graph")
+        left = self._wait_for_graph()
+        if left:
+            self._fail("Still on the ROS graph: {}".format(", ".join(left)))
+        else:
+            self._set(STOPPED, "Stopped for mapping")
+        return left
 
     def _run(self) -> None:
         """Stop, wait for the graph, start. Runs on the restart thread."""

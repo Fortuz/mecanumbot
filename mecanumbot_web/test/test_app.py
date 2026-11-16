@@ -1005,3 +1005,108 @@ def test_teleop_routes_need_the_node(tmp_path):
     web = WebApp(node=None, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path))
     response = web.app.test_client().post("/api/teleop/velocity", json={"vx": 0.1})
     assert response.status_code == 503
+
+
+# ── mapping API ──────────────────────────────────────────────────────────
+
+class StubMapper:
+    """Records mapping requests, so no SLAM is ever launched by a test."""
+
+    def __init__(self):
+        from mecanumbot_web import behaviour_runner as runner_module
+        self.calls = []
+        self.fail_with = None
+        self.runner = runner_module.BehaviourRunner(noun="mapping session")
+
+    def _maybe_fail(self):
+        from mecanumbot_web import mapping
+        if self.fail_with:
+            raise mapping.MappingError(self.fail_with)
+
+    def active(self):
+        return bool(self.calls) and self.calls[-1] == "start"
+
+    def status(self):
+        return {"phase": "mapping" if self.active() else "idle", "busy": False,
+                "active": self.active(), "message": "", "error": "",
+                "saved": [], "process": {"running": self.active()},
+                "can_save": self.active()}
+
+    def start(self):
+        self._maybe_fail()
+        self.calls.append("start")
+        return self.status()
+
+    def save(self, name, overwrite=False):
+        from mecanumbot_web import mapping
+        self._maybe_fail()
+        name = mapping.check_name(name)
+        self.calls.append(("save", name, overwrite))
+        return {"name": name, "folder": "/maps/" + name, "in_source": True}
+
+    def finish(self, restart_nav=True, load=None):
+        self._maybe_fail()
+        self.calls.append(("finish", restart_nav, load))
+        return self.status()
+
+    def shutdown(self):
+        pass
+
+
+@pytest.fixture
+def mapper_client(tmp_path):
+    node = StubNode()
+    node.map_preview = lambda: {"width": 2, "height": 1, "data": "AP8="}
+    mapper = StubMapper()
+    nav = StubNavStack()
+    web = WebApp(node=node, joystick_dir=str(tmp_path), behaviour_dir=str(tmp_path),
+                 runner=StubRunner(), nav=nav, mapper=mapper)
+    web.app.config["TESTING"] = True
+    return web.app.test_client(), mapper, nav
+
+
+def test_maps_page_has_the_mapping_card(context):
+    html = context["client"].get("/maps").data.decode()
+    assert 'id="mapping-card"' in html and "startMapping()" in html
+
+
+def test_mapping_start_save_finish(mapper_client):
+    client, mapper, _nav = mapper_client
+    assert client.post("/api/mapping/start").status_code == 200
+    response = client.post("/api/mapping/save", json={"name": "lab_3"})
+    assert response.status_code == 200
+    assert response.get_json()["saved"]["name"] == "lab_3"
+    response = client.post("/api/mapping/finish", json={"load": "lab_3"})
+    assert response.status_code == 200
+    assert mapper.calls == ["start", ("save", "lab_3", False), ("finish", True, "lab_3")]
+
+
+def test_mapping_save_rejects_a_path(mapper_client):
+    client, mapper, _nav = mapper_client
+    response = client.post("/api/mapping/save", json={"name": "../etc"})
+    assert response.status_code == 400
+    assert not any(isinstance(c, tuple) for c in mapper.calls)
+
+
+def test_a_refused_mapping_start_says_why(mapper_client):
+    client, mapper, _nav = mapper_client
+    mapper.fail_with = "Leading is running"
+    response = client.post("/api/mapping/start")
+    assert response.status_code == 409
+    assert "Leading" in response.get_json()["error"]
+
+
+def test_finish_can_skip_the_nav_restart(mapper_client):
+    client, mapper, _nav = mapper_client
+    client.post("/api/mapping/finish", json={"restart_nav": False})
+    assert mapper.calls[-1] == ("finish", False, None)
+
+
+def test_the_map_preview_is_served(mapper_client):
+    client, _mapper, _nav = mapper_client
+    assert client.get("/api/mapping/map").get_json()["map"]["width"] == 2
+
+
+def test_the_app_tells_nav2_about_the_mapping_session(mapper_client):
+    _client, mapper, nav = mapper_client
+    assert nav.mapping_active == mapper.active

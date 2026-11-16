@@ -65,9 +65,18 @@ PLAIN_STRING = re.compile(r"^[A-Za-z_][A-Za-z0-9_.-]*$")
 NECK_RANGE = (2.0, 8.6)
 
 #: Values a parameter is allowed to take, where the tree only understands
-#: a fixed set. Mirrors the modes ``IsBeingAddressed`` implements.
+#: a fixed set. Each mirrors the tuple the consuming tree checks against:
+#: ``IsBeingAddressed``'s modes, fetch's ``SEARCH_STRATEGIES``,
+#: ``SEARCH_GAZES`` and ``FACINGS``, object choice's ``RESPONSE_MODES``.
+#: A mode the tree does not know is refused here rather than at the next
+#: tree start: on 2026-11-09 ``fetch_search_strategy`` was saved as
+#: ``None`` and the fetch tree died while being built.
 CHOICES = {
     "attention_signal_mode": ("raised_hand", "wave", "any"),
+    "fetch_search_strategy": ("spin", "circles"),
+    "fetch_head_search_mode": ("hold", "sweep"),
+    "fetch_circle_facing": ("tangent", "inward", "outward"),
+    "oc_response_mode": ("approach", "grab"),
 }
 
 #: Parameters whose entries are neck positions, so the travel range applies.
@@ -293,6 +302,10 @@ def coerce(name: str, value, original):
         return float(value)
 
     if kind == "string":
+        # A null is an emptied field, not a word: str(None) would be written
+        # back as the mode "None".
+        if value is None or isinstance(value, (bool, int, float, list, dict)):
+            raise FlatStoreError("{}: must be a word, not empty".format(name))
         text = str(value).strip()
         if not PLAIN_STRING.match(text):
             raise FlatStoreError(

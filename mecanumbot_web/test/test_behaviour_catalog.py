@@ -190,7 +190,8 @@ def test_every_experiment_in_the_workspace_is_startable():
     not the same set of experiments.
     """
     assert set(bc.keys()) == {
-        "leading", "ostensive", "seek", "fetch", "autoslam", "demo"}
+        "leading", "ostensive", "seek", "fetch", "object_choice", "autoslam",
+        "demo"}
 
 
 @pytest.mark.parametrize("spec,expected", [
@@ -199,6 +200,8 @@ def test_every_experiment_in_the_workspace_is_startable():
                 "launch_fetch.launch.py"]),
     (bc.AUTOSLAM, ["ros2", "launch", "mecanumbot_autoslam",
                    "launch_autoslam.launch.py"]),
+    (bc.OBJECT_CHOICE, ["ros2", "launch", "mecanumbot_object_choice_behaviour",
+                        "launch_object_choice.launch.py"]),
 ])
 def test_each_new_behaviour_starts_its_own_launch_file(spec, expected, tmp_path):
     """The command is the one the package's README documents."""
@@ -270,3 +273,18 @@ def test_autoslam_loads_one_file_whatever_the_ssid():
     """
     for ssid in ("MecanumNet", "MecanumetoNet", None):
         assert bc.AUTOSLAM.file_for_ssid(ssid) == "autoslam_setting_constants.yaml"
+
+
+def test_object_choice_passes_only_the_argument_its_launch_file_declares(tmp_path):
+    """launch_object_choice.launch.py declares `params`, not `yaml_path`."""
+    (tmp_path / "object_choice_setting_constants.yaml").write_text("x:\n")
+    argv = bc.OBJECT_CHOICE.build_command({}, str(tmp_path))
+    assert argv[4:] == [
+        "params:=" + str(tmp_path / "object_choice_setting_constants.yaml"),
+        "namespace:=mecanumbot"]
+
+
+def test_object_choice_is_not_fetch():
+    """Its own node, so the page can tell the two runs apart."""
+    assert "object_choice_bt_node" in bc.all_node_names()
+    assert bc.OBJECT_CHOICE.node_names != bc.FETCH.node_names

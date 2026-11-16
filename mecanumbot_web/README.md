@@ -34,7 +34,7 @@ There is no login and no database.
 | `/diagnostics` | Whether the navigation stack is up, with a restart; what the LEDs are showing, how the robot is moving, and the measured publish rate of every important topic against nominal. |
 | `/teleop` | Drive the robot, move the neck and grabbers, and set the LEDs. |
 | `/behaviour` | Choose a behaviour tree, edit the constants it will load, and run it. |
-| `/maps` | Choose the map folder nav2 loads, and load it. |
+| `/maps` | Choose the map folder nav2 loads, and load it. Make a new map with slam_toolbox and save it as a map folder. |
 
 `/` redirects to `/diagnostics`.
 
@@ -269,7 +269,8 @@ where the pad left them.
 Lists every folder under `mecanumbot_description`'s installed `maps/` and loads
 the one you pick. A map is `maps/<name>/<name>.yaml` beside the image it names;
 a folder that breaks that is listed with what is wrong and cannot be loaded. A
-new folder appears after `colcon build --packages-select mecanumbot_description`.
+folder saved by the mapping card below appears at once; one copied into the
+source tree by hand appears after `colcon build --packages-select mecanumbot_description`.
 
 **Loading is saving the choice and restarting nav2** with the restart above, so
 it is refused in the same situations (a tree running, a T1 pass), and a refusal
@@ -290,6 +291,47 @@ on. **The behaviour constants do not move.** They are still chosen by SSID and
 their routes are coordinates on one map, so the page warns whenever the loaded
 map is not the one the network's constants were written for.
 
+#### Making a new map
+
+The *Make a new map* card runs one mapping session at a time (`mapping.py`):
+
+1. **Start mapping** stops the study nav2 stack with the restart's own stop
+   (`NavStackRestarter.stop_stack`), waits for its names to leave the graph, and
+   launches `mecanumbot_bringup mapping.launch.py`: slam_toolbox in mapping mode
+   plus `mecanumbot_scan_grid_node`, the same two nodes as the simulator's
+   `mode:=mapping`. nav2 has to go because AMCL and slam_toolbox would both publish
+   `map -> odom`. It is refused while a behaviour tree runs (from this GUI or from a
+   terminal) and while slam_toolbox or a T1 pass is already up. (The bringup file
+   called `slam_gmapping.launch.py` starts Cartographer. Neither gmapping nor
+   Cartographer is what the workspace maps with.)
+2. **Drive the robot round the room** with the joystick or the Teleop page. The
+   card draws `/map` as slam_toolbox builds it, every 2 s.
+3. **Save map** runs `nav2_map_server map_saver_cli` into a staging folder and moves
+   `<name>.yaml` + `<name>.pgm` into `maps/<name>/`. A name is one folder: letters
+   (Hungarian too), digits, `_`, `-`. An existing folder is replaced only with
+   *replace* ticked. You can save as often as you like, and mapping carries on.
+4. **Finish mapping** stops SLAM. By default it then restarts nav2, optionally
+   after selecting one of the maps just saved, as if it had been chosen in the table.
+
+**Where a save goes.** The installed `maps/` is a symlink install of the source
+folder, file by file, so the folder is written into the **source tree** (found by
+following an existing map's links), where git sees it and a rebuild keeps it. It is
+then linked into the share directory the way colcon would link it, so it can be
+loaded straight away. When the install is a copy, the source cannot be found and
+the folder is written into the share directory alone. The card then says
+"install only", and the folder is lost on a clean rebuild.
+
+**The saved YAML is rewritten**: `image:` becomes the bare file name (the saver
+writes the path it was given), and `free_thresh` becomes 0.196, as in `AI_dept.yaml`.
+The saver writes unexplored cells as grey 205, which is 0.196 occupied, so the
+default 0.25 would read them as *free*, and the planner could route out of the
+mapped area. No waypoints or keepout files are made. Those are written by hand
+for a study map.
+
+While a session runs, nav2 restarts are refused (the Load buttons, the Diagnostics
+restart), because a relaunch would put AMCL back beside slam_toolbox. Stopping the
+web node stops SLAM too, since it is this node's child.
+
 ### Behaviour
 
 One page for a whole trial: pick the tree, set the hyperparameters, edit the
@@ -301,6 +343,7 @@ constants it will load, start it, watch its console, stop it.
 | Ostensive | `ros2 launch mecanumbot_ostensive_behaviour launch_ostensive.launch.py` | constants file, namespace |
 | Seek (T2) | `ros2 launch mecanumbot_seek launch_seek.launch.py` | constants file, namespace |
 | Fetch | `ros2 launch mecanumbot_fetch_behaviour launch_fetch.launch.py` | constants file, namespace |
+| Object choice | `ros2 launch mecanumbot_object_choice_behaviour launch_object_choice.launch.py` | constants file, namespace |
 | Autoslam (T1) | `ros2 launch mecanumbot_autoslam launch_autoslam.launch.py` | **require_cloud**, **use_preflight**, **publish_debug_image**, **use_deep3r**, **server_port**, constants file, namespace |
 | Demo: wander between people | `ros2 run mecanumbot_demo_behaviours wander_between_people_node` | constants file, namespace |
 
@@ -374,7 +417,7 @@ Two schemas, two editors, for a reason:
   and poses that used to be constructor defaults in the behaviour library. Those
   carry the reasoning for their numbers in prose, which cannot be regenerated,
   so it is read off the outgoing file and written back around the same keys.
-- **Ostensive, seek, fetch and autoslam** (`flat_store.py`) — a flat block of scalars whose comments *are*
+- **Ostensive, seek, fetch, object choice and autoslam** (`flat_store.py`) — a flat block of scalars whose comments *are*
   the documentation. Nothing is rewritten there: only the value on each
   parameter's own line changes, then the result is reparsed and checked that
   exactly the intended keys moved. Parameters cannot be added or removed, since
@@ -482,6 +525,7 @@ complete.
 | `demo_config_dir` | `mecanumbot_demo_behaviours/config` |
 | `seek_config_dir` | `mecanumbot_seek/config` |
 | `fetch_config_dir` | `mecanumbot_fetch_behaviour/config` |
+| `object_choice_config_dir` | `mecanumbot_object_choice_behaviour/config` |
 | `autoslam_config_dir` | `mecanumbot_autoslam/config` |
 | `diagnostics_config` | `mecanumbot_web/config/diagnostics_topics.yaml` |
 | `joy_node` / `joy_topic` | `/mecanumbot/mecanumbot_joy_node` / `/mecanumbot/joy` |

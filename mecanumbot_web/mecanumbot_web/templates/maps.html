@@ -6,6 +6,15 @@
 .map-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .map-head h4 { margin: 0; font-size: 14px; }
 tr.current td:first-child { font-weight: 650; }
+.map-canvas-wrap {
+  margin-top: 12px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px; text-align: center;
+}
+#map-canvas { max-width: 100%; max-height: 460px; image-rendering: pixelated;
+              background: #7f7f7f; }
+.save-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+            margin-top: 12px; }
+.save-row input[type=text] { flex: 1; min-width: 160px; }
 pre.log {
   max-height: 260px; overflow: auto; margin: 8px 0 0; padding: 10px;
   background: var(--panel2); border-radius: 6px; font-size: 12px;
@@ -41,6 +50,55 @@ pre.log {
     </table>
   </div>
   <p class="small dim" id="maps-dir"></p>
+</div>
+
+<div class="card" id="mapping-card">
+  <div class="map-head">
+    <h4>Make a new map</h4>
+    <span id="mapping-pill" class="pill IDLE">IDLE</span>
+    <span id="mapping-message" class="small dim grow"></span>
+    <button id="mapping-start" class="primary" onclick="startMapping()">Start mapping</button>
+  </div>
+  <div id="mapping-notice" style="margin-top:10px"></div>
+
+  <div id="mapping-live" class="hidden">
+    <div class="map-canvas-wrap">
+      <canvas id="map-canvas" width="1" height="1"></canvas>
+      <div id="map-info" class="small dim"></div>
+    </div>
+
+    <div class="save-row">
+      <label for="map-name">Name</label>
+      <input type="text" id="map-name" placeholder="e.g. AI_dept_2026_11"
+             maxlength="64" autocomplete="off" spellcheck="false">
+      <label class="small"><input type="checkbox" id="map-overwrite"> replace an existing map</label>
+      <button id="map-save" onclick="saveMap()">Save map</button>
+    </div>
+    <div id="saved-list" class="small dim" style="margin-top:6px"></div>
+
+    <div class="save-row">
+      <label for="finish-load">When finished, load</label>
+      <select id="finish-load"><option value="">the map nav2 had before</option></select>
+      <label class="small"><input type="checkbox" id="finish-restart" checked> restart navigation</label>
+      <button id="mapping-finish" class="danger" onclick="finishMapping()">Finish mapping</button>
+    </div>
+  </div>
+
+  <p class="small dim" style="margin-bottom:0">
+    Starting stops the study navigation stack (AMCL and slam_toolbox would both
+    publish <code>map → odom</code>) and launches
+    <code>mecanumbot_bringup mapping.launch.py</code>: slam_toolbox and the scan
+    grid it reads. Drive the robot slowly round the room with the joystick or the
+    <a href="/teleop">Teleop</a> page, coming back past where it started so the loops
+    close. You can save as often as you like; each save is a new folder,
+    <code>maps/&lt;name&gt;/&lt;name&gt;.yaml</code> and <code>.pgm</code>, written into
+    the <code>mecanumbot_description</code> source tree and linked into the install,
+    so it can be loaded at once. Finishing stops SLAM and brings navigation back.
+  </p>
+  <details style="margin-top:8px">
+    <summary class="small dim">Console of the mapping session</summary>
+    <pre class="log" id="mapping-log"></pre>
+  </details>
 </div>
 
 <details class="card" id="nav-console">
@@ -95,8 +153,9 @@ function renderMaps(body) {
     : 'No map selected here, so the Wi-Fi decides: ' + (body.ssid || 'no network') +
       ' selects ' + body.ssid_map + '.';
   document.getElementById('maps-dir').textContent = 'Reading ' + body.maps_dir +
-    '. A new folder appears after colcon build --packages-select mecanumbot_description ' +
-    'and holds <folder>/<folder>.yaml beside its image.';
+    '. A folder holds <folder>/<folder>.yaml beside its image. One saved below appears ' +
+    'at once; one copied into the source tree by hand appears after ' +
+    'colcon build --packages-select mecanumbot_description.';
 
   document.getElementById('loaded').textContent =
     loaded ? 'Running on ' + loaded : 'No map server is answering';
@@ -171,6 +230,143 @@ async function loop() {
   setTimeout(loop, busy ? 1000 : 3000);
 }
 
+// ── mapping ─────────────────────────────────────────────────────────
+const MAPPING_LABELS = {
+  idle: ['IDLE', 'IDLE'], stopping_nav: ['SLOW', 'STOPPING NAV2'],
+  starting: ['SLOW', 'STARTING'], mapping: ['OK', 'MAPPING'],
+  saving: ['FAST', 'SAVING'], finishing: ['SLOW', 'FINISHING'],
+  finished: ['IDLE', 'FINISHED'], failed: ['DEAD', 'FAILED'],
+};
+let mappingSeq = 0;
+let mappingSession = {};
+let mappingRefusal = null;
+
+function renderMapping(body) {
+  const session = body.session || {};
+  mappingSession = session;
+  const shape = MAPPING_LABELS[session.phase] || ['IDLE', '?'];
+  const pill = document.getElementById('mapping-pill');
+  pill.className = 'pill ' + shape[0];
+  pill.textContent = shape[1];
+  document.getElementById('mapping-message').textContent = session.message || '';
+
+  const running = !!(session.process || {}).running;
+  const live = session.active || running || session.phase === 'failed';
+  document.getElementById('mapping-live').classList.toggle('hidden', !live);
+  document.getElementById('mapping-start').disabled = session.active || session.busy || busy;
+  document.getElementById('map-save').disabled = !session.can_save;
+  document.getElementById('mapping-finish').disabled = session.busy ||
+    !(running || session.phase === 'failed');
+
+  const saved = session.saved || [];
+  document.getElementById('saved-list').textContent = saved.length
+    ? 'Saved this session: ' + saved.map(function (s) {
+        return s.name + (s.in_source ? '' : ' (install only: lost on a clean rebuild)');
+      }).join(', ')
+    : '';
+  const select = document.getElementById('finish-load');
+  const chosen = select.value;
+  select.replaceChildren(el('option', {value: '', text: 'the map nav2 had before'}),
+    ...saved.map(function (s) { return el('option', {value: s.name, text: s.name}); }));
+  if (saved.some(function (s) { return s.name === chosen; })) select.value = chosen;
+
+  if (mappingRefusal) banner('mapping-notice', 'err', mappingRefusal);
+  else if (session.phase === 'failed') banner('mapping-notice', 'err', session.error);
+  else banner('mapping-notice', 'ok', null, []);
+
+  const log = body.log || {};
+  if ((log.lines || []).length) {
+    const pre = document.getElementById('mapping-log');
+    if (log.dropped) pre.textContent += '… ' + log.dropped + ' lines not shown …\n';
+    pre.textContent += log.lines.join('\n') + '\n';
+    pre.scrollTop = pre.scrollHeight;
+  }
+  mappingSeq = log.last_seq || mappingSeq;
+}
+
+async function refreshMapping() {
+  const result = await api('/api/mapping?after=' + mappingSeq);
+  if (result.ok) renderMapping(result.body);
+}
+
+// The grid as ROS sends it: row 0 is the bottom, so it is drawn flipped.
+async function refreshPreview() {
+  if (!mappingSession.active) return;
+  const result = await api('/api/mapping/map');
+  const grid = result.ok && result.body.map;
+  const info = document.getElementById('map-info');
+  if (!grid || !grid.width) { info.textContent = 'Waiting for slam_toolbox\'s first map…'; return; }
+  const cells = atob(grid.data);
+  const canvas = document.getElementById('map-canvas');
+  canvas.width = grid.width; canvas.height = grid.height;
+  const context = canvas.getContext('2d');
+  const image = context.createImageData(grid.width, grid.height);
+  for (let row = 0; row < grid.height; row++) {
+    for (let col = 0; col < grid.width; col++) {
+      const value = cells.charCodeAt(row * grid.width + col);
+      const grey = value === 255 ? 127 : 255 - Math.round(value * 2.55);
+      const i = ((grid.height - 1 - row) * grid.width + col) * 4;
+      image.data[i] = image.data[i + 1] = image.data[i + 2] = grey;
+      image.data[i + 3] = 255;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  info.textContent = grid.width + ' × ' + grid.height + ' cells at ' + grid.resolution +
+    ' m (' + (grid.width * grid.resolution).toFixed(1) + ' × ' +
+    (grid.height * grid.resolution).toFixed(1) + ' m), updated ' + grid.age_s + ' s ago';
+}
+
+async function startMapping() {
+  if (!window.confirm('Start mapping?\n\nThis stops the navigation stack. Stand the ' +
+      'robot still, somewhere it can see walls, before starting.')) return;
+  mappingRefusal = null;
+  const result = await post('/api/mapping/start');
+  if (!result.ok) mappingRefusal = result.body.error || ('HTTP ' + result.status);
+  refreshMapping();
+}
+
+async function saveMap() {
+  const name = document.getElementById('map-name').value.trim();
+  const overwrite = document.getElementById('map-overwrite').checked;
+  if (overwrite && !window.confirm('Replace the existing map "' + name + '"?')) return;
+  mappingRefusal = null;
+  document.getElementById('map-save').disabled = true;
+  const result = await post('/api/mapping/save', {name: name, overwrite: overwrite});
+  if (!result.ok) {
+    mappingRefusal = result.body.error || ('HTTP ' + result.status);
+  } else {
+    const saved = result.body.saved;
+    banner('mapping-notice', 'ok', 'Saved ' + saved.name + ' to ' + saved.folder);
+    document.getElementById('map-overwrite').checked = false;
+  }
+  await refreshMapping();
+  if (result.ok) {
+    document.getElementById('finish-load').value = result.body.saved.name;
+    banner('mapping-notice', 'ok', 'Saved ' + result.body.saved.name + ' to ' +
+           result.body.saved.folder);
+  }
+  refresh();
+}
+
+async function finishMapping() {
+  const load = document.getElementById('finish-load').value || null;
+  const restart = document.getElementById('finish-restart').checked;
+  const unsaved = !(mappingSession.saved || []).length;
+  if (!window.confirm((unsaved ? 'Nothing has been saved: the map will be lost.\n\n' : '') +
+      'Finish mapping?' + (restart ? '\n\nNavigation restarts' +
+      (load ? ' on ' + load : '') + '; set the pose estimate in RViz afterwards.' : ''))) return;
+  mappingRefusal = null;
+  const result = await post('/api/mapping/finish', {load: load, restart_nav: restart});
+  if (!result.ok) mappingRefusal = result.body.error || ('HTTP ' + result.status);
+  refreshMapping();
+}
+
+async function mappingLoop() {
+  try { await refreshMapping(); await refreshPreview(); } catch (e) { /* next tick */ }
+  setTimeout(mappingLoop, mappingSession.active ? 2000 : 4000);
+}
+
 loop();
+mappingLoop();
 </script>
 {% endblock %}

@@ -29,6 +29,7 @@ Blocking there the way the Flask-thread helper does would stall a
 callback group that the rest of this node shares.
 """
 
+import base64
 import threading
 import time
 from functools import partial
@@ -39,7 +40,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from geometry_msgs.msg import Twist
 from mecanumbot_msgs.msg import AccessMotorCmd
 from mecanumbot_msgs.srv import GetLedStatus, SetLedStatus
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import OccupancyGrid, Odometry
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import GetParameters, SetParameters
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -119,6 +120,7 @@ class WebNode(Node):
         odom_topic: Optional[str] = None,
         accessory_topic: Optional[str] = None,
         led_set_service: str = "",
+        map_topic: str = "/map",
     ):
         """Create the node, its monitor and its clients to the robot."""
         super().__init__("mecanumbot_web_node")
@@ -211,6 +213,16 @@ class WebNode(Node):
 
         self._setup_teleop(accessory_topic, led_set_service)
 
+        # The map being built, for the Maps page's mapping preview. Raw, so a
+        # large grid is only decoded when the page asks; transient local, to
+        # match slam_toolbox's and the map server's latched publishers.
+        self._map_lock = threading.Lock()
+        self._map_raw = None
+        self._map_stamp: Optional[float] = None
+        self.create_subscription(
+            OccupancyGrid, map_topic or "/map", self._on_map,
+            self._latched_qos_reliable(), raw=True, callback_group=group)
+
         self.create_timer(DISCOVERY_PERIOD, self._discover, callback_group=group)
         self._discover()
 
@@ -227,6 +239,52 @@ class WebNode(Node):
             history=HistoryPolicy.KEEP_LAST,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
+
+    @staticmethod
+    def _latched_qos_reliable() -> QoSProfile:
+        """Reliable transient-local QoS, as latched map publishers use."""
+        from rclpy.qos import DurabilityPolicy
+        return QoSProfile(
+            depth=1,
+            history=HistoryPolicy.KEEP_LAST,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+
+    # ── map preview ──────────────────────────────────────────────────────
+
+    def _on_map(self, data) -> None:
+        """Keep the newest map's bytes; decoding waits for a request."""
+        with self._map_lock:
+            self._map_raw = data
+            self._map_stamp = time.monotonic()
+
+    def map_preview(self) -> Optional[dict]:
+        """
+        Return the latest ``/map`` for the page to draw, or None.
+
+        ``data`` is the grid's int8 cells as base64 bytes: 0..100 occupancy,
+        255 (that is, -1) unknown, row 0 at the bottom as in ROS.
+        """
+        with self._map_lock:
+            raw, stamp = self._map_raw, self._map_stamp
+        if raw is None:
+            return None
+        message = deserialize_message(raw, OccupancyGrid)
+        info = message.info
+        # int8[] arrives as array('b'), whose buffer is already the bytes
+        # wanted; a list (older rosidl) is converted the slow way.
+        cells = (message.data.tobytes() if hasattr(message.data, "tobytes")
+                 else bytes(value & 0xFF for value in message.data))
+        return {
+            "width": info.width,
+            "height": info.height,
+            "resolution": round(info.resolution, 4),
+            "origin": [round(info.origin.position.x, 3),
+                       round(info.origin.position.y, 3)],
+            "age_s": round(time.monotonic() - stamp, 1),
+            "data": base64.b64encode(cells).decode("ascii"),
+        }
 
     # ── rate monitoring ──────────────────────────────────────────────────
 

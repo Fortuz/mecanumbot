@@ -452,6 +452,50 @@ FETCH = BehaviourSpec(
     ),
 )
 
+OBJECT_CHOICE = BehaviourSpec(
+    key="object_choice",
+    label="Object choice",
+    summary="The dog object-choice task: coloured bricks on the floor, a "
+            "person bids for the robot's attention and points at one, and "
+            "the robot goes to the brick it chose -- or abstains, which is "
+            "recorded too. Not fetch: it surveys the bricks first, reads the "
+            "point, and only borrows fetch's approach and grab.",
+    mode="launch",
+    package="mecanumbot_object_choice_behaviour",
+    target="launch_object_choice.launch.py",
+    editor="flat",
+    requires=(
+        "Nav2 running and AMCL localized, with the robot already at the "
+        "trial's start pose -- it returns there after every trial",
+        "Nothing else holding the webcam: the launch file starts the pose "
+        "detector and the brick detector itself, and the brick detector owns "
+        "/dev/video0 -- not fetch, not a Deep3R client, not a second "
+        "perception launch",
+        "Each trial waits for the experimenter: ros2 topic pub --once "
+        "/mecanumbot/object_choice/next std_msgs/msg/Empty",
+    ),
+    default_file="object_choice_setting_constants.yaml",
+    ssid_files={},
+    note="Trial records (JSON, one per trial, abstentions included) are on "
+         "/mecanumbot/object_choice/trial -- record that topic, it is the "
+         "result.",
+    node_names=("object_choice_bt_node",),
+    arguments=(
+        Argument(
+            name="params_file",
+            label="Constants file",
+            kind=KIND_FILE,
+            default="object_choice_setting_constants.yaml",
+            # One emit: this launch file declares only `params` and hands the
+            # same path to the tree as YAML_PATH itself.
+            emit=("params:={}",),
+            doc="The constants the tree loads at setup -- the ostensive, fetch "
+                "and oc_* keys together. This is the file edited below.",
+        ),
+        _NAMESPACE_LAUNCH,
+    ),
+)
+
 AUTOSLAM = BehaviourSpec(
     key="autoslam",
     label="Autoslam (T1)",
@@ -559,7 +603,7 @@ AUTOSLAM = BehaviourSpec(
 
 #: Every behaviour the GUI can start, in the order the page shows them.
 CATALOG: Tuple[BehaviourSpec, ...] = (
-    LEADING, OSTENSIVE, SEEK, FETCH, AUTOSLAM, DEMO)
+    LEADING, OSTENSIVE, SEEK, FETCH, OBJECT_CHOICE, AUTOSLAM, DEMO)
 
 #: The behaviour whose files the un-scoped config routes address.
 DEFAULT_BEHAVIOUR = LEADING.key

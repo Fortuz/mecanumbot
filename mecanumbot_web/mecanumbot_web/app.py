@@ -19,7 +19,8 @@ Five pages:
                   navigation stack, with a restart
 ``/teleop``       drive the robot, move the neck and grabbers, set the LEDs
 ``/behaviour``    choose a behaviour tree, edit its constants, run it
-``/maps``         choose the map folder nav2 loads, and load it
+``/maps``         choose the map folder nav2 loads, and load it; make a new
+                  map with slam_toolbox and save it as a map folder
 
 There is deliberately no user model.  The old "login" was a
 process-global name rather than a session -- two browsers already shared
@@ -36,8 +37,8 @@ from typing import Dict, List, Optional
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from . import (behaviour_catalog, behaviour_runner, behaviour_store,
-               flat_store, joystick_store, led_enums, map_store, nav_stack,
-               teleop, yaml_io)
+               flat_store, joystick_store, led_enums, map_store, mapping,
+               nav_stack, teleop, yaml_io)
 
 #: Wi-Fi SSID to behaviour constants file, for the leading behaviour.
 #: Held in the catalog, which mirrors what each behaviour's own launch
@@ -104,6 +105,7 @@ class WebApp:
         nav=None,
         maps_dir: str = "",
         map_selection_file: str = map_store.SELECTION_FILE,
+        mapper=None,
     ):
         """Build the app. ``node`` may be None, in which case ROS routes 503."""
         self._node = node
@@ -141,6 +143,23 @@ class WebApp:
                 logger=node.get_logger())
         else:
             self.nav_stack = None
+
+        # Needs the graph too. It stops nav2 through the restarter, and the
+        # restarter refuses to relaunch nav2 under a running session.
+        if mapper is not None:
+            self.mapping = mapper
+        elif node is not None:
+            self.mapping = mapping.MappingSession(
+                nav=self.nav_stack, maps_dir=maps_dir,
+                live_nodes=lambda: node.node_names(),
+                behaviour_status=self._run_status,
+                tree_nodes=behaviour_catalog.all_node_names(),
+                selection_file=map_selection_file,
+                logger=node.get_logger())
+        else:
+            self.mapping = None
+        if self.mapping is not None and self.nav_stack is not None:
+            self.nav_stack.mapping_active = self.mapping.active
 
         self.app = Flask(__name__)
         self.app.config["JSON_SORT_KEYS"] = False
@@ -607,6 +626,78 @@ class WebApp:
                 return jsonify({"ok": False, "error": str(exc),
                                 "restart": self.nav_stack.status()}), 409
             return jsonify({"ok": True, "restart": status})
+
+        # ── mapping API ──────────────────────────────────────────────────
+
+        @app.route("/api/mapping")
+        def api_mapping():
+            """Return the mapping session's progress and new console lines."""
+            _node, error = self._require_node()
+            if error:
+                return error
+            try:
+                after = int(request.args.get("after", 0))
+            except (TypeError, ValueError):
+                after = 0
+            return jsonify({"ok": True, "session": self.mapping.status(),
+                            "log": self.mapping.runner.log(after)})
+
+        @app.route("/api/mapping/map")
+        def api_mapping_map():
+            """Return the latest /map grid for the preview, or null."""
+            node, error = self._require_node()
+            if error:
+                return error
+            return jsonify({"ok": True, "map": node.map_preview()})
+
+        @app.route("/api/mapping/start", methods=["POST"])
+        def api_mapping_start():
+            """Stop nav2 and start slam_toolbox."""
+            _node, error = self._require_node()
+            if error:
+                return error
+            try:
+                status = self.mapping.start()
+            except (mapping.MappingError, behaviour_runner.RunnerError) as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "session": self.mapping.status()}), 409
+            return jsonify({"ok": True, "session": status})
+
+        @app.route("/api/mapping/save", methods=["POST"])
+        def api_mapping_save():
+            """Save the map being built as maps/<name>/."""
+            _node, error = self._require_node()
+            if error:
+                return error
+            payload = request.get_json(silent=True) or {}
+            try:
+                saved = self.mapping.save(payload.get("name"),
+                                          overwrite=bool(payload.get("overwrite")))
+            except mapping.MappingError as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "session": self.mapping.status()}), 400
+            except OSError as exc:
+                return jsonify({"ok": False,
+                                "error": "Could not write the map: {}".format(exc),
+                                "session": self.mapping.status()}), 500
+            return jsonify({"ok": True, "saved": saved,
+                            "session": self.mapping.status()})
+
+        @app.route("/api/mapping/finish", methods=["POST"])
+        def api_mapping_finish():
+            """Stop SLAM and bring nav2 back, optionally on a saved map."""
+            _node, error = self._require_node()
+            if error:
+                return error
+            payload = request.get_json(silent=True) or {}
+            try:
+                status = self.mapping.finish(
+                    restart_nav=payload.get("restart_nav", True) is not False,
+                    load=payload.get("load") or None)
+            except (mapping.MappingError, map_store.MapStoreError) as exc:
+                return jsonify({"ok": False, "error": str(exc),
+                                "session": self.mapping.status()}), 409
+            return jsonify({"ok": True, "session": status})
 
         # ── behaviour API ────────────────────────────────────────────────
 

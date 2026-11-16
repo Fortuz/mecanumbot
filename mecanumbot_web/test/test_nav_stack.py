@@ -320,3 +320,27 @@ def test_no_restart_starts_after_shutdown(servers):
     restarter.shutdown()
     with pytest.raises(behaviour_runner.RunnerError, match="shutting down"):
         restarter.restart()
+
+
+def test_a_restart_is_refused_while_mapping():
+    """A session stopped nav2 on purpose; AMCL must not come back beside SLAM."""
+    restarter = nav_stack.NavStackRestarter(live_nodes=lambda: [],
+                                            list_processes=lambda: [])
+    restarter.mapping_active = lambda: True
+    with pytest.raises(behaviour_runner.RunnerError, match="mapping session"):
+        restarter.restart()
+
+
+def test_stop_stack_reports_a_clear_graph():
+    restarter = nav_stack.NavStackRestarter(live_nodes=lambda: [],
+                                            list_processes=lambda: [])
+    assert restarter.stop_stack() == []
+    assert restarter.status()["phase"] == nav_stack.STOPPED
+
+
+def test_stop_stack_reports_names_that_stay():
+    restarter = nav_stack.NavStackRestarter(live_nodes=lambda: ["/amcl"],
+                                            list_processes=lambda: [],
+                                            graph_timeout=0.2)
+    assert restarter.stop_stack() == ["amcl"]
+    assert restarter.status()["phase"] == nav_stack.FAILED

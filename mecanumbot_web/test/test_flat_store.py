@@ -273,3 +273,60 @@ def test_rewriting_every_value_changes_nothing(shipped):
 
     rewritten = flat_store.apply_updates(text, updates, parsed)
     assert yaml.safe_load(rewritten) == yaml.safe_load(text)
+
+
+# ── 2026-11-09: a mode saved as "None" ───────────────────────────────────
+
+FETCH_LIKE = """fetch_bt_node:
+  ros__parameters:
+    # spin | circles.
+    fetch_search_strategy: spin
+    fetch_ball_class: sports ball
+"""
+
+
+@pytest.fixture
+def fetch_path(tmp_path):
+    target = tmp_path / "fetch_setting_constants.yaml"
+    target.write_text(FETCH_LIKE)
+    return str(target)
+
+
+def test_an_emptied_string_field_is_refused_not_written_as_none(fetch_path, tmp_path):
+    """
+    The page used to send null for a string it had drawn as a number box.
+
+    str(None) passed as a plain word, and the fetch tree then died at build
+    time on `fetch_search_strategy 'None'`.
+    """
+    ok, errors, _warnings, _backup = flat_store.save(
+        fetch_path, {"fetch_ball_class": None}, backup_root=str(tmp_path / "b"))
+    assert not ok and errors
+    assert "None" not in flat_store.read_text(fetch_path)
+
+
+def test_a_search_strategy_the_tree_does_not_know_is_refused(fetch_path, tmp_path):
+    """The tree checks SEARCH_STRATEGIES while it is being built."""
+    ok, errors, _w, _b = flat_store.save(
+        fetch_path, {"fetch_search_strategy": "None"},
+        backup_root=str(tmp_path / "b"))
+    assert not ok
+    assert any("fetch_search_strategy" in error for error in errors)
+
+
+def test_the_mode_parameters_are_offered_as_choices(fetch_path):
+    entries = {e["name"]: e for e in flat_store.describe(fetch_path)["entries"]}
+    assert entries["fetch_search_strategy"]["choices"] == ["spin", "circles"]
+    # A label is a free word, not a choice.
+    assert entries["fetch_ball_class"]["choices"] == []
+
+
+def test_the_shipped_fetch_files_are_valid():
+    """Both fetch constants files load clean -- no mode the tree rejects."""
+    config = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                          "mecanumbot_behaviours", "mecanumbot_fetch_behaviour",
+                          "config")
+    if not os.path.isdir(config):
+        pytest.skip("fetch package not in this checkout")
+    for name in ("fetch_setting_constants.yaml", "Eto_fetch_setting_constants.yaml"):
+        assert flat_store.describe(os.path.join(config, name))["errors"] == []
