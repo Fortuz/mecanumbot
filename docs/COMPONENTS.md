@@ -31,7 +31,7 @@ The totals at the end show the robot's price with and without these parts.
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | NVIDIA Jetson Orin Nano Developer Kit (8 GB, "Super") | 1 | Onboard computer, JetPack 6 / ROS 2 Humble | [NVIDIA](https://marketplace.nvidia.com/en-us/enterprise/robotics-edge/jetson-orin-nano-super-developer-kit/), [Seeed](https://www.seeedstudio.com/NVIDIAr-Jetson-Orintm-Nano-Developer-Kit-p-5617.html) | $249.00 | $249.00 |
 | 2 | Storage for the Jetson (microSD or NVMe SSD) — **TBC** | 1 | OS + workspace | any | ~$20–60 | ~$40 |
-| 3 | 🟦 ROBOTIS OpenCR 1.0 | 1 | Motor controller + IMU + ultrasonic input, `/dev/opencr` (USB `0483:5740`) | [ROBOTIS US](https://www.robotis.us/opencr1-0/), [MyBotShop](https://www.mybotshop.de/ROBOTIS-OpenCR10-Dynamixel-Controller_1) | $247.14 | $247.14 |
+| 3 | 🟦 ROBOTIS OpenCR 1.0 | 1 | Motor controller + IMU + gripper distance sensor (I2C), `/dev/opencr` (USB `0483:5740`) | [ROBOTIS US](https://www.robotis.us/opencr1-0/), [MyBotShop](https://www.mybotshop.de/ROBOTIS-OpenCR10-Dynamixel-Controller_1) | $247.14 | $247.14 |
 | 4 | Arduino Nano (ATmega328P, FTDI USB) | 1 | LED controller, `/dev/arduino_nano` (USB `0403:6001`) | [Arduino Store](https://store.arduino.cc/products/arduino-nano) | ~$25 | ~$25 |
 | 5 | Adafruit INA219 current/voltage sensor breakout (#904) | 1 | Jetson supply monitoring over I2C (`orin_battery_state`) | [Adafruit](https://www.adafruit.com/product/904) | ~$10 | ~$10 |
 | 6 | USB hub (model **TBC**) | 1 | Fans the USB devices (OpenCR, LiDAR, Nano, webcam) out from the Jetson | any powered USB 3 hub | ~$20 | ~$20 |
@@ -74,7 +74,7 @@ ROBOTIS sells them without fasteners.
 | --- | --- | --- | --- | --- | --- | --- |
 | 12 | 🟦 ROBOTIS LDS-02 (LD08) 360° LiDAR, with its USB interface board | 1 | `/scan`, `/dev/ld08_lidar` (USB `10c4:ea60`). **Discontinued in 2025.** The successor is the LDS-03, which needs a different driver and `LDS_MODEL`. | [ROBOTIS shop](https://en.robotis.com/shop_en/list.php?ca_id=4050), [LDS-03 notes](https://emanual.robotis.com/docs/en/platform/turtlebot3/appendix_lds_03/) | ~$100 | ~$100 |
 | 13 | USB (UVC) webcam **with built-in microphone** (model **TBC**) | 1 | `/dev/video0` feeds the DeepStream detectors, and its microphone is the `mecanumbot_audio` input. The configs assume a horizontal FOV of 51°. The Raspberry Pi Camera v2 in `images/mecanumbot.jpg` is the legacy Pi revision. | any UVC webcam with a microphone | ~$30–80 | ~$50 |
-| 14 | HC-SR04 ultrasonic distance sensor | 1 | Wired to the OpenCR Arduino header (TRIG pin 2, ECHO pin 3). The firmware reads it as `dms` in `opencr_state` (cm, `-1` on a timeout past about 4 m). `mecanumbot_sensorproc_node` turns it into `has_object`: is something held in the grabber (a majority of the last 11 readings above `has_object_threshold`, 250, or below `has_object_min_threshold`, 5 -- an object pressed against the sensor reads as a tiny distance, and the `-1` timeout counts too). | [Adafruit #3942](https://www.adafruit.com/product/3942), [SparkFun SEN-15569](https://www.sparkfun.com/products/15569) | ~$4 | ~$4 |
+| 14 | VL53L0X time-of-flight distance sensor (breakout with regulator) | 1 | Looks forward between the grabber shafts. On the OpenCR I2C header (SDA = D14, SCL = D15, VIN = 3.3 V, GND), run at 100 kHz; firmware needs Pololu's `VL53L0X` Arduino library. The firmware reads it as `dms` in `opencr_state` (cm; `-1` = no valid reading, nothing within about 1.2 m; `-2` = sensor not initialised, retried every second). `mecanumbot_sensorproc_node` turns it into `has_object`: is something held in the grabber (a majority of the last `has_object_window`, 11, readings at or below `has_object_max_distance`, 6 cm; `-1`/`-2` count as empty). | [Pololu #2490](https://www.pololu.com/product/2490), [Adafruit #3317](https://www.adafruit.com/product/3317) | ~$15 | ~$15 |
 
 ## 4. Power
 
@@ -157,7 +157,7 @@ Prices in rows 28–30 are robotis.hu list prices excluding VAT, checked on 2026
 | 31 | USB cables: micro-USB (OpenCR), mini-USB (Arduino Nano), the LiDAR interface lead, a webcam extension, and the hub's upstream cable | ~5 | Every serial device reaches the Jetson over USB, through the hub (row 6) | any, short 15–30 cm leads | ~$3 each | ~$15 |
 | 32 | 🟦 Battery lead: LB-012 → OpenCR battery input (extension / connector) — **TBC** | 1 | Motor power | comes with the TurtleBot3 kit, or built in-house | ~$5 | ~$5 |
 | 33 | Jetson power cable: LB-012 → INA219 shunt → 5.5 × 2.5 mm barrel plug | 1 | Jetson power from the second LiPo (row 15) | **CUSTOM** (built in-house) | ~$5 | ~$5 |
-| 34 | Dupont jumper wires (F–F) | 1 pack | HC-SR04 → OpenCR header (VCC, TRIG, ECHO, GND) and INA219 → Jetson I2C header (SDA, SCL, 3V3, GND) | any | ~$5 | ~$5 |
+| 34 | Dupont jumper wires (F–F) | 1 pack | VL53L0X → OpenCR I2C header (VIN, GND, SDA, SCL) and INA219 → Jetson I2C header (SDA, SCL, 3V3, GND) | any | ~$5 | ~$5 |
 | 35 | Cable ties, spiral wrap, heat-shrink | — | Routing along the standoffs and to the neck (see the photo) | any | ~$8 | ~$8 |
 
 ## 9. 3D-printed and in-house parts (CUSTOM)
@@ -171,8 +171,8 @@ The STLs are in `mecanumbot_description/meshes/3Dparts/`. Price means filament c
 | 38 | Grabber mount, front (holds the AX-12A bodies) | 1 | `grabbermount_front.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
 | 39 | Grabber mount, rear | 1 | `grabbermount_rear.stl` | **CUSTOM** (3D printed) | ~$1 | ~$1 |
 | 40 | Wheel adapter (XM430 horn → mecanum wheel hub) | 4 | `omniwheel_adapter.stl` | **CUSTOM** (3D printed) | ~$0.50 | ~$2 |
-| 41 | HC-SR04 holder — **TBC** (no STL in the repo) | 1 | — | **CUSTOM** | — | — |
-| 42 | LED bar, INA219 and HC-SR04 wiring harness (soldered joints, splices) | 1 | — | **CUSTOM** (built in-house from rows 20 and 34) | — | — |
+| 41 | VL53L0X holder — **TBC** (no STL in the repo) | 1 | — | **CUSTOM** | — | — |
+| 42 | LED bar, INA219 and VL53L0X wiring harness (soldered joints, splices) | 1 | — | **CUSTOM** (built in-house from rows 20 and 34) | — | — |
 
 ## 10. Operator side (not mounted on the robot)
 

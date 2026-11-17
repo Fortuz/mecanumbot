@@ -37,3 +37,7 @@ mecanumbot_sensorproc_node:
       from_imu: false
     imu_params:
       frame_id: "imu_link"
+    # Gripper VL53L0X: held = a majority of the last has_object_window dms
+    # readings at or below has_object_max_distance [cm].
+    has_object_max_distance: 6.0
+    has_object_window: 11

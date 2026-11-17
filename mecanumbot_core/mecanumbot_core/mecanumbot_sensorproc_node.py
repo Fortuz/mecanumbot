@@ -15,6 +15,8 @@ from std_msgs.msg import Bool
 from tf2_ros import TransformBroadcaster
 from transforms3d.euler import euler2quat, quat2euler
 
+from mecanumbot_core.held_object import HeldObjectDetector
+
 TICK_TO_RAD = 0.005061
 # A backwards stamp step larger than this is a real clock discontinuity (NTP
 # correcting the Jetson, which has no RTC, or the board restarting its stamp),
@@ -102,10 +104,11 @@ class Mecanumbot_Sensorproc_Node(Node):
                 ("imu_params.frame_id", "imu_link"),
                 ("use_state_stamp_for_dt", False),
                 ("require_state_stamp", False),
-                ("has_object_threshold", 250.0),
-                # below this [cm] the object is too close for the HC-SR04
-                # to range, so a held object reads as a tiny distance
-                ("has_object_min_threshold", 5.0),
+                # the gripper VL53L0X reads an object as held when it is at
+                # most this far [cm]
+                ("has_object_max_distance", 6.0),
+                # majority vote over this many readings
+                ("has_object_window", 11),
             ],
         )
 
@@ -153,10 +156,10 @@ class Mecanumbot_Sensorproc_Node(Node):
         )  # tick - unit diff of wheel velocoties in rpm, 2Rpi - distance/rotation, wheel_radius - m
         self.wheel_dist_scale = (self.wheel_sep_x + self.wheel_sep_y) / 2
 
-        self.has_object_threshold = self.get_parameter("has_object_threshold").value
-        self.has_object_min_threshold = self.get_parameter(
-            "has_object_min_threshold"
-        ).value
+        self.held_object = HeldObjectDetector(
+            self.get_parameter("has_object_max_distance").value,
+            self.get_parameter("has_object_window").value,
+        )
 
         # Initialize messages
 
@@ -168,9 +171,6 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.cr_battery_state = BatteryState()
         self.orin_battery_state = BatteryState()
 
-        # seeded with a reading that means "nothing held": a 0 would now
-        # count as an object and report one for the first few samples
-        self.dms_buffer = [self.has_object_min_threshold] * 11
         self.has_object = False
         # Publishers
 
@@ -526,16 +526,14 @@ class Mecanumbot_Sensorproc_Node(Node):
         self.orin_battery_state.present = True
 
     def set_object_state(self):
-        self.dms_buffer.append(self.cr_state.dms)
-        self.dms_buffer.pop(0)
-        self.has_object = (
-            sum(
-                dms > self.has_object_threshold
-                or dms < self.has_object_min_threshold
-                for dms in self.dms_buffer
+        self.has_object = self.held_object.update(self.cr_state.dms)
+        if not self.held_object.sensor_ready:
+            # has_object stays False; say why rather than look like an empty grabber.
+            self.get_logger().warn(
+                "Gripper distance sensor not initialised on the OpenCR (dms = -2); "
+                "has_object is forced False.",
+                throttle_duration_sec=10.0,
             )
-            > len(self.dms_buffer) / 2
-        )
 
 
 def main(args=None):

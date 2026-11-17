@@ -71,7 +71,7 @@ The timer stays silent until the first command arrives, so merely starting the n
 | `joint_states`    | `sensor_msgs/msg/JointState`         | Publishes wheel/accessory joint state for visualization and robot state publisher consumption. |
 | `cr_battery_state`   | `sensor_msgs/msg/BatteryState`    | Publishes main battery voltage and estimated charge percentage/capacity state, as reported by OpenCR. |
 | `orin_battery_state` | `sensor_msgs/msg/BatteryState`    | **Jetson only.** Publishes bus voltage and current read from an INA219 over I2C. Created only when the device tree reports a Jetson, and published only when the sensor was found on the bus. |
-| `has_object`      | `std_msgs/msg/Bool`                  | Publishes whether the gripper distance sensor reports a held object.                           |
+| `has_object`      | `std_msgs/msg/Bool`                  | Publishes whether the gripper VL53L0X reports a held object: a majority of the last `has_object_window` (11) `dms` readings at or below `has_object_max_distance` cm (6). No target (`-1`) and sensor not initialised (`-2`) count as empty. |
 | `/tf` (broadcast) | `geometry_msgs/msg/TransformStamped` | Broadcasts `odom -> base_footprint` transform from integrated odometry pose.                   |
 
 ### Subscribers
