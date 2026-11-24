@@ -564,3 +564,75 @@ def test_self_check_catches_an_untyped_coordinate(monkeypatch):
     params = minimal_params()
     with pytest.raises(bs.BehaviourStoreError):
         bs.dump(bs.params_from_structured(bs.parse_params(params)))
+
+
+# ── seats ────────────────────────────────────────────────────────────────
+
+def _seat_values(entry):
+    return ast.literal_eval(entry)
+
+
+def test_seats_are_edited_and_written_back():
+    """Seats get their own table, and come back as literals the tree reads."""
+    params = minimal_params()
+    params["seats"] = ["{'seat':'bean_bag', 'x':-0.80, 'y':2.20, 'radius':0.70}",
+                       "{'seat':'chair', 'x':1, 'y':3.35}"]
+    structured = bs.parse_params(params)
+    assert [seat["seat"] for seat in structured["seats"]] == ["bean_bag", "chair"]
+    assert "seats" not in structured["extras"]
+
+    structured["seats"][1]["radius"] = 0.6
+    structured["seats"].append({"seat": "chair", "x": 2.0, "y": 0.5})
+    rebuilt = bs.params_from_structured(structured)
+    seats = [_seat_values(entry) for entry in rebuilt["seats"]]
+    assert seats[0] == {"seat": "bean_bag", "x": -0.8, "y": 2.2, "radius": 0.7}
+    assert seats[1] == {"seat": "chair", "x": 1.0, "y": 3.35, "radius": 0.6}
+    assert seats[2] == {"seat": "chair", "x": 2.0, "y": 0.5}  # radius left default
+
+    document = yaml.safe_load(bs.dump(rebuilt))
+    for key in bs.ROOT_KEYS:
+        document = document[key]
+    assert document["seats"] == rebuilt["seats"]
+
+
+def test_an_empty_seat_table_keeps_a_declared_key_and_adds_none():
+    """`seats: []` survives a save; a file without seats does not gain the key."""
+    declared = minimal_params()
+    declared["seats"] = []
+    rebuilt = bs.params_from_structured(bs.parse_params(declared))
+    assert rebuilt["seats"] == []
+    assert "    seats: []" in bs.dump(rebuilt).splitlines()
+
+    rebuilt = bs.params_from_structured(bs.parse_params(minimal_params()))
+    assert "seats" not in rebuilt
+
+
+def test_a_seat_the_tree_cannot_build_is_an_error():
+    """seat_from_literal raises at setup on these, so they block the save."""
+    params = minimal_params()
+    params["body_profiles"] = ["{'body':'chair', 'low':0.0, 'high':1.3}"]
+    params["seats"] = ["{'x':0.0, 'y':0.0}",
+                       "{'seat':'chair', 'y':0.0}",
+                       "{'seat':'chair', 'x':0.0, 'y':0.0, 'radius':0.0}",
+                       "{'seat':'chair', 'x':0.0, 'y':0.0, 'low':1.0, 'high':0.5}",
+                       "{'seat':'sofa', 'x':0.0, 'y':0.0}"]
+    errors, warnings = bs.validate(params)
+    assert any(e.startswith("seats[0].seat") for e in errors)
+    assert any(e.startswith("seats[1].x") for e in errors)
+    assert any(e.startswith("seats[2].radius") for e in errors)
+    assert any(e.startswith("seats[3]") and "low" in e for e in errors)
+    assert not any(e.startswith("seats[4]") for e in errors)
+    assert any(w.startswith("seats[4].seat") for w in warnings)
+
+
+def test_a_literal_text_tunable_stays_quoted():
+    """A dict literal kept as text must not come back as a YAML mapping."""
+    params = minimal_params()
+    params["robot_start_pose"] = "{'X':0.15, 'Y':-0.12, 'Z':0.0}"
+    params["LED_lead_direction"] = "target"
+    text = bs.dump(params)
+    assert "    LED_lead_direction: target" in text.splitlines()
+    document = yaml.safe_load(text)
+    for key in bs.ROOT_KEYS:
+        document = document[key]
+    assert document["robot_start_pose"] == params["robot_start_pose"]

@@ -513,9 +513,11 @@ function renderLeading(host) {
     'The first checkpoint is the start position and the last is the target.'}));
   const routeBody = el('tbody', {id: 'checkpoints'});
   route.appendChild(el('div', {class: 'scroll'}, [el('table', {}, [
-    el('thead', {}, [el('tr', {}, [el('th', {}), el('th', {class: 'num', text: 'X'}),
-                                   el('th', {class: 'num', text: 'Y'}),
-                                   el('th', {class: 'num', text: 'Z'}), el('th', {})])]),
+    // Headers left-aligned like the inputs under them: `num` right-aligns,
+    // which put each label at the far edge of its column, past its field.
+    el('thead', {}, [el('tr', {}, [el('th', {}), el('th', {text: 'X'}),
+                                   el('th', {text: 'Y'}),
+                                   el('th', {text: 'Z'}), el('th', {})])]),
     routeBody])]));
   route.appendChild(el('button', {class: 'small', text: 'Add checkpoint',
     onclick: function () {
@@ -523,6 +525,8 @@ function renderLeading(host) {
     }}));
   host.appendChild(route);
   renderCheckpoints(routeBody);
+
+  renderSeats(host);
 
   host.appendChild(el('div', {id: 'scripts-host'}));
   renderScripts();
@@ -589,6 +593,61 @@ function renderCheckpoints(body) {
       onclick: function () {
         data.checkpoints.splice(index, 1); touch(); render();
       }})]));
+    body.appendChild(el('tr', {}, cells));
+  });
+}
+
+// Seats: where in the room a body sits, so the head looks lower for it.
+// x/y are map metres. radius, low and high may be left empty: radius then
+// takes the tree's default, low/high the seat's body profile.
+const SEAT_FIELDS = [
+  {key: 'x', label: 'x [m]', optional: false},
+  {key: 'y', label: 'y [m]', optional: false},
+  {key: 'radius', label: 'radius [m]', optional: true},
+  {key: 'low', label: 'low [m]', optional: true},
+  {key: 'high', label: 'high [m]', optional: true},
+];
+
+function renderSeats(host) {
+  if (!data.seats) data.seats = [];
+  const card = el('div', {class: 'card'});
+  card.appendChild(el('h3', {text: 'Seats'}));
+  card.appendChild(el('p', {class: 'small dim', text:
+    'Where a body sits rather than stands (bean bag, chair), so the head looks ' +
+    'lower for it. The name picks the body profile; x and y are map metres. ' +
+    'Leave radius empty for the default, and low/high empty for the profile\'s ' +
+    'height band.'}));
+  const body = el('tbody');
+  const head = [el('th', {text: 'seat'})];
+  SEAT_FIELDS.forEach(function (field) { head.push(el('th', {text: field.label})); });
+  head.push(el('th', {}));
+  card.appendChild(el('div', {class: 'scroll'}, [el('table', {}, [
+    el('thead', {}, [el('tr', {}, head)]), body])]));
+  card.appendChild(el('button', {class: 'small', text: 'Add seat',
+    onclick: function () {
+      data.seats.push({seat: 'chair', x: 0.0, y: 0.0, radius: 0.6}); touch(); render();
+    }}));
+  host.appendChild(card);
+
+  data.seats.forEach(function (seat, index) {
+    const name = el('input', {type: 'text', value: seat.seat || '',
+      onchange: function (event) { seat.seat = event.target.value.trim(); touch(); }});
+    name.style.width = '120px';
+    const cells = [el('td', {}, [name])];
+    SEAT_FIELDS.forEach(function (field) {
+      const value = seat[field.key];
+      cells.push(el('td', {}, [el('input', {type: 'number', step: 'any',
+        value: (value === undefined || value === null) ? '' : value,
+        placeholder: field.optional ? 'default' : '',
+        onchange: function (event) {
+          const text = event.target.value;
+          if (text === '' && field.optional) delete seat[field.key];
+          else seat[field.key] = parseFloat(text);
+          touch();
+        }})]));
+    });
+    cells.push(el('td', {}, [el('button', {class: 'small danger', text: 'remove',
+      onclick: function () { data.seats.splice(index, 1); touch(); render(); }})]));
     body.appendChild(el('tr', {}, cells));
   });
 }

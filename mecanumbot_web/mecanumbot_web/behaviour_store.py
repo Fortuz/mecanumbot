@@ -44,6 +44,7 @@ time -- an edit therefore applies on the next tree start, not live.
 """
 
 import ast
+import json
 import math
 import textwrap
 from typing import Dict, List, Optional, Tuple
@@ -116,6 +117,16 @@ GRIPPER_RANGE = (1.6, 8.54)
 #: number written as ``0`` rather than ``0.0`` crashes the tree at setup.
 CHECKPOINT_AXES = ("X", "Y", "Z")
 
+#: Seats: where in the room a body is sitting rather than standing, so the
+#: dog tree's head looks for it lower (``body_gaze.seat_from_literal``).
+#: ``seat`` names the body profile and ``x``/``y`` are map metres -- lower
+#: case on purpose, since ``X``/``Y`` would decode as a checkpoint ``Point``.
+#: ``radius`` defaults in the tree; ``low``/``high`` override the profile's
+#: height band and are left out unless set.
+SEAT_NAME = "seat"
+SEAT_REQUIRED = ("x", "y")
+SEAT_OPTIONAL = ("radius", "low", "high")
+
 #: Accessory positions. ``parse_gesture`` casts these to ``float`` before
 #: they reach ``AccessMotorCmd``, so an int survives; written as floats
 #: anyway, since they are travel positions rather than counts.
@@ -140,7 +151,7 @@ INTEGER_TUNABLES = frozenset({"turn_corrections", "recover_retries"})
 
 def _script_keys() -> frozenset:
     """Return every key the structured editor renders as a sequence."""
-    keys = {"Dog_checkpoints", "LED_start_setting"}
+    keys = {"Dog_checkpoints", "LED_start_setting", "seats"}
     for script in LED_SCRIPTS + GESTURE_SCRIPTS:
         keys.add("{}_seq".format(script))
         keys.add("{}_times".format(script))
@@ -263,6 +274,30 @@ def format_checkpoint(point: Dict) -> str:
     return "{{'X':{}, 'Y':{}, 'Z':{}}}".format(*values)
 
 
+def format_seat(seat: Dict) -> str:
+    """
+    Emit a seat as the quoted dict literal ``seat_from_literal`` reads.
+
+    The optional fields are written only when they hold a number, so a
+    seat left on the tree's default radius or its profile's height band
+    stays that way rather than having today's default frozen into it.
+    """
+    name = _field(seat, "seat", SEAT_NAME)
+    if not isinstance(name, str) or not name.strip():
+        raise BehaviourStoreError("seat: the name must be non-empty text")
+    parts = ["'{}':{!r}".format(SEAT_NAME, name.strip())]
+    for field in SEAT_REQUIRED:
+        parts.append("'{}':{}".format(field, _float_text(
+            as_float("seat " + field, _field(seat, "seat", field)))))
+    for field in SEAT_OPTIONAL:
+        value = seat.get(field) if isinstance(seat, dict) else None
+        if value is None or value == "":
+            continue
+        parts.append("'{}':{}".format(field, _float_text(
+            as_float("seat " + field, value))))
+    return "{" + ", ".join(parts) + "}"
+
+
 #: Describe an LED pattern in words, for the regenerated comment.
 describe_led = led_enums.describe_corners
 
@@ -330,6 +365,8 @@ def parse_params(params: Dict) -> Dict:
         "tunables": [],
         "extras": {},
         "checkpoints": [],
+        "seats": [],
+        "seats_declared": "seats" in params,
         "led_start": None,
         "led_scripts": {},
         "gesture_scripts": {},
@@ -356,6 +393,12 @@ def parse_params(params: Dict) -> Dict:
         except (BehaviourStoreError, ValueError, SyntaxError) as exc:
             structured["parse_errors"].append(
                 "Dog_checkpoints[{}]: {}".format(index, exc))
+
+    for index, entry in enumerate(params.get("seats") or ()):
+        try:
+            structured["seats"].append(parse_entry(entry))
+        except (BehaviourStoreError, ValueError, SyntaxError) as exc:
+            structured["parse_errors"].append("seats[{}]: {}".format(index, exc))
 
     start = params.get("LED_start_setting") or ()
     if start:
@@ -419,6 +462,13 @@ def params_from_structured(structured: Dict) -> Dict:
 
     params["Dog_checkpoints"] = [
         format_checkpoint(point) for point in structured.get("checkpoints") or ()]
+
+    # No seats is the tree's own default, so an empty table leaves the key
+    # out of a file that never had one -- and keeps `seats: []` in a file
+    # that declared it, so a save does not drop a key the file states.
+    seats = structured.get("seats") or ()
+    if seats or structured.get("seats_declared"):
+        params["seats"] = [format_seat(seat) for seat in seats]
 
     if structured.get("led_start") is not None:
         params["LED_start_setting"] = [format_led(structured["led_start"])]
@@ -489,7 +539,8 @@ def normalize(params: Dict) -> Dict:
             pass
 
     for key, formatter in [("Dog_checkpoints", format_checkpoint),
-                           ("LED_start_setting", format_led)]:
+                           ("LED_start_setting", format_led),
+                           ("seats", format_seat)]:
         if isinstance(result.get(key), list):
             result[key] = _renormalized(result[key], formatter)
 
@@ -608,6 +659,78 @@ def _validate_sequence(params, script, kind, errors, warnings):
                 times_key, len(times), seq_key, len(sequence)))
 
 
+def _profile_names(params: Dict) -> Optional[set]:
+    """Return the body profiles a file declares, or None if it declares none."""
+    profiles = params.get("body_profiles")
+    if not isinstance(profiles, list):
+        return None
+    names = set()
+    for entry in profiles:
+        try:
+            literal = parse_entry(entry)
+        except (BehaviourStoreError, ValueError, SyntaxError):
+            continue
+        if isinstance(literal, dict) and "body" in literal:
+            names.add(str(literal["body"]))
+    return names
+
+
+def _validate_seats(params: Dict, errors: List[str], warnings: List[str]) -> None:
+    """
+    Check ``seats`` the way ``body_gaze.seat_from_literal`` will read it.
+
+    A seat it cannot build is a ``ValueError`` when the dog tree is set up,
+    so those are errors.  A name no body profile carries is only a warning:
+    the tree then looks for that body at standing height, which runs, but
+    is almost never what a seat was declared for.
+    """
+    if "seats" not in params:
+        return
+    seats = params["seats"]
+    if not isinstance(seats, list):
+        errors.append("seats: must be a list")
+        return
+
+    profiles = _profile_names(params)
+    for index, entry in enumerate(seats):
+        label = "seats[{}]".format(index)
+        try:
+            seat = parse_entry(entry)
+        except (BehaviourStoreError, ValueError, SyntaxError) as exc:
+            errors.append("{}: not a parseable dict literal ({})".format(label, exc))
+            continue
+        if not isinstance(seat, dict):
+            errors.append("{}: must be a dict literal".format(label))
+            continue
+
+        name = seat.get(SEAT_NAME)
+        if not isinstance(name, str) or not name.strip():
+            errors.append("{}.{}: must be a non-empty name".format(label, SEAT_NAME))
+        elif profiles is not None and name not in profiles:
+            warnings.append(
+                "{}.{}: '{}' is not one of the body_profiles ({}); the head will "
+                "look for this body at standing height".format(
+                    label, SEAT_NAME, name, ", ".join(sorted(profiles)) or "none"))
+
+        for field in SEAT_REQUIRED + SEAT_OPTIONAL:
+            if field not in seat:
+                if field in SEAT_REQUIRED:
+                    errors.append("{}.{}: missing".format(label, field))
+                continue
+            value = seat[field]
+            if field in SEAT_OPTIONAL and value is None:
+                continue
+            if not _is_number(value) or not math.isfinite(float(value)):
+                errors.append("{}.{}: must be a number".format(label, field))
+        radius = seat.get("radius")
+        if _is_number(radius) and float(radius) <= 0:
+            errors.append("{}.radius: must be greater than 0".format(label))
+        low, high = seat.get("low"), seat.get("high")
+        if _is_number(low) and _is_number(high) and float(low) >= float(high):
+            errors.append("{}: low ({}) must be below high ({})".format(
+                label, low, high))
+
+
 def validate(params: Dict) -> Tuple[List[str], List[str]]:
     """
     Return ``(errors, warnings)`` for a raw params mapping.
@@ -664,6 +787,8 @@ def validate(params: Dict) -> Tuple[List[str], List[str]]:
             warnings.append(
                 "Dog_checkpoints: only one checkpoint, so the start and target "
                 "positions are the same point")
+
+    _validate_seats(params, errors, warnings)
 
     start = params.get("LED_start_setting")
     if not isinstance(start, list) or not start:
@@ -769,7 +894,15 @@ def _tunable_text(name: str, value, note: Dict) -> str:
     pinned and a measurement assumed when the file has nothing to say.
     """
     if isinstance(value, str):
-        return value
+        # Bare when it reads back as the same text (`LED_lead_direction:
+        # target`), quoted when it would not: a dict literal such as
+        # `robot_start_pose` would otherwise come back as a YAML mapping,
+        # and a "1.0" or "true" as a number or a bool.
+        try:
+            same = yaml.safe_load("k: {}".format(value)) == {"k": value}
+        except yaml.YAMLError:
+            same = False
+        return value if same else json.dumps(value)
     if name in INTEGER_TUNABLES:
         return _int_text(as_int(name, value))
     original = note.get("value")
@@ -904,6 +1037,19 @@ def dump(params: Dict, notes: Optional[Dict] = None) -> str:
                 comments.append("waypoint {}".format(index))
         _emit_literal_list(lines, "Dog_checkpoints", checkpoints, comments)
 
+    seats = params.get("seats")
+    if isinstance(seats, list) and not seats:
+        lines.append("")
+        lines.append("    seats: []")
+    elif seats:
+        lines.append("")
+        lines.append("    # Seats: where a body sits rather than stands, so the head looks "
+                     "lower for it.")
+        lines.append("    # 'seat' names a body profile, x/y are map metres; radius "
+                     "[m], low/high [m]")
+        lines.append("    # are optional.")
+        _emit_literal_list(lines, "seats", seats)
+
     start = params.get("LED_start_setting") or []
     if start:
         lines.append("")
@@ -977,7 +1123,8 @@ def _self_check(text: str, params: Dict) -> None:
                 ", ".join(missing)))
 
     literal_keys = [("Dog_checkpoints", "checkpoint"),
-                    ("LED_start_setting", "led")]
+                    ("LED_start_setting", "led"),
+                    ("seats", "seat")]
     literal_keys += [("{}_seq".format(name), "led") for name in LED_SCRIPTS]
     literal_keys += [("{}_seq".format(name), "gesture") for name in GESTURE_SCRIPTS]
 
@@ -1022,6 +1169,19 @@ def _check_literal_types(parsed, kind: str, label: str) -> None:
                         "internal error: {}.{}.{} was emitted as {!r}, which the "
                         "tree cannot assign to an int8 field".format(
                             label, corner, field, value))
+        return
+
+    if kind == "seat":
+        # The tree casts these with float(), so only the shape matters: a
+        # name, and numbers where the numbers are.
+        if not isinstance((parsed or {}).get(SEAT_NAME), str):
+            raise BehaviourStoreError(
+                "internal error: {}.{} was not emitted as text".format(label, SEAT_NAME))
+        for field in SEAT_REQUIRED:
+            if not _is_number((parsed or {}).get(field)):
+                raise BehaviourStoreError(
+                    "internal error: {}.{} was emitted as {!r}".format(
+                        label, field, (parsed or {}).get(field)))
         return
 
     fields = CHECKPOINT_AXES if kind == "checkpoint" else GESTURE_FIELDS
