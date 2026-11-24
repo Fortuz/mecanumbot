@@ -1,0 +1,9 @@
+# Saved from the web GUI's Maps page on 2026-11-24 08:54. free_thresh is 0.196, not 0.25, so the
+# grey of unexplored cells reads as unknown rather than free.
+image: Etho_test.pgm
+mode: trinary
+resolution: 0.05
+origin: [-3.15, -0.978, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
