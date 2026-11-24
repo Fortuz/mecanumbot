@@ -32,7 +32,7 @@ from .yaml_io import atomic_write_text
 #: Wi-Fi SSID to map folder.
 SSID_MAPS = {
     "MecanumNet": "AI_dept",
-    "MecanumetoNet": "LED_exp",
+    "MecanumetoNet": "Etho_test",  # the leading study's room since 2026-11-24
 }
 
 #: The map of any other network.

@@ -45,7 +45,7 @@ def test_only_the_led_room_ships_a_keepout_mask():
 
 @pytest.mark.parametrize("ssid,expected", [
     ("MecanumNet", "AI_dept"),
-    ("MecanumetoNet", "LED_exp"),
+    ("MecanumetoNet", "Etho_test"),
     ("somewhere else", "AI_dept"),
     (None, "AI_dept"),
 ])
@@ -81,7 +81,7 @@ def test_a_chosen_folder_that_has_gone_falls_back_and_says_so(tmp_path, selectio
     map_store.select(str(tmp_path), "room", selection)
     (tmp_path / "room" / "room.yaml").unlink()
     name, source, note = map_store.resolve("MecanumetoNet", str(tmp_path), selection)
-    assert (name, source) == ("LED_exp", map_store.WIFI)
+    assert (name, source) == ("Etho_test", map_store.WIFI)
     assert "room" in note
 
 

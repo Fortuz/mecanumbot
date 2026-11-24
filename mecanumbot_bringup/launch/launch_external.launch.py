@@ -108,7 +108,7 @@ def get_wifi_ssid():
 def choose_launch_profile(ssid):
     ssid_to_map = {
         "MecanumNet": "AI_dept",
-        "MecanumetoNet": "LED_exp",
+        "MecanumetoNet": "Etho_test",
     }
     map_name = ssid_to_map.get(ssid, "AI_dept")
     map_dir = os.path.join(mecanumbot_description_pkg_share, 'maps', map_name)

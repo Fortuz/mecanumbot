@@ -10,7 +10,7 @@ This package does not contain ROS nodes. It provides files consumed by launch fi
 | ------------------------------------ | ----------------------------------------------------------------------------------- |
 | `behavior_trees/`                    | `mecanumbot_nav_to_pose.xml` and `mecanumbot_nav_through_poses.xml`: the `bt_navigator` trees `mecanumbot_bringup/nav2.launch.py` substitutes for the Nav2 stock ones. |
 | `config/joystick/`                   | Joystick mapping profiles (`generic.yaml`, `ps4.yaml`, `xbox360.yaml`) read by `mecanumbot_joy`.                |
-| `maps/`                              | Occupancy map assets (`.pgm` + `.yaml`) used by Nav2 and RViz: `AI_dept`, `LED_exp` (plus `LED_exp_keepout`) and `ethodept_old`, each with a `<map>_waypoints.yaml` used by `mecanumbot_demo_behaviours`. |
+| `maps/`                              | Occupancy map assets (`.pgm` + `.yaml`) used by Nav2 and RViz: `AI_dept`, `LED_exp` (plus `LED_exp_keepout`), `ethodept_old`, `etho_room` and `Etho_test` (the leading study's room since 2026-11-24, made from the web GUI). The first three come each with a `<map>_waypoints.yaml` used by `mecanumbot_demo_behaviours`. |
 | `meshes/`                            | 3D mesh resources for robot visualization/simulation.                               |
 | `param/mecanumbot_custom_nav2.yaml`  | Nav2 parameter set for localization/navigation behavior (with keepout mask).         |
 | `param/mecanumbot_custom_nav2_no_keepout.yaml` | Nav2 parameter set used when no keepout mask applies to the selected map. |
